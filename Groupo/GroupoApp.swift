@@ -9,14 +9,9 @@ import SwiftUI
 
 @main
 struct GroupoApp: App {
-    @StateObject private var router = NavigationRouter()
-    
     var body: some Scene {
         WindowGroup {
-            NavigationStack(path: $router.path) {
-                ContentView()
-                    .environmentObject(router)
-            }
+            MainTabView()
         }
     }
 }
