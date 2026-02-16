@@ -64,5 +64,5 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView()
+    DashboardView()
 }
