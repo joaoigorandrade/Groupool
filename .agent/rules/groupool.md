@@ -38,6 +38,8 @@ Dark Mode: All colors and assets must support Dark Mode natively using Color(uiC
 
 Haptics: Use UIImpactFeedbackGenerator for all financial confirmations and voting actions.
 
+Always try to use the simple native component, try to not create existing apple components.
+
 3. SOLID Implementation in Swift
 
 Single Responsibility: Each View does one thing. If a View exceeds 100 lines, break it into sub-components (e.g., VoteCardView, BalanceHeaderView).
