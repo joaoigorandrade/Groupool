@@ -24,9 +24,13 @@ class CreateChallengeViewModel: ObservableObject {
         return !title.isEmpty && !description.isEmpty && buyInAmount > 0
     }
     
+    var canCreateChallenge: Bool {
+        return !dataService.hasActiveChallenge
+    }
+    
     func createChallenge(completion: @escaping (Bool) -> Void) {
         if dataService.hasActiveChallenge {
-            errorMessage = "Já existe um desafio ativo neste grupo."
+            errorMessage = "Existe um desafio ativo. Aguarde o término para criar outro."
             completion(false)
             return
         }

@@ -59,8 +59,9 @@ struct RequestWithdrawalView: View {
                     Spacer()
                     
                     Button {
-                        viewModel.submit()
-                        dismiss()
+                        if viewModel.submit() {
+                            dismiss()
+                        }
                     } label: {
                         if viewModel.isValid {
                             Text("Request Withdrawal")
@@ -95,6 +96,11 @@ struct RequestWithdrawalView: View {
                     }
                 }
             }
+        }
+        .alert("Atenção", isPresented: $viewModel.showCooldownAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.cooldownAlertMessage)
         }
     }
 }

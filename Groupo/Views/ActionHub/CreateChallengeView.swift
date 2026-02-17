@@ -64,7 +64,7 @@ struct CreateChallengeView: View {
                             }
                         }
                     }
-                    .disabled(!viewModel.isValid)
+                    .disabled(!viewModel.isValid || !viewModel.canCreateChallenge)
                 }
             }
         }

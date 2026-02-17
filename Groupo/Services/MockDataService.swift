@@ -55,6 +55,13 @@ class MockDataService: ObservableObject {
         self.transactions = [
             Transaction(
                 id: UUID(),
+                description: "Vitoria Desafio Semanal",
+                amount: 50.00,
+                type: .win,
+                timestamp: Date().addingTimeInterval(-60 * 60 * 2) // 2 hours ago
+            ),
+             Transaction(
+                id: UUID(),
                 description: "Depósito Inicial - João",
                 amount: 500.00,
                 type: .win,
