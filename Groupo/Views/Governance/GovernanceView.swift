@@ -17,14 +17,14 @@ struct GovernanceView: View {
                     ForEach(viewModel.activeItems) { item in
                         if case .challenge(let challenge) = item {
                             NavigationLink(destination: ChallengeVotingView(challenge: challenge)) {
-                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline))
+                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                             }
                         } else if case .withdrawal(let request) = item {
                              NavigationLink(destination: WithdrawalVotingView(withdrawal: request)) {
-                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline))
+                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                             }
                         } else {
-                            GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline))
+                            GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                         }
                     }
                 }
@@ -40,6 +40,7 @@ struct GovernanceView: View {
 struct GovernanceListRow: View {
     let item: GovernanceItem
     let time: String
+    var showVoteRequired: Bool = false
     
     var body: some View {
         HStack {
@@ -49,10 +50,18 @@ struct GovernanceListRow: View {
                 .frame(width: 40)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
+                HStack {
+                    Text(title)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                    
+                    if showVoteRequired {
+                        Circle()
+                            .fill(.red)
+                            .frame(width: 8, height: 8)
+                    }
+                }
                 
                 Text(time)
                     .font(.caption)

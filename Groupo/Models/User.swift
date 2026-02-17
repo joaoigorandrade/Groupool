@@ -8,6 +8,9 @@ struct User: Identifiable, Codable, Hashable {
     let currentEquity: Decimal
     let challengesWon: Int
     let challengesLost: Int
+    let lastWinTimestamp: Date?
+    let votingHistory: [UUID]
+    let consecutiveMissedVotes: Int
     let status: UserStatus
 
     enum UserStatus: String, Codable {

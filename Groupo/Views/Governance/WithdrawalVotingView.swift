@@ -72,6 +72,32 @@ struct WithdrawalVotingView: View {
             .background(Color.secondaryBackground)
             .cornerRadius(16)
             
+            // Auto-Approval Indicator
+            HStack {
+                Image(systemName: "timer")
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading) {
+                    Text("Auto-Approval in")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(viewModel.timeRemaining(for: withdrawal.deadline))
+                        .font(.headline)
+                        .monospacedDigit()
+                }
+                Spacer()
+                Text("Default: Approved")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.1))
+                    .foregroundStyle(.green)
+                    .cornerRadius(8)
+            }
+            .padding()
+            .background(Color.secondary.opacity(0.1))
+            .cornerRadius(12)
+            
             Divider()
             
             

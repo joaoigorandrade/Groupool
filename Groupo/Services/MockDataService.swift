@@ -18,11 +18,14 @@ class MockDataService: ObservableObject {
             currentEquity: 500.00,
             challengesWon: 5,
             challengesLost: 2,
+            lastWinTimestamp: nil,
+            votingHistory: [],
+            consecutiveMissedVotes: 0,
             status: .active
         )
         self.currentUser = user
-        let member2 = User(id: UUID(), name: "Maria Oliveira", avatar: "person.circle", reputationScore: 90, currentEquity: 500.00, challengesWon: 3, challengesLost: 1, status: .active)
-        let member3 = User(id: UUID(), name: "Carlos Pereira", avatar: "person.circle", reputationScore: 85, currentEquity: 500.00, challengesWon: 1, challengesLost: 4, status: .active)
+        let member2 = User(id: UUID(), name: "Maria Oliveira", avatar: "person.circle", reputationScore: 90, currentEquity: 500.00, challengesWon: 3, challengesLost: 1, lastWinTimestamp: nil, votingHistory: [], consecutiveMissedVotes: 0, status: .active)
+        let member3 = User(id: UUID(), name: "Carlos Pereira", avatar: "person.circle", reputationScore: 85, currentEquity: 500.00, challengesWon: 1, challengesLost: 4, lastWinTimestamp: nil, votingHistory: [], consecutiveMissedVotes: 0, status: .active)
 
         self.currentGroup = Group(
             id: UUID(),
@@ -96,18 +99,101 @@ class MockDataService: ObservableObject {
         )
     }
 
-    func castVote(targetID: UUID, type: Vote.VoteType) {
+    func castVote(targetID: UUID, type: Vote.VoteType, voterID: UUID? = nil) {
         let vote = Vote(
             id: UUID(),
+            voterID: voterID ?? currentUser.id,
             targetID: targetID,
             type: type,
             deadline: Date().addingTimeInterval(60 * 60 * 24)
         )
         votes.append(vote)
+        
+        // Reset consecutive missed votes if they vote
+        if let index = currentGroup.members.firstIndex(where: { $0.id == (voterID ?? currentUser.id) }) {
+            var member = currentGroup.members[index]
+            member = User(
+                id: member.id,
+                name: member.name,
+                avatar: member.avatar,
+                reputationScore: member.reputationScore,
+                currentEquity: member.currentEquity,
+                challengesWon: member.challengesWon,
+                challengesLost: member.challengesLost,
+                lastWinTimestamp: member.lastWinTimestamp,
+                votingHistory: member.votingHistory, // Don't add here yet, add in updateVotingParticipation or here?
+                // Spec says: "Reset counter when user votes"
+                consecutiveMissedVotes: 0, 
+                status: member.status == .inactive ? .active : member.status // Reactivate if active?
+            )
+             // If we just reset, we should update the member
+            var newMembers = currentGroup.members
+            newMembers[index] = member
+            currentGroup = Group(id: currentGroup.id, name: currentGroup.name, totalPool: currentGroup.totalPool, members: newMembers)
+            
+            if member.id == currentUser.id {
+                currentUser = member
+            }
+        }
+        
+        objectWillChange.send()
+    }
+    
+    func updateVotingParticipation(for targetID: UUID) {
+        // Find all active members who haven't voted on this targetID
+        // But we need to do this for ALL members
+        
+        var newMembers = currentGroup.members
+        
+        for (index, member) in newMembers.enumerated() {
+            let hasVoted = votes.contains { $0.targetID == targetID && $0.voterID == member.id }
+            
+            var newHistory = member.votingHistory
+            var newConsecutive = member.consecutiveMissedVotes
+            var newStatus = member.status
+            
+            if hasVoted {
+                // Determine if we should add to history (avoid duplicates)
+                if !newHistory.contains(targetID) {
+                    newHistory.append(targetID)
+                }
+                newConsecutive = 0
+            } else {
+                newConsecutive += 1
+                if newConsecutive >= 3 {
+                    newStatus = .inactive
+                }
+            }
+            
+            newMembers[index] = User(
+                id: member.id,
+                name: member.name,
+                avatar: member.avatar,
+                reputationScore: member.reputationScore,
+                currentEquity: member.currentEquity,
+                challengesWon: member.challengesWon,
+                challengesLost: member.challengesLost,
+                lastWinTimestamp: member.lastWinTimestamp,
+                votingHistory: newHistory,
+                consecutiveMissedVotes: newConsecutive,
+                status: newStatus
+            )
+        }
+        
+        currentGroup = Group(id: currentGroup.id, name: currentGroup.name, totalPool: currentGroup.totalPool, members: newMembers)
+        
+        // Update currentUser
+        if let updatedCurrentUser = newMembers.first(where: { $0.id == currentUser.id }) {
+            currentUser = updatedCurrentUser
+        }
     }
 
     var hasActiveChallenge: Bool {
-        return challenges.contains { $0.status == .active }
+        return challenges.contains { $0.status == .active || $0.status == .voting }
+    }
+    
+    var activeChallenge: Challenge? {
+        return challenges.first { $0.status == .active || $0.status == .voting }
     }
 
     func addChallenge(title: String, description: String, buyIn: Decimal, deadline: Date) {
@@ -151,7 +237,7 @@ class MockDataService: ObservableObject {
             amount: amount,
             status: .pending,
             createdDate: Date(),
-            deadline: Date().addingTimeInterval(60 * 60 * 24) // 24 hours
+            deadline: Date().addingTimeInterval(60 * 60 * 24)
         )
         withdrawalRequests.insert(request, at: 0)
     }
@@ -173,40 +259,64 @@ class MockDataService: ObservableObject {
         }
     }
     
-    func completeChallenge(challengeID: UUID, winnerID: UUID?) {
+    func submitProof(challengeID: UUID, image: String?) {
         guard let index = challenges.firstIndex(where: { $0.id == challengeID }) else { return }
         var challenge = challenges[index]
         
-        guard challenge.status != .complete else { return }
+        guard challenge.status == .active else { return }
         
-        challenge.status = .complete
+        challenge.proofImage = image
+        challenge.proofSubmissionUserID = currentUser.id
+        challenge.status = .voting
+        
         challenges[index] = challenge
+        objectWillChange.send()
+    }
+
+    func resolveChallengeVoting(challengeID: UUID) {
+        guard let index = challenges.firstIndex(where: { $0.id == challengeID }) else { return }
+        var challenge = challenges[index]
         
-        let pot = challenge.buyIn * Decimal(challenge.participants.count)
+        guard challenge.status == .voting else { return }
         
-        if let winnerID = winnerID {
+        // Update voting participation stats before resolving
+        updateVotingParticipation(for: challengeID)
+        
+        let challengeVotes = votes.filter { $0.targetID == challengeID }
+        let approvalVotes = challengeVotes.filter { $0.type == .approval }.count
+        
+        let requiredVotes = (challenge.participants.count / 2) + 1
+        
+        if approvalVotes >= requiredVotes {
+            challenge.status = .complete
+            
+            let pot = challenge.buyIn * Decimal(challenge.participants.count)
+            let winnerID = challenge.proofSubmissionUserID ?? currentUser.id
+
             if winnerID == currentUser.id {
-                let profit = pot - challenge.buyIn
-                currentUser = User(
-                    id: currentUser.id,
-                    name: currentUser.name,
-                    avatar: currentUser.avatar,
-                    reputationScore: currentUser.reputationScore + 10,
-                    currentEquity: currentUser.currentEquity + profit,
-                    challengesWon: currentUser.challengesWon + 1,
-                    challengesLost: currentUser.challengesLost,
-                    status: currentUser.status
-                )
-                
-                let winTransaction = Transaction(
-                    id: UUID(),
-                    description: "Vitoria: \(challenge.title)",
-                    amount: profit,
-                    type: .win,
-                    timestamp: Date()
-                )
-                transactions.insert(winTransaction, at: 0)
-                
+                 let profit = pot - challenge.buyIn
+                 currentUser = User(
+                     id: currentUser.id,
+                     name: currentUser.name,
+                     avatar: currentUser.avatar,
+                     reputationScore: currentUser.reputationScore + 10,
+                     currentEquity: currentUser.currentEquity + profit,
+                     challengesWon: currentUser.challengesWon + 1,
+                     challengesLost: currentUser.challengesLost,
+                     lastWinTimestamp: Date(),
+                     votingHistory: currentUser.votingHistory,
+                     consecutiveMissedVotes: currentUser.consecutiveMissedVotes,
+                     status: currentUser.status
+                 )
+                 
+                 let winTransaction = Transaction(
+                     id: UUID(),
+                     description: "Vitoria: \(challenge.title)",
+                     amount: profit,
+                     type: .win,
+                     timestamp: Date()
+                 )
+                 transactions.insert(winTransaction, at: 0)
             } else if challenge.participants.contains(currentUser.id) {
                 currentUser = User(
                     id: currentUser.id,
@@ -216,6 +326,9 @@ class MockDataService: ObservableObject {
                     currentEquity: currentUser.currentEquity - challenge.buyIn,
                     challengesWon: currentUser.challengesWon,
                     challengesLost: currentUser.challengesLost + 1,
+                    lastWinTimestamp: currentUser.lastWinTimestamp,
+                    votingHistory: currentUser.votingHistory,
+                    consecutiveMissedVotes: currentUser.consecutiveMissedVotes,
                     status: currentUser.status
                 )
                 
@@ -228,8 +341,122 @@ class MockDataService: ObservableObject {
                 )
                 transactions.insert(lossTransaction, at: 0)
             }
+        } else {
+            challenge.status = .failed
+            
+            if challenge.participants.contains(currentUser.id) {
+               
+            }
+            
+             let refundTransaction = Transaction(
+                 id: UUID(),
+                 description: "Reembolso: \(challenge.title)",
+                 amount: 0,
+                 type: .win,
+                 timestamp: Date()
+             )
+             transactions.insert(refundTransaction, at: 0)
         }
         
+        challenges[index] = challenge
         objectWillChange.send()
+    }
+
+    func completeChallenge(challengeID: UUID, winnerID: UUID?) {
+         resolveChallengeVoting(challengeID: challengeID)
+    }
+
+    // MARK: - Withdrawal Auto-Approval Logic (Antifragile)
+    
+    func verifyExpiredWithdrawals() {
+        let now = Date()
+        let expiredPending = withdrawalRequests.filter { $0.status == .pending && $0.deadline < now }
+        
+        for request in expiredPending {
+            autoApproveWithdrawal(request)
+        }
+    }
+    
+    private func autoApproveWithdrawal(_ request: WithdrawalRequest) {
+        guard let index = withdrawalRequests.firstIndex(where: { $0.id == request.id }) else { return }
+        
+        // Count Contest votes
+        let requestVotes = votes.filter { $0.targetID == request.id }
+        let contestVotes = requestVotes.filter { $0.type == .contest }.count
+        let totalMembers = currentGroup.members.count
+        let requiredContestVotes = (totalMembers / 2) + 1
+        
+        // If Contests are NOT a majority, Auto-Approve
+        if contestVotes < requiredContestVotes {
+            // 1. Update Status
+            var updatedRequest = request
+            updatedRequest.status = .approved
+            withdrawalRequests[index] = updatedRequest
+            
+            // 0. Update Voting Participation
+            updateVotingParticipation(for: request.id)
+            
+            // 2. Deduct from Pool
+            let newPool = currentGroup.totalPool - request.amount
+            currentGroup = Group(
+                id: currentGroup.id,
+                name: currentGroup.name,
+                totalPool: newPool,
+                members: currentGroup.members
+            )
+            
+            // 3. Deduct from User Equity
+            if let userIndex = currentGroup.members.firstIndex(where: { $0.id == request.initiatorID }) {
+                var member = currentGroup.members[userIndex]
+                member = User(
+                    id: member.id,
+                    name: member.name,
+                    avatar: member.avatar,
+                    reputationScore: member.reputationScore,
+                    currentEquity: member.currentEquity - request.amount, // Deduct
+                    challengesWon: member.challengesWon,
+                    challengesLost: member.challengesLost,
+                    lastWinTimestamp: member.lastWinTimestamp,
+                    votingHistory: member.votingHistory,
+                    consecutiveMissedVotes: member.consecutiveMissedVotes,
+                    status: member.status
+                )
+                
+                // Update in members list
+                var newMembers = currentGroup.members
+                newMembers[userIndex] = member
+                
+                currentGroup = Group(
+                    id: currentGroup.id,
+                    name: currentGroup.name,
+                    totalPool: currentGroup.totalPool,
+                    members: newMembers
+                )
+                
+                // Update currentUser if it's them
+                if member.id == currentUser.id {
+                    currentUser = member
+                }
+            }
+            
+            // 4. Create Transaction
+            let transaction = Transaction(
+                id: UUID(),
+                description: "Withdrawal Approved (Auto)",
+                amount: request.amount,
+                type: .withdrawal,
+                timestamp: Date()
+            )
+            transactions.insert(transaction, at: 0)
+            
+            print("Auto-approved withdrawal \(request.id)")
+            objectWillChange.send()
+        } else {
+            // Majority contested -> Reject
+             var updatedRequest = request
+             updatedRequest.status = .rejected
+             withdrawalRequests[index] = updatedRequest
+             objectWillChange.send()
+        }
     }
 }

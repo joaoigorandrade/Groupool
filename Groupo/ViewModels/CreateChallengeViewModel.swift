@@ -24,6 +24,17 @@ class CreateChallengeViewModel: ObservableObject {
         return !title.isEmpty && !description.isEmpty && buyInAmount > 0
     }
     
+    var activeChallenge: Challenge? {
+        return dataService.activeChallenge
+    }
+    
+    var activeChallengeRemainingTime: String {
+        guard let challenge = activeChallenge else { return "" }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: challenge.deadline, relativeTo: Date())
+    }
+
     var canCreateChallenge: Bool {
         return !dataService.hasActiveChallenge
     }

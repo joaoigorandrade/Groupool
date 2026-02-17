@@ -61,6 +61,7 @@ class GovernanceViewModel: ObservableObject {
             .autoconnect()
             .sink { [weak self] _ in
                 self?.currentTime = Date()
+                self?.mockDataService.verifyExpiredWithdrawals()
             }
             .store(in: &cancellables)
     }
@@ -95,7 +96,6 @@ class GovernanceViewModel: ObservableObject {
     }
     
     func castVote(withdrawal: WithdrawalRequest, type: Vote.VoteType, reason: String? = nil) {
-        // In a real app, reason would be stored with the vote
         mockDataService.castVote(targetID: withdrawal.id, type: type)
     }
     
@@ -103,10 +103,31 @@ class GovernanceViewModel: ObservableObject {
         mockDataService.joinChallenge(challengeID: challenge.id)
     }
     
+    func submitProof(challenge: Challenge, image: String?) {
+        mockDataService.submitProof(challengeID: challenge.id, image: image)
+    }
+    
+    func resolveChallenge(challenge: Challenge) {
+        mockDataService.resolveChallengeVoting(challengeID: challenge.id)
+    }
+    
     func getUser(for id: UUID) -> User? {
         if mockDataService.currentUser.id == id {
             return mockDataService.currentUser
         }
         return mockDataService.currentGroup.members.first { $0.id == id }
+    }
+    
+    func hasVoted(on item: GovernanceItem) -> Bool {
+        return mockDataService.votes.contains { $0.targetID == item.id && $0.voterID == mockDataService.currentUser.id }
+    }
+    
+    func isEligibleToVote(on item: GovernanceItem) -> Bool {
+        switch item {
+        case .challenge(let challenge):
+            return challenge.participants.contains(mockDataService.currentUser.id)
+        case .withdrawal:
+            return true
+        }
     }
 }

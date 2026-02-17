@@ -23,18 +23,26 @@ struct RequestWithdrawalView: View {
                                     .font(.headline)
                                     .foregroundStyle(.primary)
                                 
-                                Text("Requests above 50% of your equity trigger a 24h review period to prevent pump & dump behavior.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                if let cooldown = viewModel.cooldownString {
+                                     Text("Withdrawals locked for \(cooldown)")
+                                         .font(.title3)
+                                         .monospacedDigit()
+                                         .fontWeight(.bold)
+                                         .foregroundStyle(.orange)
+                                } else {
+                                    Text("Requests above 50% of your equity trigger a 24h review period to prevent pump & dump behavior.")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
                     .padding()
-                    .background(Color.yellow.opacity(0.1))
+                    .background(viewModel.cooldownString != nil ? Color.orange.opacity(0.1) : Color.yellow.opacity(0.1))
                     .cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
+                            .stroke(viewModel.cooldownString != nil ? Color.orange.opacity(0.3) : Color.yellow.opacity(0.3), lineWidth: 1)
                     )
                     
                     VStack(alignment: .leading, spacing: 8) {

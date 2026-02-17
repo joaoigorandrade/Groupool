@@ -4,7 +4,7 @@ struct WithdrawalRequest: Identifiable, Codable, Hashable {
     let id: UUID
     let initiatorID: UUID
     let amount: Decimal
-    let status: WithdrawalStatus
+    var status: WithdrawalStatus
     let createdDate: Date
     let deadline: Date
 
