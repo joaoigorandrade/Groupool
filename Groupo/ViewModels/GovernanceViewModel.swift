@@ -23,6 +23,7 @@ enum GovernanceItem: Identifiable, Hashable {
 class GovernanceViewModel: ObservableObject {
     @Published var activeItems: [GovernanceItem] = []
     @Published var currentTime: Date = Date()
+    @Published var isLoading: Bool = false
     
     private var cancellables = Set<AnyCancellable>()
     private var mockDataService: MockDataService
@@ -38,6 +39,14 @@ class GovernanceViewModel: ObservableObject {
         self.cancellables.removeAll()
         addSubscribers()
         setupTimer()
+    }
+    
+    @MainActor
+    func refresh() async {
+        isLoading = true
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        // Data is reactive, so no need to manually fetch, but we simulate the delay to show the spinner
+        isLoading = false
     }
     
     private func addSubscribers() {
@@ -91,24 +100,59 @@ class GovernanceViewModel: ObservableObject {
         }
     }
     
-    func castVote(challenge: Challenge, type: Vote.VoteType) {
+    @MainActor
+    func castVote(challenge: Challenge, type: Vote.VoteType) async {
+        isLoading = true
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        
         mockDataService.castVote(targetID: challenge.id, type: type)
+        HapticManager.notificationSuccess()
+        
+        isLoading = false
     }
     
-    func castVote(withdrawal: WithdrawalRequest, type: Vote.VoteType, reason: String? = nil) {
+    @MainActor
+    func castVote(withdrawal: WithdrawalRequest, type: Vote.VoteType, reason: String? = nil) async {
+        isLoading = true
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        
         mockDataService.castVote(targetID: withdrawal.id, type: type)
+        HapticManager.notificationSuccess()
+        
+        isLoading = false
     }
     
-    func joinChallenge(challenge: Challenge) {
+    @MainActor
+    func joinChallenge(challenge: Challenge) async {
+        isLoading = true
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        
         mockDataService.joinChallenge(challengeID: challenge.id)
+        HapticManager.notificationSuccess()
+        
+        isLoading = false
     }
     
-    func submitProof(challenge: Challenge, image: String?) {
+    @MainActor
+    func submitProof(challenge: Challenge, image: String?) async {
+        isLoading = true
+        try? await Task.sleep(nanoseconds: 1_200_000_000)
+        
         mockDataService.submitProof(challengeID: challenge.id, image: image)
+        HapticManager.notificationSuccess()
+        
+        isLoading = false
     }
     
-    func resolveChallenge(challenge: Challenge) {
+    @MainActor
+    func resolveChallenge(challenge: Challenge) async {
+        isLoading = true
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        
         mockDataService.resolveChallengeVoting(challengeID: challenge.id)
+        HapticManager.notificationSuccess()
+        
+        isLoading = false
     }
     
     func getUser(for id: UUID) -> User? {

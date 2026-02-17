@@ -2,66 +2,219 @@
 trigger: always_on
 ---
 
-FRONTEND DEVELOPMENT RULES
+# 📜 Swift & SwiftUI Code Quality Manifesto
+A concise guide to writing clear, maintainable Swift and SwiftUI code, based on best practices.
 
-Platform: iOS (SwiftUI 5.0)
-Design System: Apple Human Interface Guidelines (HIG)
-Primary Color: SystemTeal (Light Mode: #5AC8FA, Dark Mode: #64D2FF) — Chosen for its association with "Pools," clarity, and distinctness from traditional banking "Navy Blue."
+## 🧭 Core Philosophy
+```mermaid
+mindmap
+  root((Code Quality))
+    Clarity
+      Readability at call site
+      Descriptive naming
+      Self-documenting structure
+    Consistency
+      Unified style
+      Predictable patterns
+      Shared conventions
+    Maintainability
+      Modular architecture
+      Clear separation of concerns
+      Easy to test and refactor
+    Correctness
+      Compile without warnings
+      Safe by default
+      Explicit over implicit
+```
+**Key pillars (in priority order):**
+1. **Clarity** at usage point.
+2. **Consistency** across code.
+3. **Brevity** as a byproduct, not goal.
 
-1. Architectural Pattern
+## 📁 File Organization
+### Naming
+- Primary files: Name after main type (e.g., `UserProfileView.swift`).
+- Protocol extensions: Use `+` (e.g., `User+Encodable.swift`).
+- Multiple extensions: Descriptive prefix (e.g., `MyType+Additions.swift`).
 
-MVVM-C (Model-View-ViewModel-Coordinator):
+### Structure
+Organize as:
+1. File docs.
+2. Sorted imports.
+3. Declarations.
+4. Extensions.
 
-Views must be purely declarative and devoid of business logic.
+**Example View File:**
+```swift
+// ContentView.swift
+import SwiftUI
+import Combine
 
-ViewModels must implement the ObservableObject protocol and handle state transformation.
+struct ContentView: View {
+    @StateObject private var viewModel = ContentViewModel()
+    
+    var body: some View {
+        NavigationView {
+            listView
+                .navigationTitle("Todo List")
+                .toolbar { toolbarContent }
+        }
+        .onAppear { viewModel.loadInitialData() }
+    }
+    
+    private var listView: some View {
+        List {
+            ForEach(viewModel.items) { item in
+                ItemRowView(item: item)
+                    .onTapGesture { viewModel.toggleItem(item) }
+            }
+            .onDelete { viewModel.deleteItems(at: $0) }
+        }
+    }
+    
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            addButton
+        }
+    }
+    
+    private var addButton: some View {
+        Button(action: { viewModel.showAddSheet = true }) {
+            Image(systemName: "plus")
+        }
+    }
+}
 
-Coordinators (or a NavigationRouter environment object) must handle all navigation logic. Views never instantiate other full-screen Views directly.
+#Preview {
+    ContentView()
+        .environmentObject(ContentViewModel())
+}
+```
 
-Dependency Injection: All dependencies (NetworkService, formatting logic) must be injected via init or @EnvironmentObject. No Singletons accessed directly inside Views.
+## ✍️ Naming
+Follow Swift guidelines for clarity.
 
-2. UI/UX Guidelines (Strict Apple HIG)
+| Category | Convention | Example | Avoid |
+|----------|------------|---------|-------|
+| Types | UpperCamelCase | `struct UserProfile` | `struct user_profile` |
+| Functions/Vars | lowerCamelCase | `func calculateTotal()` | `func CalculateTotal()` |
+| Constants | lowerCamelCase | `let maxRetryCount = 3` | `let MAX_RETRY_COUNT = 3` |
+| Booleans | Assertions | `isEmpty`, `hasCompleted` | `empty`, `completed` |
+| Protocols | Nouns | `Collection` | `Collectable` |
+| Capabilities | -able/-ible | `Codable` | `Coding` |
 
-Typography: Use Font.TextStyle exclusively (e.g., .headline, .caption, .body). Do not use hardcoded sizes (e.g., .system(size: 14)).
+**Rules:**
+- Prioritize call-site clarity.
+- Omit inferable words.
+- Avoid abbreviations.
 
-Iconography: Use SF Symbols exclusively.
+**Good vs. Bad:**
+```swift
+// Good
+employees.filter { $0.isActive }
+var hasCompletedOnboarding: Bool
+protocol Drawable { func draw(in: CGContext) }
+static func makeDefaultSettings() -> Settings
 
-Components:
+// Bad
+employees.filterActive()
+var active: Bool
+protocol Draw { func draw(in: CGContext) }
+static func create() -> Settings
+```
 
-Use List for collections.
+## 🏗️ Architecture
+Use layered structure:
+```mermaid
+flowchart LR
+    A[View Layer] --> B[Business Logic]
+    B --> C[Data Access]
+    C --> D[External]
+```
+**Rules:**
+1. Single responsibility.
+2. Dependencies inward.
+3. Isolate view state.
+4. Unidirectional flow.
 
-Use NavigationView / NavigationStack for hierarchy.
+**SwiftUI Tips:**
+- Views lightweight, no logic.
+- `@StateObject` for owned ViewModels.
+- `@EnvironmentObject` for shared state.
+- Extract reusable views.
 
-Use standard Button styles (.borderedProminent for primary actions).
+**Example:**
+```swift
+class AppState: ObservableObject {
+    @Published var userData = UserData()
+}
 
-Dark Mode: All colors and assets must support Dark Mode natively using Color(uiColor:) or Asset Catalog sets.
+protocol CountriesInteractor {
+    func loadCountries()
+}
 
-Haptics: Use UIImpactFeedbackGenerator for all financial confirmations and voting actions.
+struct RealCountriesInteractor: CountriesInteractor {
+    let webRepository: CountriesWebRepository
+    let appState: AppState
+    
+    func loadCountries() {
+        appState.userData.countries = .isLoading(last: appState.userData.countries.value)
+        _ = webRepository.loadCountries()
+            .sinkToLoadable { appState.userData.countries = $0 }
+    }
+}
 
-Always try to use the simple native component, try to not create existing apple components.
+struct CountriesList: View {
+    @EnvironmentObject var appState: AppState
+    @Environment(\.interactors) var interactors: InteractorsContainer
+    
+    var body: some View {
+        listView
+            .onAppear { interactors.countriesInteractor.loadCountries() }
+    }
+}
+```
 
-3. SOLID Implementation in Swift
+## 🎨 Formatting
+- Spaces for indentation.
+- Consistent spacing around operators/colons.
+- 100-char line limit.
+- Braces on same line.
+- No semicolons.
+- One statement/line.
 
-Single Responsibility: Each View does one thing. If a View exceeds 100 lines, break it into sub-components (e.g., VoteCardView, BalanceHeaderView).
+**Control Flow:**
+```swift
+// Good: Guard for early exit
+func processItem(_ item: Item?) {
+    guard let item = item else { return }
+    // Process
+}
 
-Open/Closed: Use Protocols for service layers. Extensions should add functionality, not modify existing classes.
+// Bad: Nested if
+func processItem(_ item: Item?) {
+    if let item = item {
+        // Process
+    }
+}
+```
 
-Liskov Substitution: Protocol types must be interchangeable. A MockPaymentService must function identically to LivePaymentService in tests.
+## 🚀 Checklist
+### Setup
+- [ ] Install SwiftLint.
+- [ ] File templates.
+- [ ] Naming conventions.
+- [ ] CI checks.
 
-Interface Segregation: Protocols should be small. Prefer Readable and Writeable protocols over a massive DatabaseManager protocol.
+### Development
+- [ ] Docs first.
+- [ ] Single responsibility.
+- [ ] Access modifiers.
+- [ ] Tests for logic.
 
-Dependency Inversion: High-level modules (ViewModels) must not depend on low-level modules (API Client); both must depend on abstractions (Protocols).
-
-4. Coding Standards (No Comments Policy)
-
-Self-Explanatory Naming:
-
-Bad: func proc()
-
-Good: func processTransactionAndUpdateLedger()
-
-No Comments: If the code requires a comment to explain what it does, rewrite the code. Code should read like English sentences.
-
-Access Control: All properties are private or private(set) by default. Expose only what is necessary.
-
-Error Handling: Never use try? or force unwrap !. Use do-catch blocks and propagate distinct Error enum cases.
+### Commit
+- [ ] Run SwiftLint.
+- [ ] Tests pass.
+- [ ] No warnings.
+- [ ] Docs complete.

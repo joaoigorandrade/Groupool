@@ -4,6 +4,7 @@ import SwiftUI
 struct PrimaryButton: View {
     let title: String
     var icon: String? = nil
+    var backgroundColor: Color = .brandTeal
     var isLoading: Bool = false
     var isDisabled: Bool = false
     let action: () -> Void
@@ -22,7 +23,7 @@ struct PrimaryButton: View {
                 
                 if let icon = icon, !isLoading {
                     Image(systemName: icon)
-                        .font(.headlineText)
+                    .font(.headlineText)
                 }
                 
                 Text(title)
@@ -30,7 +31,7 @@ struct PrimaryButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(isDisabled || isLoading ? Color.gray : Color.brandTeal)
+            .background(isDisabled || isLoading ? Color.gray : backgroundColor)
             .foregroundColor(.white)
             .cornerRadius(12)
             .contentShape(Rectangle())

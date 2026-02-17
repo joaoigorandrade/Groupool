@@ -91,14 +91,13 @@ private extension ChallengeVotingView {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
-            Button(action: joinChallenge) {
-                Text("Join Challenge")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
+            PrimaryButton(
+                title: "Join Challenge",
+                isLoading: viewModel.isLoading
+            ) {
+                Task {
+                    await viewModel.joinChallenge(challenge: currentChallenge)
+                }
             }
             
             Text("Buy-in: \(currentChallenge.buyIn.formatted(.currency(code: "BRL")))")
@@ -116,8 +115,10 @@ private extension ChallengeVotingView {
             if isParticipant {
                 if hasUserVoted {
                     voteConfirmationView
+                        .transition(.scale.combined(with: .opacity))
                 } else {
                     votingControlsView
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             } else {
                 Text("Only participants can vote")
@@ -130,8 +131,6 @@ private extension ChallengeVotingView {
     
     @ViewBuilder
     var votingControlsView: some View {
-        // Proof is already displayed in ChallengeDetailView
-        
         votingButtons
     }
     
@@ -157,6 +156,7 @@ private extension ChallengeVotingView {
             }
             .font(.headline)
             .padding(.top)
+            .disabled(viewModel.isLoading)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
@@ -167,14 +167,12 @@ private extension ChallengeVotingView {
             Text("Cast Your Vote")
                 .font(.headline)
             
-            Button(action: { vote(.approval) }) {
-                Text("Vote Winner ✓")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+            PrimaryButton(
+                title: "Vote Winner ✓",
+                backgroundColor: .green,
+                isLoading: viewModel.isLoading
+            ) {
+                vote(.approval)
             }
             
             Button(action: { vote(.abstain) }) {
@@ -186,6 +184,7 @@ private extension ChallengeVotingView {
                     .foregroundColor(.primary)
                     .cornerRadius(12)
             }
+            .disabled(viewModel.isLoading)
             
             if isCreator {
                 Button(action: simulateResolution) {
@@ -194,6 +193,7 @@ private extension ChallengeVotingView {
                     .foregroundColor(.red)
                     .padding(.top)
                 }
+                .disabled(viewModel.isLoading)
             }
         }
     }
@@ -202,20 +202,25 @@ private extension ChallengeVotingView {
 // MARK: - Helper Methods
 private extension ChallengeVotingView {
     func joinChallenge() {
-        viewModel.joinChallenge(challenge: currentChallenge)
-        HapticManager.impact(style: .medium)
+        Task {
+            await viewModel.joinChallenge(challenge: currentChallenge)
+        }
     }
     
     func vote(_ type: Vote.VoteType) {
-        viewModel.castVote(challenge: currentChallenge, type: type)
-        withAnimation {
-            hasUserVoted = true
+        Task {
+            await viewModel.castVote(challenge: currentChallenge, type: type)
+            HapticManager.notification(type: .success)
+            withAnimation(.spring()) {
+                hasUserVoted = true
+            }
         }
-        HapticManager.impact(style: .medium)
     }
     
     func simulateResolution() {
-        viewModel.resolveChallenge(challenge: currentChallenge)
+        Task {
+            await viewModel.resolveChallenge(challenge: currentChallenge)
+        }
     }
 }
 

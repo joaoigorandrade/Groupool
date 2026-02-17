@@ -21,7 +21,12 @@ struct LedgerView: View {
     
     @ViewBuilder
     private var view: some View {
-        if viewModel.sections.isEmpty {
+        if viewModel.isLoading {
+            List {
+                SkeletonView()
+            }
+            .listStyle(.insetGrouped)
+        } else if viewModel.sections.isEmpty {
             ContentUnavailableView {
                 Label("No Transactions", systemImage: "list.clipboard")
             } description: {
@@ -44,6 +49,9 @@ struct LedgerView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .refreshable {
+                await viewModel.refresh(transactions: dataService.transactions)
+            }
         }
     }
 }

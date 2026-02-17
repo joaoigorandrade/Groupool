@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RequestWithdrawalView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var toastManager: ToastManager
     @StateObject private var viewModel: RequestWithdrawalViewModel
     
     init(dataService: MockDataService = MockDataService()) {
@@ -66,49 +67,27 @@ struct RequestWithdrawalView: View {
                     
                     Spacer()
                     
-                    Button {
-                        if viewModel.submit() {
-                            dismiss()
-                        }
-                    } label: {
-                        if viewModel.isValid {
-                            Text("Request Withdrawal")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.brandTeal)
-                                .cornerRadius(12)
-                        } else {
-                            Text("Invalid Amount")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.gray)
-                                .cornerRadius(12)
+                    Spacer()
+                    
+                    PrimaryButton(
+                        title: "Request Withdrawal",
+                        isLoading: viewModel.isLoading,
+                        isDisabled: !viewModel.isValid
+                    ) {
+                        viewModel.submit { success, errorMsg in
+                            if success {
+                                toastManager.show(style: .success, message: "Withdrawal requested successfully")
+                                dismiss()
+                            } else if let errorMsg = errorMsg {
+                                toastManager.show(style: .error, message: errorMsg)
+                            }
                         }
                     }
-                    .disabled(!viewModel.isValid)
                 }
                 .padding()
             }
             .navigationTitle("Request Withdrawal")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-        .alert("Atenção", isPresented: $viewModel.showCooldownAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(viewModel.cooldownAlertMessage)
         }
     }
 }
@@ -116,4 +95,5 @@ struct RequestWithdrawalView: View {
 #Preview {
     RequestWithdrawalView()
         .environmentObject(MockDataService())
+        .environmentObject(ToastManager())
 }

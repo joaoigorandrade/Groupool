@@ -5,9 +5,6 @@ class RequestWithdrawalViewModel: ObservableObject {
     @Published var amount: Decimal = 0
     @Published var dataService: MockDataService
     
-    @Published var showCooldownAlert: Bool = false
-    @Published var cooldownAlertMessage: String = ""
-    
     @Published var cooldownString: String? = nil
     private var timer: AnyCancellable?
     
@@ -52,16 +49,32 @@ class RequestWithdrawalViewModel: ObservableObject {
         }
     }
     
-    func submit() -> Bool {
-        guard isValid else { return false }
-        
-        if cooldownString != nil {
-             cooldownAlertMessage = "Você ganhou um desafio nas últimas 24 horas. Aguarde o período de cooldown para sacar."
-             showCooldownAlert = true
-             return false
+    @Published var isLoading: Bool = false
+    
+    // ... (existing code)
+    
+    @MainActor
+    func submit(completion: @escaping (Bool, String?) -> Void) {
+        guard isValid else {
+            completion(false, nil)
+            return
         }
         
-        dataService.requestWithdrawal(amount: amount)
-        return true
+        if cooldownString != nil {
+             completion(false, "Você ganhou um desafio nas últimas 24 horas. Aguarde o período de cooldown para sacar.")
+             return
+        }
+        
+        isLoading = true
+        
+        Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            
+            dataService.requestWithdrawal(amount: amount)
+            HapticManager.notificationSuccess()
+            
+            isLoading = false
+            completion(true, nil)
+        }
     }
 }

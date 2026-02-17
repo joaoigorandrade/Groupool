@@ -208,7 +208,9 @@ struct WithdrawalVotingView: View {
             Spacer()
             
             Button {
-                castVote()
+                Task {
+                    await castVote()
+                }
             } label: {
                 Text(selectedVote == .contest ? "Submit Contest" : "Confirm Approval")
                     .font(.headline)
@@ -269,13 +271,13 @@ struct WithdrawalVotingView: View {
         }
     }
     
-    private func castVote() {
+    private func castVote() async {
         guard let vote = selectedVote else { return }
         
         let type: Vote.VoteType = vote == .approve ? .approval : .contest
         let reasoning = vote == .contest ? contestReason.rawValue : nil
         
-        viewModel.castVote(withdrawal: withdrawal, type: type, reason: reasoning)
+        await viewModel.castVote(withdrawal: withdrawal, type: type, reason: reasoning)
         
         withAnimation {
             hasVoted = true

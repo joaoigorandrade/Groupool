@@ -41,13 +41,6 @@ struct ActionMenuSheet: View {
             .padding()
             .navigationTitle("Actions")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
-            }
         }
         .presentationDetents([.height(350), .medium])
         .presentationDragIndicator(.visible)

@@ -35,24 +35,6 @@ class MockDataService: ObservableObject {
         )
         
         self.challenges = [
-            Challenge(
-                id: UUID(),
-                title: "Economizar R$ 50 na semana",
-                description: "Quem conseguir economizar mais, ganha.",
-                buyIn: 50.00,
-                deadline: Date().addingTimeInterval(60 * 60 * 24 * 7),
-                participants: [user.id, member2.id],
-                status: .active
-            ),
-            Challenge(
-                id: UUID(),
-                title: "Sem Uber por 1 mês",
-                description: "Ninguém pode usar Uber, apenas transporte público ou caminhada.",
-                buyIn: 500.00,
-                deadline: Date().addingTimeInterval(60 * 60 * 24 * 30),
-                participants: [],
-                status: .voting
-            )
         ]
         
         self.transactions = [
@@ -117,7 +99,6 @@ class MockDataService: ObservableObject {
         )
         votes.append(vote)
         
-        // Reset consecutive missed votes if they vote
         if let index = currentGroup.members.firstIndex(where: { $0.id == (voterID ?? currentUser.id) }) {
             var member = currentGroup.members[index]
             member = User(
@@ -130,7 +111,7 @@ class MockDataService: ObservableObject {
                 challengesLost: member.challengesLost,
                 lastWinTimestamp: member.lastWinTimestamp,
                 votingHistory: member.votingHistory,
-                consecutiveMissedVotes: 0, 
+                consecutiveMissedVotes: 0,
                 status: member.status == .inactive ? .active : member.status // Reactivate if active?
             )
             var newMembers = currentGroup.members
@@ -220,8 +201,8 @@ class MockDataService: ObservableObject {
     }
     
     var currentUserFrozenBalance: Decimal {
-        let activeChallenges = challenges.filter { 
-            ($0.status == .active || $0.status == .voting) && 
+        let activeChallenges = challenges.filter {
+            ($0.status == .active || $0.status == .voting) &&
             $0.participants.contains(currentUser.id)
         }
         return activeChallenges.reduce(0) { $0 + $1.buyIn }

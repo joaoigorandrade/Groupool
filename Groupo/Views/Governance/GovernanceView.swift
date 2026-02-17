@@ -34,6 +34,11 @@ struct GovernanceView: View {
                         }
                     }
                 }
+
+            }
+            .animation(.default, value: viewModel.activeItems)
+            .refreshable {
+                await viewModel.refresh()
             }
             .navigationTitle("Governance")
             .onAppear {

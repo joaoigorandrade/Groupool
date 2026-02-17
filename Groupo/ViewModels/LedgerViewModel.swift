@@ -3,8 +3,35 @@ import Combine
 
 class LedgerViewModel: ObservableObject {
     @Published var sections: [TransactionSection] = []
+    @Published var isLoading: Bool = true
     
+    private var hasLoaded: Bool = false
+    
+    @MainActor
     func update(transactions: [Transaction]) {
+        if !hasLoaded {
+            // Simulate initial load
+            Task {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                processTransactions(transactions)
+                isLoading = false
+                hasLoaded = true
+            }
+        } else {
+            // Real-time updates (no delay)
+            processTransactions(transactions)
+        }
+    }
+    
+    @MainActor
+    func refresh(transactions: [Transaction]) async {
+        // We don't set isLoading to true here because refreshable shows its own spinner
+        // But we can simulate the delay
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        processTransactions(transactions)
+    }
+    
+    private func processTransactions(_ transactions: [Transaction]) {
         let sortedTransactions = transactions.sorted { $0.timestamp > $1.timestamp }
         let grouped = Dictionary(grouping: sortedTransactions) { (transaction) -> Date in
             return Calendar.current.startOfDay(for: transaction.timestamp)
@@ -19,6 +46,8 @@ class LedgerViewModel: ObservableObject {
         }
     }
     
+    // Kept private helper logic outside update
+
     private func getSectionTitle(for date: Date) -> String {
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {

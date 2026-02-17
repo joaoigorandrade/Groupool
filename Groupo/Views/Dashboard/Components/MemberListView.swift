@@ -16,7 +16,11 @@ struct MemberListView: View {
             
             Divider()
             
-            if viewModel.filteredMembers.isEmpty {
+            if viewModel.isLoading {
+                SkeletonView()
+                    .padding()
+                Spacer()
+            } else if viewModel.filteredMembers.isEmpty {
                 ContentUnavailableView(
                     emptyTitle,
                     systemImage: "person.2.slash",

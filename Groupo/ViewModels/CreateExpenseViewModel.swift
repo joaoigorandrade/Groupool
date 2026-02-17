@@ -14,6 +14,8 @@ class CreateExpenseViewModel: ObservableObject {
     @Published var selectedSplit: SplitOption = .equal
     @Published var errorMessage: String? = nil
     
+    @Published var isLoading: Bool = false
+    
     var isValid: Bool {
         return !description.isEmpty && amount > 0
     }
@@ -28,10 +30,20 @@ class CreateExpenseViewModel: ObservableObject {
         return true
     }
     
-    func createExpense(service: MockDataService, onSuccess: () -> Void) {
+    @MainActor
+    func createExpense(service: MockDataService, onSuccess: @escaping () -> Void) {
         guard validate(availableBalance: service.currentUserAvailableBalance) else { return }
         
-        service.addExpense(amount: Decimal(amount), description: description)
-        onSuccess()
+        isLoading = true
+        
+        Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            
+            service.addExpense(amount: Decimal(amount), description: description)
+            HapticManager.notificationSuccess()
+            
+            isLoading = false
+            onSuccess()
+        }
     }
 }

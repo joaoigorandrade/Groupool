@@ -5,6 +5,7 @@ class MemberListViewModel: ObservableObject {
     @Published var members: [User] = []
     @Published var filteredMembers: [User] = []
     @Published var selectedStatus: UserStatusFilter = .all
+    @Published var isLoading: Bool = true
     
     private var cancellables = Set<AnyCancellable>()
     private let mockDataService: MockDataService
@@ -19,7 +20,14 @@ class MemberListViewModel: ObservableObject {
     
     init(mockDataService: MockDataService) {
         self.mockDataService = mockDataService
-        addSubscribers()
+        // Simulate initial load
+        Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            await MainActor.run {
+                addSubscribers()
+                isLoading = false
+            }
+        }
     }
     
     private func addSubscribers() {

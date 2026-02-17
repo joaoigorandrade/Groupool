@@ -23,4 +23,8 @@ final class HapticManager {
         generator.prepare()
         generator.selectionChanged()
     }
+    
+    static func notificationSuccess() {
+        notification(type: .success)
+    }
 }

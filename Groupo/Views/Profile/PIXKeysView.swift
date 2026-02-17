@@ -100,7 +100,6 @@ struct AddPIXKeyView: View {
                     }
                     
                     TextField("Key Value", text: $keyValue)
-                        // In a real app, keyboard type would change based on key type
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
                 }

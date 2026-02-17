@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject private var mockDataService: MockDataService
+    @StateObject private var viewModel = DashboardViewModel()
     
     var body: some View {
         NavigationStack {
@@ -21,10 +22,16 @@ struct DashboardView: View {
                         Color.clear.frame(height: 20)
                     }
                 }
+                .refreshable {
+                    await viewModel.refresh()
+                }
                 .scrollBounceBehavior(.basedOnSize)
             }
             .navigationTitle("Dashboard")
             .toolbarBackground(.visible, for: .navigationBar)
+            .onAppear {
+                viewModel.setup(service: mockDataService)
+            }
         }
     }
     
@@ -61,18 +68,19 @@ struct DashboardView: View {
                 .textCase(.uppercase)
                 .tracking(1.5)
             
-            Text(mockDataService.currentGroup.totalPool.formatted(.currency(code: "BRL")))
+            Text(viewModel.totalPool.formatted(.currency(code: "BRL")))
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .foregroundStyle(.primary)
                 .monospacedDigit()
                 .contentTransition(.numericText())
         }
         .frame(maxWidth: .infinity)
+        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: viewModel.totalPool)
     }
     
     private var memberHealthSummary: some View {
-        let activeCount = mockDataService.currentGroup.members.filter { $0.status == .active }.count
-        let totalCount = mockDataService.currentGroup.members.count
+        let activeCount = viewModel.members.filter { $0.status == .active }.count
+        let totalCount = viewModel.members.count
         
         return NavigationLink(destination: MemberListView(mockDataService: mockDataService)) {
             HStack {
@@ -97,19 +105,19 @@ struct DashboardView: View {
     
     private var memberStackPreview: some View {
         ZStack {
-            ForEach(Array(mockDataService.currentGroup.members.prefix(5).enumerated()), id: \.element.id) { index, member in
+            ForEach(Array(viewModel.members.prefix(5).enumerated()), id: \.element.id) { index, member in
                 memberAvatarCompact(for: member)
                     .offset(x: CGFloat(index) * 20)
                     .zIndex(Double(5 - index))
             }
             
-            if mockDataService.currentGroup.members.count > 5 {
+            if viewModel.members.count > 5 {
                 overflowIndicator
                     .offset(x: CGFloat(5 * 20))
                     .zIndex(0)
             }
         }
-        .frame(width: CGFloat((min(mockDataService.currentGroup.members.count, 5) + 1) * 20) + 16, height: 36)
+        .frame(width: CGFloat((min(viewModel.members.count, 5) + 1) * 20) + 16, height: 36)
     }
     
     private func memberAvatarCompact(for member: User) -> some View {
@@ -128,7 +136,7 @@ struct DashboardView: View {
     }
     
     private var overflowIndicator: some View {
-        let remainingCount = mockDataService.currentGroup.members.count - 5
+        let remainingCount = viewModel.members.count - 5
         
         return Text("+\(remainingCount)")
             .font(.caption2)

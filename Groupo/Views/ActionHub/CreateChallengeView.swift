@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CreateChallengeView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var toastManager: ToastManager
     @StateObject private var viewModel: CreateChallengeViewModel
     
     init(dataService: MockDataService) {
@@ -59,75 +60,74 @@ struct CreateChallengeView: View {
                     Spacer()
                 }
             } else {
-                Form {
-                    Section(header: Text("Detalhes do Desafio")) {
-                        TextField("Título", text: $viewModel.title)
-                        TextField("Descrição", text: $viewModel.description, axis: .vertical)
-                            .lineLimit(3...6)
-                    }
-                    
-                    Section(header: Text("Apostas")) {
-                        HStack {
-                            Text("Valor do Buy-in (R$)")
-                            Spacer()
-                            TextField("0.00", value: $viewModel.buyInAmount, format: .number.precision(.fractionLength(2)))
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
+                VStack(spacing: 0) {
+                    Form {
+                        Section(header: Text("Detalhes do Desafio")) {
+                            TextField("Título", text: $viewModel.title)
+                            TextField("Descrição", text: $viewModel.description, axis: .vertical)
+                                .lineLimit(3...6)
                         }
                         
-                        HStack {
-                            Spacer()
-                            Text("Disponível: \(viewModel.availableBalance.formatted(.currency(code: "BRL")))")
-                                .font(.caption)
-                                .foregroundStyle(viewModel.buyInAmount > viewModel.availableBalance ? .red : .secondary)
+                        Section(header: Text("Apostas")) {
+                            HStack {
+                                Text("Valor do Buy-in (R$)")
+                                Spacer()
+                                TextField("0.00", value: $viewModel.buyInAmount, format: .number.precision(.fractionLength(2)))
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                            }
+                            
+                            HStack {
+                                Spacer()
+                                Text("Disponível: \(viewModel.availableBalance.formatted(.currency(code: "BRL")))")
+                                    .font(.caption)
+                                    .foregroundStyle(viewModel.buyInAmount > viewModel.availableBalance ? .red : .secondary)
+                            }
+                            
+                            HStack {
+                                Text("Prêmio Estimado")
+                                Spacer()
+                                Text("R$ \(viewModel.projectedPrizePool.formatted(.number.precision(.fractionLength(2))))")
+                                    .foregroundColor(.green)
+                                    .fontWeight(.bold)
+                            }
                         }
                         
-                        HStack {
-                            Text("Prêmio Estimado")
-                            Spacer()
-                            Text("R$ \(viewModel.projectedPrizePool.formatted(.number.precision(.fractionLength(2))))")
-                                .foregroundColor(.green)
-                                .fontWeight(.bold)
+                        Section(header: Text("Prazo")) {
+                            DatePicker("Data de Término", selection: $viewModel.deadline, displayedComponents: [.date, .hourAndMinute])
                         }
+                        
+
                     }
                     
-                    Section(header: Text("Prazo")) {
-                        DatePicker("Data de Término", selection: $viewModel.deadline, displayedComponents: [.date, .hourAndMinute])
-                    }
-                    
-                    if let error = viewModel.errorMessage {
-                        Section {
-                            Text(error)
-                                .foregroundColor(.red)
-                                .font(.caption)
+                    VStack {
+                        PrimaryButton(
+                            title: "Criar Desafio",
+                            isLoading: viewModel.isLoading,
+                            isDisabled: !viewModel.isValid || !viewModel.canCreateChallenge
+                        ) {
+                            viewModel.createChallenge { success, errorMsg in
+                                if success {
+                                    toastManager.show(style: .success, message: "Desafio criado com sucesso!")
+                                    dismiss()
+                                } else if let errorMsg = errorMsg {
+                                    toastManager.show(style: .error, message: errorMsg)
+                                }
+                            }
                         }
                     }
+                    .padding()
+                    .background(Color(uiColor: .systemBackground))
                 }
             }
         }
         .navigationTitle("Novo Desafio")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancelar") {
-                    dismiss()
-                }
-            }
-            
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Criar") {
-                    viewModel.createChallenge { success in
-                        if success {
-                            dismiss()
-                        }
-                    }
-                }
-                .disabled(!viewModel.isValid || !viewModel.canCreateChallenge)
-            }
-        }
+        .interactiveDismissDisabled(viewModel.isLoading)
     }
 }
 
 #Preview {
     CreateChallengeView(dataService: MockDataService())
+        .environmentObject(ToastManager())
 }

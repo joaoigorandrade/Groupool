@@ -6,7 +6,9 @@ class CreateChallengeViewModel: ObservableObject {
     @Published var description: String = ""
     @Published var buyInAmount: Decimal = 0.0
     @Published var deadline: Date = Date()
-    @Published var errorMessage: String?
+
+    
+    @Published var isLoading: Bool = false
     
     private let dataService: MockDataService
     
@@ -43,26 +45,33 @@ class CreateChallengeViewModel: ObservableObject {
         return dataService.currentUserAvailableBalance
     }
     
-    func createChallenge(completion: @escaping (Bool) -> Void) {
+    @MainActor
+    func createChallenge(completion: @escaping (Bool, String?) -> Void) {
         if dataService.hasActiveChallenge {
-            errorMessage = "Existe um desafio ativo. Aguarde o término para criar outro."
-            completion(false)
+            completion(false, "Existe um desafio ativo. Aguarde o término para criar outro.")
             return
         }
         
         guard isValid else {
-            errorMessage = "Preencha todos os campos corretamente."
-            completion(false)
+            completion(false, "Preencha todos os campos corretamente.")
             return
         }
         
         guard buyInAmount <= availableBalance else {
-            errorMessage = "Saldo insuficiente. Disponível: \(availableBalance.formatted(.currency(code: "BRL")))"
-            completion(false)
+            completion(false, "Saldo insuficiente. Disponível: \(availableBalance.formatted(.currency(code: "BRL")))")
             return
         }
         
-        dataService.addChallenge(title: title, description: description, buyIn: buyInAmount, deadline: deadline)
-        completion(true)
+        isLoading = true
+        
+        Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            
+            dataService.addChallenge(title: title, description: description, buyIn: buyInAmount, deadline: deadline)
+            HapticManager.notificationSuccess()
+            
+            isLoading = false
+            completion(true, nil)
+        }
     }
 }

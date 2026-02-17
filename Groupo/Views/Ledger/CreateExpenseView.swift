@@ -3,6 +3,7 @@ import SwiftUI
 struct CreateExpenseView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var dataService: MockDataService
+    @EnvironmentObject var toastManager: ToastManager
     @StateObject private var viewModel = CreateExpenseViewModel()
     
     var body: some View {
@@ -54,18 +55,13 @@ struct CreateExpenseView: View {
             PrimaryButton(
                 title: "Create Expense",
                 icon: "checkmark.circle.fill",
+                isLoading: viewModel.isLoading,
                 isDisabled: !viewModel.isValid
             ) {
-                if viewModel.validate(availableBalance: dataService.currentUserAvailableBalance) {
-                    dataService.addExpense(
-                        amount: Decimal(viewModel.amount),
-                        description: viewModel.description
-                    )
-                    HapticManager.notification(type: .success)
-                    presentationMode.wrappedValue.dismiss()
-                } else {
-                    HapticManager.notification(type: .error)
-                }
+                 viewModel.createExpense(service: dataService) {
+                     toastManager.show(style: .success, message: "Expense created successfully")
+                     presentationMode.wrappedValue.dismiss()
+                 }
             }
             .padding(.bottom)
         }
@@ -77,4 +73,5 @@ struct CreateExpenseView: View {
 #Preview {
     CreateExpenseView()
         .environmentObject(MockDataService())
+        .environmentObject(ToastManager())
 }
