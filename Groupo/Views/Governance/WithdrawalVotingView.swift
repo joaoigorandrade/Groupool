@@ -69,7 +69,7 @@ struct WithdrawalVotingView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 24)
-            .background(Color.secondary.opacity(0.05))
+            .background(Color.secondaryBackground)
             .cornerRadius(16)
             
             Divider()
@@ -82,6 +82,7 @@ struct WithdrawalVotingView: View {
                 Button {
                     withAnimation {
                         selectedVote = .approve
+                        HapticManager.selection()
                     }
                 } label: {
                     HStack {
@@ -109,8 +110,8 @@ struct WithdrawalVotingView: View {
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(selectedVote == .approve ? Color.green : Color.secondary.opacity(0.2), lineWidth: 2)
-                            .background(selectedVote == .approve ? Color.green.opacity(0.05) : Color.clear)
+                            .stroke(selectedVote == .approve ? Color.successGreen : Color.secondary.opacity(0.2), lineWidth: 2)
+                            .background(selectedVote == .approve ? Color.successGreen.opacity(0.1) : Color.clear)
                     )
                     .frame(maxWidth: .infinity)
                 }
@@ -119,6 +120,7 @@ struct WithdrawalVotingView: View {
                 Button {
                     withAnimation {
                         selectedVote = .contest
+                        HapticManager.selection()
                     }
                 } label: {
                     HStack {
@@ -141,8 +143,8 @@ struct WithdrawalVotingView: View {
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(selectedVote == .contest ? Color.orange : Color.secondary.opacity(0.2), lineWidth: 2)
-                            .background(selectedVote == .contest ? Color.orange.opacity(0.05) : Color.clear)
+                            .stroke(selectedVote == .contest ? Color.warningOrange : Color.secondary.opacity(0.2), lineWidth: 2)
+                            .background(selectedVote == .contest ? Color.warningOrange.opacity(0.1) : Color.clear)
                     )
                     .frame(maxWidth: .infinity)
                 }
@@ -252,6 +254,7 @@ struct WithdrawalVotingView: View {
         withAnimation {
             hasVoted = true
         }
+        HapticManager.impact(style: .medium)
     }
 }
 

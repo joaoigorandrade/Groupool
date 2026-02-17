@@ -14,18 +14,27 @@ struct ActionMenuSheet: View {
                 } label: {
                     MenuButtonLabel(title: "Split Expense", icon: "banknote")
                 }
+                .simultaneousGesture(TapGesture().onEnded {
+                    HapticManager.impact(style: .medium)
+                })
                 
                 NavigationLink {
                     CreateChallengeView(dataService: dataService)
                 } label: {
                     MenuButtonLabel(title: "Create Challenge", icon: "trophy")
                 }
+                .simultaneousGesture(TapGesture().onEnded {
+                    HapticManager.impact(style: .medium)
+                })
                 
                 NavigationLink {
                     RequestWithdrawalView(dataService: dataService)
                 } label: {
                     MenuButtonLabel(title: "Request Withdrawal", icon: "arrow.down.circle")
                 }
+                .simultaneousGesture(TapGesture().onEnded {
+                    HapticManager.impact(style: .medium)
+                })
                 
                 Spacer()
             }

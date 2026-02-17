@@ -135,14 +135,12 @@ struct ChallengeVotingView: View {
         withAnimation {
             hasVoted = true
         }
-        let feedback = UIImpactFeedbackGenerator(style: .medium)
-        feedback.impactOccurred()
+        HapticManager.impact(style: .medium)
     }
     
     private func joinChallenge() {
         viewModel.joinChallenge(challenge: challenge)
-        let feedback = UIImpactFeedbackGenerator(style: .medium)
-        feedback.impactOccurred()
+        HapticManager.impact(style: .medium)
     }
 }
 

@@ -9,7 +9,10 @@ struct PrimaryButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticManager.impact(style: .medium)
+            action()
+        }) {
             HStack {
                 if isLoading {
                     ProgressView()

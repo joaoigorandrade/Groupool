@@ -53,7 +53,10 @@ struct CreateExpenseView: View {
                         amount: Decimal(viewModel.amount),
                         description: viewModel.description
                     )
+                    HapticManager.notification(type: .success)
                     presentationMode.wrappedValue.dismiss()
+                } else {
+                    HapticManager.notification(type: .error)
                 }
             }
             .padding(.bottom)
