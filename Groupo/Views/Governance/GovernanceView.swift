@@ -15,7 +15,17 @@ struct GovernanceView: View {
                     )
                 } else {
                     ForEach(viewModel.activeItems) { item in
-                        GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline))
+                        if case .challenge(let challenge) = item {
+                            NavigationLink(destination: ChallengeVotingView(challenge: challenge)) {
+                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline))
+                            }
+                        } else if case .withdrawal(let request) = item {
+                             NavigationLink(destination: WithdrawalVotingView(withdrawal: request)) {
+                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline))
+                            }
+                        } else {
+                            GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline))
+                        }
                     }
                 }
             }

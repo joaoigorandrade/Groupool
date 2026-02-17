@@ -89,4 +89,20 @@ class GovernanceViewModel: ObservableObject {
             return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         }
     }
+    
+    func castVote(challenge: Challenge, type: Vote.VoteType) {
+        mockDataService.castVote(targetID: challenge.id, type: type)
+    }
+    
+    func castVote(withdrawal: WithdrawalRequest, type: Vote.VoteType, reason: String? = nil) {
+        // In a real app, reason would be stored with the vote
+        mockDataService.castVote(targetID: withdrawal.id, type: type)
+    }
+    
+    func getUser(for id: UUID) -> User? {
+        if mockDataService.currentUser.id == id {
+            return mockDataService.currentUser
+        }
+        return mockDataService.currentGroup.members.first { $0.id == id }
+    }
 }

@@ -9,5 +9,6 @@ struct Vote: Identifiable, Codable, Hashable {
     enum VoteType: String, Codable {
         case approval
         case contest
+        case abstain
     }
 }
