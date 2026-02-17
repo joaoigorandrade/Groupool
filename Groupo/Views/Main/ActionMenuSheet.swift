@@ -22,7 +22,7 @@ struct ActionMenuSheet: View {
                 }
                 
                 NavigationLink {
-                    WithdrawalView()
+                    RequestWithdrawalView(dataService: dataService)
                 } label: {
                     MenuButtonLabel(title: "Request Withdrawal", icon: "arrow.down.circle")
                 }

@@ -7,6 +7,7 @@ class MockDataService: ObservableObject {
     @Published var challenges: [Challenge]
     @Published var transactions: [Transaction]
     @Published var votes: [Vote] = []
+    @Published var withdrawalRequests: [WithdrawalRequest] = []
 
     init() {
         let user = User(
@@ -117,5 +118,17 @@ class MockDataService: ObservableObject {
     
     var currentUserAvailableBalance: Decimal {
         return currentUser.currentEquity - currentUserFrozenBalance
+    }
+
+    func requestWithdrawal(amount: Decimal) {
+        let request = WithdrawalRequest(
+            id: UUID(),
+            initiatorID: currentUser.id,
+            amount: amount,
+            status: .pending,
+            createdDate: Date(),
+            deadline: Date().addingTimeInterval(60 * 60 * 24) // 24 hours
+        )
+        withdrawalRequests.insert(request, at: 0)
     }
 }
