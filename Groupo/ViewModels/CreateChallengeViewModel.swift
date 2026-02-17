@@ -28,6 +28,10 @@ class CreateChallengeViewModel: ObservableObject {
         return !dataService.hasActiveChallenge
     }
     
+    var availableBalance: Decimal {
+        return dataService.currentUserAvailableBalance
+    }
+    
     func createChallenge(completion: @escaping (Bool) -> Void) {
         if dataService.hasActiveChallenge {
             errorMessage = "Existe um desafio ativo. Aguarde o término para criar outro."
@@ -37,6 +41,12 @@ class CreateChallengeViewModel: ObservableObject {
         
         guard isValid else {
             errorMessage = "Preencha todos os campos corretamente."
+            completion(false)
+            return
+        }
+        
+        guard buyInAmount <= availableBalance else {
+            errorMessage = "Saldo insuficiente. Disponível: \(availableBalance.formatted(.currency(code: "BRL")))"
             completion(false)
             return
         }

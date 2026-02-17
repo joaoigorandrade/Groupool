@@ -45,7 +45,7 @@ class MockDataService: ObservableObject {
                 id: UUID(),
                 title: "Sem Uber por 1 mês",
                 description: "Ninguém pode usar Uber, apenas transporte público ou caminhada.",
-                buyIn: 100.00,
+                buyIn: 500.00,
                 deadline: Date().addingTimeInterval(60 * 60 * 24 * 30),
                 participants: [],
                 status: .voting
@@ -58,7 +58,7 @@ class MockDataService: ObservableObject {
                 description: "Vitoria Desafio Semanal",
                 amount: 50.00,
                 type: .win,
-                timestamp: Date().addingTimeInterval(-60 * 60 * 2) // 2 hours ago
+                timestamp: Date().addingTimeInterval(-60 * 60 * 2)
             ),
              Transaction(
                 id: UUID(),
@@ -111,6 +111,15 @@ class MockDataService: ObservableObject {
     }
 
     func addChallenge(title: String, description: String, buyIn: Decimal, deadline: Date) {
+        if hasActiveChallenge {
+            return
+        }
+        
+        guard currentUserAvailableBalance >= buyIn else {
+            print("Insufficient funds to create challenge with buy-in \(buyIn)")
+            return
+        }
+        
         let newChallenge = Challenge(
             id: UUID(),
             title: title,
@@ -151,10 +160,76 @@ class MockDataService: ObservableObject {
         guard let index = challenges.firstIndex(where: { $0.id == challengeID }) else { return }
         var challenge = challenges[index]
         
-        // Prevent double joining
         if !challenge.participants.contains(currentUser.id) {
+            guard currentUserAvailableBalance >= challenge.buyIn else {
+                print("Insufficient funds to join challenge")
+                return
+            }
+            
             challenge.participants.append(currentUser.id)
             challenges[index] = challenge
+            
+            objectWillChange.send()
         }
+    }
+    
+    func completeChallenge(challengeID: UUID, winnerID: UUID?) {
+        guard let index = challenges.firstIndex(where: { $0.id == challengeID }) else { return }
+        var challenge = challenges[index]
+        
+        guard challenge.status != .complete else { return }
+        
+        challenge.status = .complete
+        challenges[index] = challenge
+        
+        let pot = challenge.buyIn * Decimal(challenge.participants.count)
+        
+        if let winnerID = winnerID {
+            if winnerID == currentUser.id {
+                let profit = pot - challenge.buyIn
+                currentUser = User(
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    avatar: currentUser.avatar,
+                    reputationScore: currentUser.reputationScore + 10,
+                    currentEquity: currentUser.currentEquity + profit,
+                    challengesWon: currentUser.challengesWon + 1,
+                    challengesLost: currentUser.challengesLost,
+                    status: currentUser.status
+                )
+                
+                let winTransaction = Transaction(
+                    id: UUID(),
+                    description: "Vitoria: \(challenge.title)",
+                    amount: profit,
+                    type: .win,
+                    timestamp: Date()
+                )
+                transactions.insert(winTransaction, at: 0)
+                
+            } else if challenge.participants.contains(currentUser.id) {
+                currentUser = User(
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    avatar: currentUser.avatar,
+                    reputationScore: currentUser.reputationScore,
+                    currentEquity: currentUser.currentEquity - challenge.buyIn,
+                    challengesWon: currentUser.challengesWon,
+                    challengesLost: currentUser.challengesLost + 1,
+                    status: currentUser.status
+                )
+                
+                let lossTransaction = Transaction(
+                    id: UUID(),
+                    description: "Derrota: \(challenge.title)",
+                    amount: challenge.buyIn,
+                    type: .expense,
+                    timestamp: Date()
+                )
+                transactions.insert(lossTransaction, at: 0)
+            }
+        }
+        
+        objectWillChange.send()
     }
 }

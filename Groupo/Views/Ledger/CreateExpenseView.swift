@@ -27,6 +27,14 @@ struct CreateExpenseView: View {
                     errorMessage: viewModel.errorMessage
                 )
                 
+                HStack {
+                    Spacer()
+                    Text("Available: \(dataService.currentUserAvailableBalance.formatted(.currency(code: "BRL")))")
+                        .font(.caption)
+                        .foregroundStyle(viewModel.amount > Double(truncating: dataService.currentUserAvailableBalance as NSNumber) ? .red : .secondary)
+                }
+                .padding(.top, -12)
+                
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Split")
                         .font(.caption)

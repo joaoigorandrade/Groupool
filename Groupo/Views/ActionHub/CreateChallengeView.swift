@@ -27,6 +27,13 @@ struct CreateChallengeView: View {
                     }
                     
                     HStack {
+                        Spacer()
+                        Text("Disponível: \(viewModel.availableBalance.formatted(.currency(code: "BRL")))")
+                            .font(.caption)
+                            .foregroundStyle(viewModel.buyInAmount > viewModel.availableBalance ? .red : .secondary)
+                    }
+                    
+                    HStack {
                         Text("Prêmio Estimado")
                         Spacer()
                         Text("R$ \(viewModel.projectedPrizePool.formatted(.number.precision(.fractionLength(2))))")

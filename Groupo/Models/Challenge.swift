@@ -7,7 +7,7 @@ struct Challenge: Identifiable, Codable, Hashable {
     let buyIn: Decimal
     let deadline: Date
     var participants: [UUID]
-    let status: ChallengeStatus
+    var status: ChallengeStatus
 
     enum ChallengeStatus: String, Codable {
         case active
