@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct AppSettingsView: View {
+    @EnvironmentObject var mockDataService: MockDataService
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("selectedAppearance") private var selectedAppearance = "System"
     @AppStorage("selectedLanguage") private var selectedLanguage = "en"
+    @State private var showingResetAlert = false
     
     let appearances = ["System", "Light", "Dark"]
     let languages = [("English", "en"), ("Português (Brasil)", "pt-BR")]
@@ -47,13 +49,30 @@ struct AppSettingsView: View {
                         .navigationTitle("Privacy Policy")
                 }
             }
+            
+            Section("Developer") {
+                Button(role: .destructive) {
+                    showingResetAlert = true
+                } label: {
+                    Text("Reset Mock Data")
+                }
+            }
         }
         .navigationTitle("App Settings")
+        .alert("Reset Data?", isPresented: $showingResetAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Reset", role: .destructive) {
+                mockDataService.resetData()
+            }
+        } message: {
+            Text("This will delete all current data and restore the initial mock state. This action cannot be undone.")
+        }
     }
 }
 
 #Preview {
     NavigationStack {
         AppSettingsView()
+            .environmentObject(MockDataService())
     }
 }

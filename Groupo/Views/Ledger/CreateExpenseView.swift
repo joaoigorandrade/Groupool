@@ -5,6 +5,7 @@ struct CreateExpenseView: View {
     @EnvironmentObject var dataService: MockDataService
     @EnvironmentObject var toastManager: ToastManager
     @StateObject private var viewModel = CreateExpenseViewModel()
+    @State private var showCustomSplitSheet = false
     
     var body: some View {
         VStack(spacing: 24) {
@@ -18,14 +19,18 @@ struct CreateExpenseView: View {
                 InputField(
                     title: "Description",
                     placeholder: "e.g. Dinner, Groceries",
-                    text: $viewModel.description
+                    text: $viewModel.description,
+                    errorMessage: viewModel.descriptionError,
+                    characterLimit: 50,
+                    showCharacterCount: true
                 )
                 
                 InputField(
                     title: "Amount",
                     placeholder: "0.00",
                     value: $viewModel.amount,
-                    errorMessage: viewModel.errorMessage
+                    errorMessage: viewModel.amountError,
+                    keyboardType: .decimalPad
                 )
                 
                 HStack {
@@ -47,6 +52,35 @@ struct CreateExpenseView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                    .onChange(of: viewModel.selectedSplit) { newValue in
+                        if newValue == .custom {
+                            viewModel.initializeSplits(members: dataService.currentGroup.members)
+                        }
+                    }
+                    
+                    if viewModel.selectedSplit == .custom {
+                        Button {
+                            showCustomSplitSheet = true
+                        } label: {
+                            HStack {
+                                Text("Configure Split")
+                                Spacer()
+                                if abs(viewModel.remainingAmount) < 0.01 {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.green)
+                                } else {
+                                    Text("Remaining: \(viewModel.remainingAmount.formatted(.currency(code: "BRL")))")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                            }
+                            .padding()
+                            .background(Color(uiColor: .secondarySystemBackground))
+                            .cornerRadius(10)
+                        }
+                    }
                 }
             }
             
@@ -67,6 +101,9 @@ struct CreateExpenseView: View {
         }
         .padding()
         .background(Color.primaryBackground.edgesIgnoringSafeArea(.all))
+        .sheet(isPresented: $showCustomSplitSheet) {
+            CustomSplitView(viewModel: viewModel, members: dataService.currentGroup.members)
+        }
     }
 }
 

@@ -58,6 +58,17 @@ struct RequestWithdrawalView: View {
                             .padding()
                             .background(Color.secondaryBackground)
                             .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(viewModel.amountError != nil ? Color.red : Color.clear, lineWidth: 1)
+                            )
+                        
+                        if let error = viewModel.amountError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
                         
                         Text("Available: \(viewModel.dataService.currentUserAvailableBalance.formatted(.currency(code: "BRL")))")
                             .font(.caption)

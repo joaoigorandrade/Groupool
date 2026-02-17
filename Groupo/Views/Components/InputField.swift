@@ -4,34 +4,71 @@ struct InputField: View {
     let title: String
     let placeholder: String
     let errorMessage: String?
+    let axis: Axis
+    let characterLimit: Int?
+    let showCharacterCount: Bool
+    let keyboardType: UIKeyboardType
     
     private let text: Binding<String>?
     private let doubleValue: Binding<Double>?
     private let isCurrency: Bool
     
-    init(title: String, placeholder: String, text: Binding<String>, errorMessage: String? = nil) {
+    init(
+        title: String,
+        placeholder: String,
+        text: Binding<String>,
+        errorMessage: String? = nil,
+        axis: Axis = .horizontal,
+        characterLimit: Int? = nil,
+        showCharacterCount: Bool = false,
+        keyboardType: UIKeyboardType = .default
+    ) {
         self.title = title
         self.placeholder = placeholder
         self.text = text
         self.doubleValue = nil
         self.isCurrency = false
         self.errorMessage = errorMessage
+        self.axis = axis
+        self.characterLimit = characterLimit
+        self.showCharacterCount = showCharacterCount
+        self.keyboardType = keyboardType
     }
     
-    init(title: String, placeholder: String, value: Binding<Double>, errorMessage: String? = nil) {
+    init(
+        title: String,
+        placeholder: String,
+        value: Binding<Double>,
+        errorMessage: String? = nil,
+        keyboardType: UIKeyboardType = .decimalPad
+    ) {
         self.title = title
         self.placeholder = placeholder
         self.text = nil
         self.doubleValue = value
         self.isCurrency = true
         self.errorMessage = errorMessage
+        self.axis = .horizontal
+        self.characterLimit = nil
+        self.showCharacterCount = false
+        self.keyboardType = keyboardType
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.captionText)
-                .foregroundColor(.textSecondary)
+            HStack {
+                Text(title)
+                    .font(.captionText)
+                    .foregroundColor(.textSecondary)
+                
+                Spacer()
+                
+                if showCharacterCount, let limit = characterLimit, let text = text {
+                    Text("\(text.wrappedValue.count)/\(limit)")
+                        .font(.caption)
+                        .foregroundColor(text.wrappedValue.count > limit ? .red : .secondary)
+                }
+            }
             
             textField
                 .padding()
@@ -54,9 +91,15 @@ struct InputField: View {
     private var textField: some View {
         if isCurrency, let doubleValue = doubleValue {
             TextField(placeholder, value: doubleValue, format: .currency(code: "BRL"))
-                .keyboardType(.decimalPad)
+                .keyboardType(keyboardType)
         } else if let text = text {
-            TextField(placeholder, text: text)
+            TextField(placeholder, text: text, axis: axis)
+                .keyboardType(keyboardType)
+                .onChange(of: text.wrappedValue) { newValue in
+                    if let limit = characterLimit, newValue.count > limit {
+                        text.wrappedValue = String(newValue.prefix(limit))
+                    }
+                }
         }
     }
 }

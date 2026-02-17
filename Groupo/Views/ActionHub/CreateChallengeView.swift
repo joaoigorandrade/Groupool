@@ -63,18 +63,44 @@ struct CreateChallengeView: View {
                 VStack(spacing: 0) {
                     Form {
                         Section(header: Text("Detalhes do Desafio")) {
-                            TextField("Título", text: $viewModel.title)
-                            TextField("Descrição", text: $viewModel.description, axis: .vertical)
-                                .lineLimit(3...6)
+                            InputField(
+                                title: "Título",
+                                placeholder: "Ex: Tênis no Domingo",
+                                text: $viewModel.title,
+                                errorMessage: viewModel.titleError,
+                                characterLimit: 50,
+                                showCharacterCount: true
+                            )
+                            
+                            InputField(
+                                title: "Descrição",
+                                placeholder: "Regras, local, etc.",
+                                text: $viewModel.description,
+                                errorMessage: viewModel.descriptionError,
+                                axis: .vertical,
+                                characterLimit: 200,
+                                showCharacterCount: true
+                            )
+                            .lineLimit(3...6)
                         }
                         
                         Section(header: Text("Apostas")) {
-                            HStack {
+                            HStack(alignment: .top) {
                                 Text("Valor do Buy-in (R$)")
+                                    .padding(.top, 12)
                                 Spacer()
-                                TextField("0.00", value: $viewModel.buyInAmount, format: .number.precision(.fractionLength(2)))
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
+                                VStack(alignment: .trailing) {
+                                    InputField(
+                                        title: "",
+                                        placeholder: "0.00",
+                                        value: Binding(
+                                            get: { NSDecimalNumber(decimal: viewModel.buyInAmount).doubleValue },
+                                            set: { viewModel.buyInAmount = Decimal($0) }
+                                        ),
+                                        errorMessage: viewModel.amountError
+                                    )
+                                    .frame(width: 150)
+                                }
                             }
                             
                             HStack {
@@ -94,10 +120,16 @@ struct CreateChallengeView: View {
                         }
                         
                         Section(header: Text("Prazo")) {
-                            DatePicker("Data de Término", selection: $viewModel.deadline, displayedComponents: [.date, .hourAndMinute])
+                            VStack(alignment: .leading) {
+                                DatePicker("Data de Término", selection: $viewModel.deadline, displayedComponents: [.date, .hourAndMinute])
+                                
+                                if let dateError = viewModel.dateError {
+                                    Text(dateError)
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
+                            }
                         }
-                        
-
                     }
                     
                     VStack {

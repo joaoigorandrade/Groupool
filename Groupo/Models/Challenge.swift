@@ -10,6 +10,7 @@ struct Challenge: Identifiable, Codable, Hashable {
     var status: ChallengeStatus
     var proofImage: String? // URL or base64 string
     var proofSubmissionUserID: UUID?
+    var votingFailureReason: String?
 
     enum ChallengeStatus: String, Codable {
         case active

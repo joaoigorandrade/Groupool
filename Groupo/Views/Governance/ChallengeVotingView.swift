@@ -11,6 +11,19 @@ struct ChallengeVotingView: View {
         mockDataService.challenges.first(where: { $0.id == challenge.id }) ?? challenge
     }
     
+    // Derived state for voting progress
+    private var totalParticipants: Int {
+        currentChallenge.participants.count
+    }
+    
+    private var votesCast: Int {
+        mockDataService.votes.filter { $0.targetID == currentChallenge.id }.count
+    }
+    
+    private var myVote: Vote? {
+        mockDataService.votes.first(where: { $0.targetID == currentChallenge.id && $0.voterID == mockDataService.currentUser.id })
+    }
+    
     private var isParticipant: Bool {
         currentChallenge.participants.contains(mockDataService.currentUser.id)
     }
@@ -41,6 +54,7 @@ struct ChallengeVotingView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             viewModel.setService(mockDataService)
+            checkUserVoteStatus()
         }
     }
 }
@@ -58,7 +72,7 @@ private extension ChallengeVotingView {
         case .complete:
             EmptyView()
         case .failed:
-            EmptyView()
+            failedPhaseActions
         }
     }
     
@@ -112,6 +126,29 @@ private extension ChallengeVotingView {
     @ViewBuilder
     var votingPhaseActions: some View {
         VStack(spacing: 24) {
+            // Voting Progress
+            VStack(spacing: 8) {
+                Text("Voting Progress")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                     Text("\(votesCast) of \(totalParticipants) voted")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    if totalParticipants > 0 {
+                          Text("\(Int((Double(votesCast) / Double(totalParticipants)) * 100))%")
+                            .font(.caption)
+                            .bold()
+                    }
+                }
+                
+                ProgressView(value: Double(votesCast), total: Double(totalParticipants))
+                    .tint(.blue)
+            }
+            .padding(.horizontal)
+            
             if isParticipant {
                 if hasUserVoted {
                     voteConfirmationView
@@ -139,7 +176,7 @@ private extension ChallengeVotingView {
             Image(systemName: "checkmark.circle.fill")
                 .resizable()
                 .frame(width: 60, height: 60)
-                .foregroundColor(.green)
+                .foregroundColor(myVote?.type == .approval ? .green : (myVote?.type == .contest ? .red : .gray))
             
             Text("Vote Cast")
                 .font(.title2)
@@ -160,6 +197,16 @@ private extension ChallengeVotingView {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
+        .overlay(alignment: .topTrailing) {
+             if let voteType = myVote?.type {
+                 Text(voteType == .approval ? "Voted Winner" : (voteType == .contest ? "Contested" : "Abstained"))
+                     .font(.caption)
+                     .fontWeight(.bold)
+                     .padding(6)
+                     .background(Color.secondary.opacity(0.1))
+                     .cornerRadius(6)
+             }
+        }
     }
     
     var votingButtons: some View {
@@ -199,6 +246,39 @@ private extension ChallengeVotingView {
     }
 }
 
+// MARK: - Failed Phase Actions
+private extension ChallengeVotingView {
+    @ViewBuilder
+    var failedPhaseActions: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .resizable()
+                .frame(width: 50, height: 50)
+                .foregroundColor(.orange)
+            
+            Text("Challenge Failed")
+                .font(.title2)
+                .bold()
+            
+            if let reason = currentChallenge.votingFailureReason {
+                Text(reason)
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+            }
+            
+            Text("Funds have been refunded/unfrozen.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 2)
+    }
+}
+
 // MARK: - Helper Methods
 private extension ChallengeVotingView {
     func joinChallenge() {
@@ -214,6 +294,14 @@ private extension ChallengeVotingView {
             withAnimation(.spring()) {
                 hasUserVoted = true
             }
+        }
+    }
+    
+    private func checkUserVoteStatus() {
+        if mockDataService.votes.first(where: { $0.targetID == currentChallenge.id && $0.voterID == mockDataService.currentUser.id }) != nil {
+            hasUserVoted = true
+        } else {
+            hasUserVoted = false
         }
     }
     

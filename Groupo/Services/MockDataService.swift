@@ -9,7 +9,28 @@ class MockDataService: ObservableObject {
     @Published var votes: [Vote] = []
     @Published var withdrawalRequests: [WithdrawalRequest] = []
     
+    private let defaults = UserDefaults.standard
+    private let keys = (
+        user: "mock_user",
+        group: "mock_group",
+        challenges: "mock_challenges",
+        transactions: "mock_transactions",
+        votes: "mock_votes",
+        withdrawals: "mock_withdrawals"
+    )
+    
     init() {
+        self.currentUser = User(id: UUID(), name: "", avatar: "", reputationScore: 0, currentEquity: 0, challengesWon: 0, challengesLost: 0, lastWinTimestamp: nil, votingHistory: [], consecutiveMissedVotes: 0, status: .active)
+        self.currentGroup = Group(id: UUID(), name: "", totalPool: 0, members: [])
+        self.challenges = []
+        self.transactions = []
+        
+        if !loadData() {
+            initializeWithDefaultData()
+        }
+    }
+    
+    private func initializeWithDefaultData() {
         let user = User(
             id: UUID(),
             name: "João Silva",
@@ -66,9 +87,76 @@ class MockDataService: ObservableObject {
                 splitDetails: ["João Silva": 66.66, "Maria Oliveira": 66.67, "Carlos Pereira": 66.67]
             )
         ]
+        
+        
+        saveData()
     }
     
-    func addExpense(amount: Decimal, description: String) {
+    // MARK: - Persistence
+    
+    private func saveData() {
+        if let encoded = try? JSONEncoder().encode(currentUser) {
+            defaults.set(encoded, forKey: keys.user)
+        }
+        if let encoded = try? JSONEncoder().encode(currentGroup) {
+            defaults.set(encoded, forKey: keys.group)
+        }
+        if let encoded = try? JSONEncoder().encode(challenges) {
+            defaults.set(encoded, forKey: keys.challenges)
+        }
+        if let encoded = try? JSONEncoder().encode(transactions) {
+            defaults.set(encoded, forKey: keys.transactions)
+        }
+        if let encoded = try? JSONEncoder().encode(votes) {
+            defaults.set(encoded, forKey: keys.votes)
+        }
+        if let encoded = try? JSONEncoder().encode(withdrawalRequests) {
+            defaults.set(encoded, forKey: keys.withdrawals)
+        }
+    }
+    
+    private func loadData() -> Bool {
+        guard let userData = defaults.data(forKey: keys.user),
+              let groupData = defaults.data(forKey: keys.group),
+              let challengesData = defaults.data(forKey: keys.challenges),
+              let transactionsData = defaults.data(forKey: keys.transactions) else {
+            return false
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            currentUser = try decoder.decode(User.self, from: userData)
+            currentGroup = try decoder.decode(Group.self, from: groupData)
+            challenges = try decoder.decode([Challenge].self, from: challengesData)
+            transactions = try decoder.decode([Transaction].self, from: transactionsData)
+            
+            if let votesData = defaults.data(forKey: keys.votes) {
+                votes = try decoder.decode([Vote].self, from: votesData)
+            }
+            
+            if let withdrawalsData = defaults.data(forKey: keys.withdrawals) {
+                withdrawalRequests = try decoder.decode([WithdrawalRequest].self, from: withdrawalsData)
+            }
+            
+            return true
+        } catch {
+            print("Failed to decode saved data: \(error)")
+            return false
+        }
+    }
+    
+    func resetData() {
+        defaults.removeObject(forKey: keys.user)
+        defaults.removeObject(forKey: keys.group)
+        defaults.removeObject(forKey: keys.challenges)
+        defaults.removeObject(forKey: keys.transactions)
+        defaults.removeObject(forKey: keys.votes)
+        defaults.removeObject(forKey: keys.withdrawals)
+        
+        initializeWithDefaultData()
+    }
+    
+    func addExpense(amount: Decimal, description: String, splitDetails: [String: Decimal]? = nil) {
         let transaction = Transaction(
             id: UUID(),
             description: description,
@@ -76,7 +164,7 @@ class MockDataService: ObservableObject {
             type: .expense,
             timestamp: Date(),
             relatedChallengeID: nil,
-            splitDetails: nil
+            splitDetails: splitDetails
         )
         transactions.insert(transaction, at: 0)
         
@@ -87,42 +175,27 @@ class MockDataService: ObservableObject {
             totalPool: newPool,
             members: currentGroup.members
         )
+        
+        saveData()
     }
     
     func castVote(targetID: UUID, type: Vote.VoteType, voterID: UUID? = nil) {
+        let voter = voterID ?? currentUser.id
+        
+        // Remove existing vote if any
+        if let existingIndex = votes.firstIndex(where: { $0.targetID == targetID && $0.voterID == voter }) {
+            votes.remove(at: existingIndex)
+        }
+        
         let vote = Vote(
             id: UUID(),
-            voterID: voterID ?? currentUser.id,
+            voterID: voter,
             targetID: targetID,
             type: type,
             deadline: Date().addingTimeInterval(60 * 60 * 24)
         )
         votes.append(vote)
-        
-        if let index = currentGroup.members.firstIndex(where: { $0.id == (voterID ?? currentUser.id) }) {
-            var member = currentGroup.members[index]
-            member = User(
-                id: member.id,
-                name: member.name,
-                avatar: member.avatar,
-                reputationScore: member.reputationScore,
-                currentEquity: member.currentEquity,
-                challengesWon: member.challengesWon,
-                challengesLost: member.challengesLost,
-                lastWinTimestamp: member.lastWinTimestamp,
-                votingHistory: member.votingHistory,
-                consecutiveMissedVotes: 0,
-                status: member.status == .inactive ? .active : member.status // Reactivate if active?
-            )
-            var newMembers = currentGroup.members
-            newMembers[index] = member
-            currentGroup = Group(id: currentGroup.id, name: currentGroup.name, totalPool: currentGroup.totalPool, members: newMembers)
-            
-            if member.id == currentUser.id {
-                currentUser = member
-            }
-        }
-        
+        saveData()
         objectWillChange.send()
     }
     
@@ -168,6 +241,9 @@ class MockDataService: ObservableObject {
         if let updatedCurrentUser = newMembers.first(where: { $0.id == currentUser.id }) {
             currentUser = updatedCurrentUser
         }
+        
+        
+        saveData()
     }
     
     var hasActiveChallenge: Bool {
@@ -198,6 +274,8 @@ class MockDataService: ObservableObject {
             status: .active
         )
         challenges.insert(newChallenge, at: 0)
+        
+        saveData()
     }
     
     var currentUserFrozenBalance: Decimal {
@@ -222,6 +300,8 @@ class MockDataService: ObservableObject {
             deadline: Date().addingTimeInterval(60 * 60 * 24)
         )
         withdrawalRequests.insert(request, at: 0)
+        
+        saveData()
     }
     
     func joinChallenge(challengeID: UUID) {
@@ -237,6 +317,7 @@ class MockDataService: ObservableObject {
             challenge.participants.append(currentUser.id)
             challenges[index] = challenge
             
+            saveData()
             objectWillChange.send()
         }
     }
@@ -252,6 +333,7 @@ class MockDataService: ObservableObject {
         challenge.status = .voting
         
         challenges[index] = challenge
+        saveData()
         objectWillChange.send()
     }
     
@@ -264,11 +346,49 @@ class MockDataService: ObservableObject {
         updateVotingParticipation(for: challengeID)
         
         let challengeVotes = votes.filter { $0.targetID == challengeID }
+        let totalMembers = currentGroup.members.count
+        
+        // Edge Case: No votes cast
+        if challengeVotes.isEmpty {
+            challenge.status = .failed
+            challenge.votingFailureReason = "No votes cast. Funds refunded."
+            refundChallenge(challenge)
+            challenges[index] = challenge
+            saveData()
+            objectWillChange.send()
+            return
+        }
+        
+        // Requirements
+        let participationCount = challengeVotes.count
+        let participationThreshold = Int(ceil(Double(totalMembers) * 0.5)) // 50% participation required
+        
+        // Edge Case: Minimum participation not met
+        if participationCount < participationThreshold {
+            challenge.status = .failed
+            challenge.votingFailureReason = "Insufficient participation (\(participationCount)/\(totalMembers)). Funds refunded."
+            refundChallenge(challenge)
+            challenges[index] = challenge
+            saveData()
+            objectWillChange.send()
+            return
+        }
+        
         let approvalVotes = challengeVotes.filter { $0.type == .approval }.count
+        let contestVotes = challengeVotes.filter { $0.type == .contest }.count
         
-        let requiredVotes = (challenge.participants.count / 2) + 1
+        // Edge Case: Tie
+        if approvalVotes == contestVotes {
+            challenge.status = .failed
+            challenge.votingFailureReason = "Tie vote (\(approvalVotes) vs \(contestVotes)). Funds refunded."
+            refundChallenge(challenge)
+            challenges[index] = challenge
+            saveData()
+            objectWillChange.send()
+            return
+        }
         
-        if approvalVotes >= requiredVotes {
+        if approvalVotes > contestVotes {
             challenge.status = .complete
             
             let pot = challenge.buyIn * Decimal(challenge.participants.count)
@@ -276,19 +396,7 @@ class MockDataService: ObservableObject {
             
             if winnerID == currentUser.id {
                 let profit = pot - challenge.buyIn
-                currentUser = User(
-                    id: currentUser.id,
-                    name: currentUser.name,
-                    avatar: currentUser.avatar,
-                    reputationScore: currentUser.reputationScore + 10,
-                    currentEquity: currentUser.currentEquity + profit,
-                    challengesWon: currentUser.challengesWon + 1,
-                    challengesLost: currentUser.challengesLost,
-                    lastWinTimestamp: Date(),
-                    votingHistory: currentUser.votingHistory,
-                    consecutiveMissedVotes: currentUser.consecutiveMissedVotes,
-                    status: currentUser.status
-                )
+                updateUserStats(win: true, profit: profit)
                 
                 let winTransaction = Transaction(
                     id: UUID(),
@@ -301,19 +409,7 @@ class MockDataService: ObservableObject {
                 )
                 transactions.insert(winTransaction, at: 0)
             } else if challenge.participants.contains(currentUser.id) {
-                currentUser = User(
-                    id: currentUser.id,
-                    name: currentUser.name,
-                    avatar: currentUser.avatar,
-                    reputationScore: currentUser.reputationScore,
-                    currentEquity: currentUser.currentEquity - challenge.buyIn,
-                    challengesWon: currentUser.challengesWon,
-                    challengesLost: currentUser.challengesLost + 1,
-                    lastWinTimestamp: currentUser.lastWinTimestamp,
-                    votingHistory: currentUser.votingHistory,
-                    consecutiveMissedVotes: currentUser.consecutiveMissedVotes,
-                    status: currentUser.status
-                )
+                updateUserStats(win: false, profit: 0, buyIn: challenge.buyIn)
                 
                 let lossTransaction = Transaction(
                     id: UUID(),
@@ -328,25 +424,67 @@ class MockDataService: ObservableObject {
             }
         } else {
             challenge.status = .failed
-            
-            if challenge.participants.contains(currentUser.id) {
-                
-            }
-            
-            let refundTransaction = Transaction(
-                id: UUID(),
-                description: "Reembolso: \(challenge.title)",
-                amount: 0,
-                type: .win,
-                timestamp: Date(),
-                relatedChallengeID: challenge.id,
-                splitDetails: nil
-            )
-            transactions.insert(refundTransaction, at: 0)
+            challenge.votingFailureReason = "Challenge contested by majority. Funds refunded."
+            refundChallenge(challenge)
         }
         
         challenges[index] = challenge
+        saveData()
         objectWillChange.send()
+    }
+    
+    private func refundChallenge(_ challenge: Challenge) {
+        if challenge.participants.contains(currentUser.id) {
+            // Refund logic: User gets buy-in back (essentially just visual if we didn't deduct, but we assume deduction logic exists or is implied)
+            // In this mock, we calculate available balance dynamically, so removing the challenge from 'active' status effectively 'refunds' the frozen amount.
+            // We can log a transaction for clarity.
+        }
+        
+        let refundTransaction = Transaction(
+            id: UUID(),
+            description: "Reembolso: \(challenge.title)",
+            amount: 0, // 0 because funds were frozen, not spent? Or show buyIn amount? Let's show 0 indicating 'Unfrozen' or actual amount if we were deducting.
+            // Current model uses 'currentUserFrozenBalance' calculated from active challenges.
+            // By setting status to .failed, it's no longer 'active', so funds unfreeze automatically.
+            // We'll log 0 just as a record.
+            type: .win, // Using win type to show green/positive
+            timestamp: Date(),
+            relatedChallengeID: challenge.id,
+            splitDetails: nil
+        )
+        transactions.insert(refundTransaction, at: 0)
+    }
+    
+    private func updateUserStats(win: Bool, profit: Decimal, buyIn: Decimal = 0) {
+        if win {
+            currentUser = User(
+                id: currentUser.id,
+                name: currentUser.name,
+                avatar: currentUser.avatar,
+                reputationScore: currentUser.reputationScore + 10,
+                currentEquity: currentUser.currentEquity + profit,
+                challengesWon: currentUser.challengesWon + 1,
+                challengesLost: currentUser.challengesLost,
+                lastWinTimestamp: Date(),
+                votingHistory: currentUser.votingHistory,
+                consecutiveMissedVotes: currentUser.consecutiveMissedVotes,
+                status: currentUser.status
+            )
+        } else {
+            currentUser = User(
+                id: currentUser.id,
+                name: currentUser.name,
+                avatar: currentUser.avatar,
+                reputationScore: currentUser.reputationScore,
+                currentEquity: currentUser.currentEquity - buyIn, // Deduct the loss
+                challengesWon: currentUser.challengesWon,
+                challengesLost: currentUser.challengesLost + 1,
+                lastWinTimestamp: currentUser.lastWinTimestamp,
+                votingHistory: currentUser.votingHistory,
+                consecutiveMissedVotes: currentUser.consecutiveMissedVotes,
+                status: currentUser.status
+            )
+        }
     }
     
     func completeChallenge(challengeID: UUID, winnerID: UUID?) {
@@ -430,11 +568,13 @@ class MockDataService: ObservableObject {
             transactions.insert(transaction, at: 0)
             
             print("Auto-approved withdrawal \(request.id)")
+            saveData()
             objectWillChange.send()
         } else {
             var updatedRequest = request
             updatedRequest.status = .rejected
             withdrawalRequests[index] = updatedRequest
+            saveData()
             objectWillChange.send()
         }
     }

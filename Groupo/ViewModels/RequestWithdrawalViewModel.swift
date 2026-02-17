@@ -3,19 +3,43 @@ import Combine
 
 class RequestWithdrawalViewModel: ObservableObject {
     @Published var amount: Decimal = 0
+    @Published var amountError: String? = nil
+    
     @Published var dataService: MockDataService
     
     @Published var cooldownString: String? = nil
     private var timer: AnyCancellable?
+    private var subscribers = Set<AnyCancellable>()
     
     init(dataService: MockDataService) {
         self.dataService = dataService
         self.amount = dataService.currentUserAvailableBalance
         startCooldownTimer()
+        setupValidation()
+    }
+    
+    private func setupValidation() {
+        $amount
+            .dropFirst()
+            .sink { [weak self] _ in self?.validateAmount() }
+            .store(in: &subscribers)
+    }
+    
+    private func validateAmount() {
+        if amount <= 0 {
+            amountError = "O valor deve ser maior que zero."
+        } else if amount > dataService.currentUserAvailableBalance {
+            amountError = "Saldo insuficiente."
+        } else {
+            amountError = nil
+        }
     }
     
     var isValid: Bool {
-        return amount > 0 && amount <= dataService.currentUserAvailableBalance && cooldownString == nil
+        return amount > 0 && 
+               amount <= dataService.currentUserAvailableBalance && 
+               cooldownString == nil &&
+               amountError == nil
     }
     
     private func startCooldownTimer() {
@@ -55,8 +79,10 @@ class RequestWithdrawalViewModel: ObservableObject {
     
     @MainActor
     func submit(completion: @escaping (Bool, String?) -> Void) {
+        validateAmount()
+        
         guard isValid else {
-            completion(false, nil)
+            completion(false, amountError ?? "Verifique os erros.")
             return
         }
         
