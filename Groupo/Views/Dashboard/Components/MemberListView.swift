@@ -177,9 +177,24 @@ struct MemberRow: View {
 }
 
 
-#Preview {
-    NavigationView {
-        MemberListView(mockDataService: MockDataService())
-            .environmentObject(MockDataService())
+#Preview("Populated") {
+    NavigationStack {
+        MemberListView(mockDataService: MockDataService.preview)
+            .environmentObject(MockDataService.preview)
     }
+}
+
+#Preview("Empty") {
+    NavigationStack {
+        MemberListView(mockDataService: MockDataService.empty)
+            .environmentObject(MockDataService.empty)
+    }
+}
+
+#Preview("Dark Mode") {
+    NavigationStack {
+        MemberListView(mockDataService: MockDataService.preview)
+            .environmentObject(MockDataService.preview)
+    }
+    .preferredColorScheme(.dark)
 }

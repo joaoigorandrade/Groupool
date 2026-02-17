@@ -579,3 +579,36 @@ class MockDataService: ObservableObject {
         }
     }
 }
+
+// MARK: - Preview Helper
+extension MockDataService {
+    static var preview: MockDataService {
+        let service = MockDataService()
+        // Ensure we have some default data
+        if service.currentUser.name.isEmpty {
+             // Force initialization if empty (though init checks loadData)
+             // This is just to be safe for previews which might use a fresh instance
+            service.resetData() 
+        }
+        return service
+    }
+    
+    static var empty: MockDataService {
+        let service = MockDataService()
+        service.currentUser = User(id: UUID(), name: "New User", avatar: "person.circle", reputationScore: 0, currentEquity: 0, challengesWon: 0, challengesLost: 0, lastWinTimestamp: nil, votingHistory: [], consecutiveMissedVotes: 0, status: .active)
+        service.currentGroup = Group(id: UUID(), name: "New Group", totalPool: 0, members: [])
+        service.challenges = []
+        service.transactions = []
+        service.votes = []
+        service.withdrawalRequests = []
+        return service
+    }
+    
+    static var loading: MockDataService {
+        let service = MockDataService()
+        // You might have an isLoading property to toggle, 
+        // or just rely on views interpreting 'empty but loading' state if designed that way.
+        // For now, we return a standard service, but views might use this to toggle their own isRedacted state.
+        return service
+    }
+}

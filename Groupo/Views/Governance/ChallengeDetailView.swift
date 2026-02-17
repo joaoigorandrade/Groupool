@@ -311,8 +311,8 @@ private extension ChallengeDetailView {
     }
 }
 
-#Preview {
-    NavigationView {
+#Preview("Active") {
+    NavigationStack {
         ChallengeDetailView(challenge: Challenge(
             id: UUID(),
             title: "Mock Challenge",
@@ -320,10 +320,39 @@ private extension ChallengeDetailView {
             buyIn: 50,
             deadline: Date().addingTimeInterval(3600),
             participants: [],
-            status: .active,
-            proofImage: nil,
-            proofSubmissionUserID: nil
+            status: .active
         ))
-        .environmentObject(MockDataService())
+        .environmentObject(MockDataService.preview)
+    }
+}
+
+#Preview("Completed") {
+    NavigationStack {
+        ChallengeDetailView(challenge: Challenge(
+            id: UUID(),
+            title: "Completed Challenge",
+            description: "Challenge finished.",
+            buyIn: 50,
+            deadline: Date().addingTimeInterval(-3600),
+            participants: [],
+            status: .complete
+        ))
+        .environmentObject(MockDataService.preview)
+    }
+}
+
+#Preview("Dark Mode") {
+    NavigationStack {
+        ChallengeDetailView(challenge: Challenge(
+            id: UUID(),
+            title: "Mock Challenge",
+            description: "Description of the mock challenge.",
+            buyIn: 50,
+            deadline: Date().addingTimeInterval(3600),
+            participants: [],
+            status: .active
+        ))
+        .environmentObject(MockDataService.preview)
+        .preferredColorScheme(.dark)
     }
 }

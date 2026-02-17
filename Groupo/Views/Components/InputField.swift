@@ -59,7 +59,7 @@ struct InputField: View {
             HStack {
                 Text(title)
                     .font(.captionText)
-                    .foregroundColor(.textSecondary)
+                    .foregroundColor(.appTextSecondary)
                 
                 Spacer()
                 
@@ -72,17 +72,17 @@ struct InputField: View {
             
             textField
                 .padding()
-                .background(Color.primaryBackground)
-                .cornerRadius(8)
+                .background(Color.appPrimaryBackground)
+                .cornerRadius(12)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(errorMessage != nil ? Color.dangerRed : Color.textSecondary.opacity(0.3), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(errorMessage != nil ? Color.appDangerRed : Color.appTextSecondary.opacity(0.3), lineWidth: 1)
                 )
             
             if let error = errorMessage {
                 Text(error)
                     .font(.captionText)
-                    .foregroundColor(.dangerRed)
+                    .foregroundColor(.appDangerRed)
             }
         }
     }
@@ -113,5 +113,5 @@ struct InputField: View {
         InputField(title: "Email", placeholder: "Email", text: .constant("invalid"), errorMessage: "Invalid email")
     }
     .padding()
-    .background(Color.secondaryBackground)
+    .background(Color.appSecondaryBackground)
 }

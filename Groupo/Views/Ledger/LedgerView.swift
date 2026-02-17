@@ -9,7 +9,7 @@ struct LedgerView: View {
         NavigationStack {
             view
             .navigationTitle("Extrato")
-            .background(Color.primaryBackground)
+            .background(Color.appPrimaryBackground)
             .onAppear {
                 viewModel.update(transactions: dataService.transactions)
             }
@@ -91,7 +91,18 @@ struct TransactionRow: View {
     }
 }
 
-#Preview {
+#Preview("Populated") {
     LedgerView()
-        .environmentObject(MockDataService())
+        .environmentObject(MockDataService.preview)
+}
+
+#Preview("Empty") {
+    LedgerView()
+        .environmentObject(MockDataService.empty)
+}
+
+#Preview("Dark Mode") {
+    LedgerView()
+        .environmentObject(MockDataService.preview)
+        .preferredColorScheme(.dark)
 }

@@ -100,15 +100,22 @@ struct CreateExpenseView: View {
             .padding(.bottom)
         }
         .padding()
-        .background(Color.primaryBackground.edgesIgnoringSafeArea(.all))
+        .background(Color.appPrimaryBackground.edgesIgnoringSafeArea(.all))
         .sheet(isPresented: $showCustomSplitSheet) {
             CustomSplitView(viewModel: viewModel, members: dataService.currentGroup.members)
         }
     }
 }
 
-#Preview {
+#Preview("Default") {
     CreateExpenseView()
-        .environmentObject(MockDataService())
+        .environmentObject(MockDataService.preview)
         .environmentObject(ToastManager())
+}
+
+#Preview("Dark Mode") {
+    CreateExpenseView()
+        .environmentObject(MockDataService.preview)
+        .environmentObject(ToastManager())
+        .preferredColorScheme(.dark)
 }

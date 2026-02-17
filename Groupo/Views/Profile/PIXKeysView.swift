@@ -130,8 +130,15 @@ struct AddPIXKeyView: View {
     }
 }
 
-#Preview {
+#Preview("Light") {
     NavigationStack {
         PIXKeysView()
+    }
+}
+
+#Preview("Dark") {
+    NavigationStack {
+        PIXKeysView()
+            .preferredColorScheme(.dark)
     }
 }

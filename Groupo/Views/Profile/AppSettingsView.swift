@@ -70,9 +70,17 @@ struct AppSettingsView: View {
     }
 }
 
-#Preview {
+#Preview("Light") {
     NavigationStack {
         AppSettingsView()
-            .environmentObject(MockDataService())
+            .environmentObject(MockDataService.preview)
+    }
+}
+
+#Preview("Dark") {
+    NavigationStack {
+        AppSettingsView()
+            .environmentObject(MockDataService.preview)
+            .preferredColorScheme(.dark)
     }
 }

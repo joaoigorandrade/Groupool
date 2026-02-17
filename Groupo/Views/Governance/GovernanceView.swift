@@ -116,7 +116,18 @@ struct GovernanceListRow: View {
     }
 }
 
-#Preview {
+#Preview("Populated") {
     GovernanceView()
-        .environmentObject(MockDataService())
+        .environmentObject(MockDataService.preview)
+}
+
+#Preview("Empty") {
+    GovernanceView()
+        .environmentObject(MockDataService.empty)
+}
+
+#Preview("Dark Mode") {
+    GovernanceView()
+        .environmentObject(MockDataService.preview)
+        .preferredColorScheme(.dark)
 }

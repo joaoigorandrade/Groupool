@@ -98,6 +98,13 @@ struct ProfileView: View {
     }
 }
 
-#Preview {
+#Preview("Populated") {
     ProfileView()
+        .environmentObject(MockDataService.preview)
+}
+
+#Preview("Dark Mode") {
+    ProfileView()
+        .environmentObject(MockDataService.preview)
+        .preferredColorScheme(.dark)
 }

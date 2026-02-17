@@ -157,7 +157,18 @@ struct DashboardView: View {
     }
 }
 
-#Preview {
+#Preview("Populated") {
     DashboardView()
-        .environmentObject(MockDataService())
+        .environmentObject(MockDataService.preview)
+}
+
+#Preview("Empty") {
+    DashboardView()
+        .environmentObject(MockDataService.empty)
+}
+
+#Preview("Dark Mode") {
+    DashboardView()
+        .environmentObject(MockDataService.preview)
+        .preferredColorScheme(.dark)
 }

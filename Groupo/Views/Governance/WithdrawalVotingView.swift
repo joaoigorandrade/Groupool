@@ -69,7 +69,7 @@ struct WithdrawalVotingView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 24)
-            .background(Color.secondaryBackground)
+            .background(Color.appSecondaryBackground)
             .cornerRadius(16)
             
             // Auto-Approval Indicator

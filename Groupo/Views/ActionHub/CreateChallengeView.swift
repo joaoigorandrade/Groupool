@@ -159,7 +159,15 @@ struct CreateChallengeView: View {
     }
 }
 
-#Preview {
-    CreateChallengeView(dataService: MockDataService())
+#Preview("Default") {
+    CreateChallengeView(dataService: MockDataService.preview)
+        .environmentObject(ToastManager())
+}
+
+#Preview("Active Challenge") {
+    let service = MockDataService.preview
+    // Simulate active challenge
+    service.addChallenge(title: "Existing Challenge", description: "Test", buyIn: 10, deadline: Date().addingTimeInterval(3600))
+    return CreateChallengeView(dataService: service)
         .environmentObject(ToastManager())
 }

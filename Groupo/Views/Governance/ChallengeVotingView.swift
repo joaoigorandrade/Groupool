@@ -312,8 +312,8 @@ private extension ChallengeVotingView {
     }
 }
 
-#Preview {
-    NavigationView {
+#Preview("Active") {
+    NavigationStack {
         ChallengeVotingView(challenge: Challenge(
             id: UUID(),
             title: "Mock Challenge",
@@ -323,6 +323,36 @@ private extension ChallengeVotingView {
             participants: [],
             status: .active
         ))
-        .environmentObject(MockDataService())
+        .environmentObject(MockDataService.preview)
+    }
+}
+
+#Preview("Voting") {
+    NavigationStack {
+        ChallengeVotingView(challenge: Challenge(
+            id: UUID(),
+            title: "Voting Challenge",
+            description: "Voting in progress.",
+            buyIn: 50,
+            deadline: Date().addingTimeInterval(3600),
+            participants: [],
+            status: .voting
+        ))
+        .environmentObject(MockDataService.preview)
+    }
+}
+
+#Preview("Completed") {
+    NavigationStack {
+        ChallengeVotingView(challenge: Challenge(
+            id: UUID(),
+            title: "Completed Challenge",
+            description: "Challenge finished.",
+            buyIn: 50,
+            deadline: Date().addingTimeInterval(-3600),
+            participants: [],
+            status: .complete
+        ))
+        .environmentObject(MockDataService.preview)
     }
 }

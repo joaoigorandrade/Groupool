@@ -154,8 +154,8 @@ private extension TransactionDetailView {
     }
 }
 
-#Preview {
-    NavigationView {
+#Preview("Expense") {
+    NavigationStack {
         TransactionDetailView(transaction: Transaction(
             id: UUID(),
             description: "Jantar de Comemoração",
@@ -165,6 +165,36 @@ private extension TransactionDetailView {
             relatedChallengeID: nil,
             splitDetails: ["João Silva": 66.66, "Maria Oliveira": 66.67, "Carlos Pereira": 66.67]
         ))
-        .environmentObject(MockDataService())
+        .environmentObject(MockDataService.preview)
+    }
+}
+
+#Preview("Win") {
+    NavigationStack {
+        TransactionDetailView(transaction: Transaction(
+            id: UUID(),
+            description: "Winning Payout",
+            amount: 50.00,
+            type: .win,
+            timestamp: Date(),
+            relatedChallengeID: nil,
+            splitDetails: nil
+        ))
+        .environmentObject(MockDataService.preview)
+    }
+}
+
+#Preview("Withdrawal") {
+    NavigationStack {
+        TransactionDetailView(transaction: Transaction(
+            id: UUID(),
+            description: "Withdrawal",
+            amount: 100.00,
+            type: .withdrawal,
+            timestamp: Date(),
+            relatedChallengeID: nil,
+            splitDetails: nil
+        ))
+        .environmentObject(MockDataService.preview)
     }
 }

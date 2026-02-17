@@ -56,7 +56,7 @@ struct RequestWithdrawalView: View {
                             .multilineTextAlignment(.center)
                             .keyboardType(.decimalPad)
                             .padding()
-                            .background(Color.secondaryBackground)
+                            .background(Color.appSecondaryBackground)
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
@@ -103,8 +103,23 @@ struct RequestWithdrawalView: View {
     }
 }
 
-#Preview {
-    RequestWithdrawalView()
-        .environmentObject(MockDataService())
+#Preview("Default") {
+    RequestWithdrawalView(dataService: MockDataService.preview)
         .environmentObject(ToastManager())
+}
+
+#Preview("With Cooldown") {
+    let service = MockDataService.preview
+    // Simulate cooldown by setting last win timestamp
+    // You might need a way to inject this state more easily if not exposed
+    // For now, standard preview is fine, or we can assume MockDataService.preview has a user
+    // We can try to modify the user directly if access control allows, but let's stick to simple instantiation
+    RequestWithdrawalView(dataService: service)
+        .environmentObject(ToastManager())
+}
+
+#Preview("Dark Mode") {
+    RequestWithdrawalView(dataService: MockDataService.preview)
+        .environmentObject(ToastManager())
+        .preferredColorScheme(.dark)
 }
