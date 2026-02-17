@@ -13,17 +13,15 @@ class MockDataService: ObservableObject {
         let user = User(
             id: UUID(),
             name: "João Silva",
-            avatar: "person.circle.fill", // SF Symbol
+            avatar: "person.circle.fill",
             reputationScore: 100,
+            currentEquity: 500.00,
             status: .active
         )
         self.currentUser = user
+        let member2 = User(id: UUID(), name: "Maria Oliveira", avatar: "person.circle", reputationScore: 90, currentEquity: 500.00, status: .active)
+        let member3 = User(id: UUID(), name: "Carlos Pereira", avatar: "person.circle", reputationScore: 85, currentEquity: 500.00, status: .active)
 
-        // Mock Group Members
-        let member2 = User(id: UUID(), name: "Maria Oliveira", avatar: "person.circle", reputationScore: 90, status: .active)
-        let member3 = User(id: UUID(), name: "Carlos Pereira", avatar: "person.circle", reputationScore: 85, status: .active)
-
-        // Mock Group
         self.currentGroup = Group(
             id: UUID(),
             name: "Férias 2024",
@@ -37,39 +35,32 @@ class MockDataService: ObservableObject {
                 id: UUID(),
                 title: "Economizar R$ 50 na semana",
                 buyIn: 50.00,
-                deadline: Date().addingTimeInterval(60 * 60 * 24 * 7), // 7 days from now
+                deadline: Date().addingTimeInterval(60 * 60 * 24 * 7),
                 status: .active
             ),
             Challenge(
                 id: UUID(),
                 title: "Sem Uber por 1 mês",
                 buyIn: 100.00,
-                deadline: Date().addingTimeInterval(60 * 60 * 24 * 30), // 30 days from now
+                deadline: Date().addingTimeInterval(60 * 60 * 24 * 30),
                 status: .voting
             )
         ]
 
-        // Mock Transactions
         self.transactions = [
             Transaction(
                 id: UUID(),
                 description: "Depósito Inicial - João",
                 amount: 500.00,
-                type: .win, // Using 'win' as positive inflow for now if 'deposit' isn't available, or it should be 'expense' is negative? Let's check TransactionType.
-                // Checking Transaction.swift: expense, withdrawal, win.
-                // 'win' likely adds to pool. 'expense' likely subtracts? Or 'expense' is a group expense?
-                // Let's assume 'win' adds money (like winning a challenge) and 'expense' spends it.
-                // For a deposit, it might be a 'win' or we might need a 'deposit' case. 
-                // Given the enum: expense, withdrawal, win. I'll use 'win' for income for now, or maybe the user meant something else.
-                // Let's stick to the visible types. 
-                timestamp: Date().addingTimeInterval(-60 * 60 * 24 * 2) // 2 days ago
+                type: .win,
+                timestamp: Date().addingTimeInterval(-60 * 60 * 24 * 2)
             ),
              Transaction(
                 id: UUID(),
                 description: "Jantar de Comemoração",
                 amount: 200.00,
                 type: .expense,
-                timestamp: Date().addingTimeInterval(-60 * 60 * 24 * 1) // 1 day ago
+                timestamp: Date().addingTimeInterval(-60 * 60 * 24 * 1)
             )
         ]
     }
@@ -110,5 +101,16 @@ class MockDataService: ObservableObject {
             deadline: Date().addingTimeInterval(60 * 60 * 24) // 24 hours deadline
         )
         votes.append(vote)
+    }
+
+    var currentUserFrozenBalance: Decimal {
+        // Sum of buy-ins for active/voting challenges
+        // Assuming user is participating in all active/voting challenges for this mock
+        let activeChallenges = challenges.filter { $0.status == .active || $0.status == .voting }
+        return activeChallenges.reduce(0) { $0 + $1.buyIn }
+    }
+    
+    var currentUserAvailableBalance: Decimal {
+        return currentUser.currentEquity - currentUserFrozenBalance
     }
 }

@@ -12,6 +12,7 @@ struct DashboardView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         poolHeroCard
+                        personalStakeCard
                         activitySection
                     }
                     .padding(.horizontal)
@@ -41,6 +42,14 @@ struct DashboardView: View {
                 .stroke(.white.opacity(0.15), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.15), radius: 25, x: 0, y: 10)
+    }
+    
+    private var personalStakeCard: some View {
+        PersonalStakeCard(
+            available: mockDataService.currentUserAvailableBalance,
+            frozen: mockDataService.currentUserFrozenBalance,
+            total: mockDataService.currentUser.currentEquity
+        )
     }
     
     private var poolValueDisplay: some View {
@@ -133,69 +142,7 @@ struct DashboardView: View {
     }
     
     private var activitySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Activity")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .padding(.leading, 4)
-            
-            if mockDataService.transactions.isEmpty {
-                ContentUnavailableView(
-                    "No Activity Yet",
-                    systemImage: "tray",
-                    description: Text("Transactions will appear here")
-                )
-                .frame(height: 150)
-            } else {
-                LazyVStack(spacing: 12) {
-                    ForEach(Array(mockDataService.transactions.prefix(5))) { transaction in
-                        activityRow(for: transaction)
-                    }
-                }
-            }
-        }
-    }
-    
-    private func activityRow(for transaction: Transaction) -> some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color.secondaryBackground)
-                    .frame(width: 44, height: 44)
-                    .shadow(radius: 2)
-                
-                Image(systemName: transaction.type.iconName())
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(transaction.type.iconColor())
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(transaction.description)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .lineLimit(2)
-                
-                Text(transaction.timestamp, style: .relative)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            Text(transaction.formattedAmount())
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundStyle(transaction.type.amountColor())
-                .monospacedDigit()
-        }
-        .padding(16)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
-        .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(.white.opacity(0.1), lineWidth: 1)
-        }
+        ActivityFeedView()
     }
 }
 

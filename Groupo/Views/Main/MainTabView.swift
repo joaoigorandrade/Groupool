@@ -46,19 +46,9 @@ struct MainTabView: View {
                     Label("Profile", systemImage: "person.circle")
                 }
         }
+        .environmentObject(coordinator)
         .sheet(isPresented: $coordinator.isPresentingCreateSheet) {
-            NavigationStack {
-                Text("Create New Item")
-                    .navigationTitle("New Entry")
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") {
-                                coordinator.dismissSheet()
-                            }
-                        }
-                    }
-            }
-            .presentationDetents([.medium, .large])
+            ActionMenuSheet()
         }
     }
 }

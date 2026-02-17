@@ -5,6 +5,7 @@ struct User: Identifiable, Codable, Hashable {
     let name: String
     let avatar: String
     let reputationScore: Int
+    let currentEquity: Decimal
     let status: UserStatus
 
     enum UserStatus: String, Codable {
