@@ -9,7 +9,6 @@ class MockDataService: ObservableObject {
     @Published var votes: [Vote] = []
 
     init() {
-        // Mock User
         let user = User(
             id: UUID(),
             name: "João Silva",
@@ -29,11 +28,11 @@ class MockDataService: ObservableObject {
             members: [user, member2, member3]
         )
 
-        // Mock Challenges
         self.challenges = [
             Challenge(
                 id: UUID(),
                 title: "Economizar R$ 50 na semana",
+                description: "Quem conseguir economizar mais, ganha.",
                 buyIn: 50.00,
                 deadline: Date().addingTimeInterval(60 * 60 * 24 * 7),
                 status: .active
@@ -41,6 +40,7 @@ class MockDataService: ObservableObject {
             Challenge(
                 id: UUID(),
                 title: "Sem Uber por 1 mês",
+                description: "Ninguém pode usar Uber, apenas transporte público ou caminhada.",
                 buyIn: 100.00,
                 deadline: Date().addingTimeInterval(60 * 60 * 24 * 30),
                 status: .voting
@@ -75,15 +75,6 @@ class MockDataService: ObservableObject {
         )
         transactions.insert(transaction, at: 0)
         
-        // Update group total pool?
-        // If it sends money OUT of the pool
-        // currentGroup.totalPool -= amount // Group struct is immutable (let properties).
-        // I need to update the group object.
-        
-        // Since Group is a struct and members are let, I might need to create a new Group with updated pool.
-        // However, Group struct definition: let totalPool: Decimal.
-        // I cannot modify it directly. I have to replace `currentGroup`.
-        
         let newPool = currentGroup.totalPool - amount
         currentGroup = Group(
             id: currentGroup.id,
@@ -98,14 +89,28 @@ class MockDataService: ObservableObject {
             id: UUID(),
             targetID: targetID,
             type: type,
-            deadline: Date().addingTimeInterval(60 * 60 * 24) // 24 hours deadline
+            deadline: Date().addingTimeInterval(60 * 60 * 24)
         )
         votes.append(vote)
     }
 
+    var hasActiveChallenge: Bool {
+        return challenges.contains { $0.status == .active }
+    }
+
+    func addChallenge(title: String, description: String, buyIn: Decimal, deadline: Date) {
+        let newChallenge = Challenge(
+            id: UUID(),
+            title: title,
+            description: description,
+            buyIn: buyIn,
+            deadline: deadline,
+            status: .active
+        )
+        challenges.insert(newChallenge, at: 0)
+    }
+
     var currentUserFrozenBalance: Decimal {
-        // Sum of buy-ins for active/voting challenges
-        // Assuming user is participating in all active/voting challenges for this mock
         let activeChallenges = challenges.filter { $0.status == .active || $0.status == .voting }
         return activeChallenges.reduce(0) { $0 + $1.buyIn }
     }

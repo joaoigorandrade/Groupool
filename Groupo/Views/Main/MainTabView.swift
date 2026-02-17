@@ -49,6 +49,7 @@ struct MainTabView: View {
         .environmentObject(coordinator)
         .sheet(isPresented: $coordinator.isPresentingCreateSheet) {
             ActionMenuSheet()
+                .presentationDetents([.large])
         }
     }
 }

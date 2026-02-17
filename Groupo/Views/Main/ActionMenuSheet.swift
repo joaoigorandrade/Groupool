@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ActionMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var dataService: MockDataService
     
     var body: some View {
         NavigationStack {
@@ -15,7 +16,7 @@ struct ActionMenuSheet: View {
                 }
                 
                 NavigationLink {
-                    CreateChallengeView()
+                    CreateChallengeView(dataService: dataService)
                 } label: {
                     MenuButtonLabel(title: "Create Challenge", icon: "trophy")
                 }
