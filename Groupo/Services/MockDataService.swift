@@ -16,11 +16,13 @@ class MockDataService: ObservableObject {
             avatar: "person.circle.fill",
             reputationScore: 100,
             currentEquity: 500.00,
+            challengesWon: 5,
+            challengesLost: 2,
             status: .active
         )
         self.currentUser = user
-        let member2 = User(id: UUID(), name: "Maria Oliveira", avatar: "person.circle", reputationScore: 90, currentEquity: 500.00, status: .active)
-        let member3 = User(id: UUID(), name: "Carlos Pereira", avatar: "person.circle", reputationScore: 85, currentEquity: 500.00, status: .active)
+        let member2 = User(id: UUID(), name: "Maria Oliveira", avatar: "person.circle", reputationScore: 90, currentEquity: 500.00, challengesWon: 3, challengesLost: 1, status: .active)
+        let member3 = User(id: UUID(), name: "Carlos Pereira", avatar: "person.circle", reputationScore: 85, currentEquity: 500.00, challengesWon: 1, challengesLost: 4, status: .active)
 
         self.currentGroup = Group(
             id: UUID(),
@@ -36,6 +38,7 @@ class MockDataService: ObservableObject {
                 description: "Quem conseguir economizar mais, ganha.",
                 buyIn: 50.00,
                 deadline: Date().addingTimeInterval(60 * 60 * 24 * 7),
+                participants: [user.id, member2.id],
                 status: .active
             ),
             Challenge(
@@ -44,6 +47,7 @@ class MockDataService: ObservableObject {
                 description: "Ninguém pode usar Uber, apenas transporte público ou caminhada.",
                 buyIn: 100.00,
                 deadline: Date().addingTimeInterval(60 * 60 * 24 * 30),
+                participants: [],
                 status: .voting
             )
         ]
@@ -106,13 +110,17 @@ class MockDataService: ObservableObject {
             description: description,
             buyIn: buyIn,
             deadline: deadline,
+            participants: [currentUser.id],
             status: .active
         )
         challenges.insert(newChallenge, at: 0)
     }
 
     var currentUserFrozenBalance: Decimal {
-        let activeChallenges = challenges.filter { $0.status == .active || $0.status == .voting }
+        let activeChallenges = challenges.filter { 
+            ($0.status == .active || $0.status == .voting) && 
+            $0.participants.contains(currentUser.id)
+        }
         return activeChallenges.reduce(0) { $0 + $1.buyIn }
     }
     
@@ -130,5 +138,16 @@ class MockDataService: ObservableObject {
             deadline: Date().addingTimeInterval(60 * 60 * 24) // 24 hours
         )
         withdrawalRequests.insert(request, at: 0)
+    }
+    
+    func joinChallenge(challengeID: UUID) {
+        guard let index = challenges.firstIndex(where: { $0.id == challengeID }) else { return }
+        var challenge = challenges[index]
+        
+        // Prevent double joining
+        if !challenge.participants.contains(currentUser.id) {
+            challenge.participants.append(currentUser.id)
+            challenges[index] = challenge
+        }
     }
 }

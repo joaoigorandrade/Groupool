@@ -99,6 +99,10 @@ class GovernanceViewModel: ObservableObject {
         mockDataService.castVote(targetID: withdrawal.id, type: type)
     }
     
+    func joinChallenge(challenge: Challenge) {
+        mockDataService.joinChallenge(challengeID: challenge.id)
+    }
+    
     func getUser(for id: UUID) -> User? {
         if mockDataService.currentUser.id == id {
             return mockDataService.currentUser

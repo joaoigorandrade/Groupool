@@ -6,6 +6,7 @@ struct Challenge: Identifiable, Codable, Hashable {
     let description: String
     let buyIn: Decimal
     let deadline: Date
+    var participants: [UUID]
     let status: ChallengeStatus
 
     enum ChallengeStatus: String, Codable {

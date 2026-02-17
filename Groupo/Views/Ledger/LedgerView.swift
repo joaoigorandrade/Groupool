@@ -2,17 +2,28 @@ import SwiftUI
 
 struct LedgerView: View {
     @EnvironmentObject var dataService: MockDataService
+    @StateObject private var viewModel = LedgerViewModel()
     
     var body: some View {
         NavigationStack {
             List {
-                ForEach(dataService.transactions) { transaction in
-                    TransactionRow(transaction: transaction)
+                ForEach(viewModel.sections) { section in
+                    Section(header: Text(section.title)) {
+                        ForEach(section.transactions) { transaction in
+                            TransactionRow(transaction: transaction)
+                        }
+                    }
                 }
             }
-            .listStyle(.plain)
-            .navigationTitle("Ledger")
+            .listStyle(.insetGrouped)
+            .navigationTitle("Extrato")
             .background(Color.primaryBackground)
+            .onAppear {
+                viewModel.update(transactions: dataService.transactions)
+            }
+            .onChange(of: dataService.transactions) { _, newValue in
+                viewModel.update(transactions: newValue)
+            }
         }
     }
 }
@@ -25,61 +36,31 @@ struct TransactionRow: View {
             // Icon Background
             ZStack {
                 Circle()
-                    .fill(transactionTypeColor(transaction.type).opacity(0.1))
+                    .fill(transaction.type.iconColor().opacity(0.1))
                     .frame(width: 40, height: 40)
                 
-                Image(systemName: transactionTypeIcon(transaction.type))
-                    .foregroundColor(transactionTypeColor(transaction.type))
+                Image(systemName: transaction.type.iconName())
+                    .foregroundColor(transaction.type.iconColor())
                     .font(.system(size: 18, weight: .semibold))
             }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(transaction.description)
-                    .font(.bodyBold)
-                    .foregroundColor(.textPrimary)
+                    .font(.headline) // Using standard fonts as per user rule, or custom if defined
+                    .foregroundColor(.primary)
                 
                 Text(transaction.timestamp.formatted(date: .abbreviated, time: .shortened))
-                    .font(.captionText)
-                    .foregroundColor(.textSecondary)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
             
             Spacer()
             
-            Text(amountString(for: transaction))
-                .font(.bodyBold)
-                .foregroundColor(transactionTypeColor(transaction.type))
+            Text(transaction.formattedAmount())
+                .font(.headline)
+                .foregroundColor(transaction.type.amountColor())
         }
         .padding(.vertical, 8)
-        .listRowBackground(Color.primaryBackground)
-        .listRowSeparatorTint(Color.textSecondary.opacity(0.2))
-    }
-    
-    private func transactionTypeIcon(_ type: Transaction.TransactionType) -> String {
-        switch type {
-        case .expense: return "arrow.down"
-        case .withdrawal: return "arrow.up"
-        case .win: return "star.fill"
-        }
-    }
-    
-    private func transactionTypeColor(_ type: Transaction.TransactionType) -> Color {
-        switch type {
-        case .expense: return .dangerRed
-        case .withdrawal: return .frozenBlue
-        case .win: return .availableGreen
-        }
-    }
-    
-    private func amountString(for transaction: Transaction) -> String {
-        let amount = transaction.amount
-        let formatted = amount.formatted(.currency(code: "BRL"))
-        
-        switch transaction.type {
-        case .expense, .withdrawal:
-            return "- \(formatted)"
-        case .win:
-            return "+ \(formatted)"
-        }
     }
 }
 

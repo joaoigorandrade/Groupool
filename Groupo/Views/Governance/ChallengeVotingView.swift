@@ -3,8 +3,16 @@ import SwiftUI
 struct ChallengeVotingView: View {
     let challenge: Challenge
     @StateObject private var viewModel = GovernanceViewModel()
+    @EnvironmentObject var mockDataService: MockDataService
     @Environment(\.dismiss) var dismiss
     @State private var hasVoted = false
+    
+    var isParticipant: Bool {
+        if let latest = mockDataService.challenges.first(where: { $0.id == challenge.id }) {
+            return latest.participants.contains(mockDataService.currentUser.id)
+        }
+        return false
+    }
     
     var body: some View {
         ScrollView {
@@ -34,56 +42,71 @@ struct ChallengeVotingView: View {
                             .foregroundColor(.secondary)
                     )
                 
-                if hasVoted {
-                    VStack(spacing: 16) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .resizable()
-                            .frame(width: 60, height: 60)
-                            .foregroundColor(.green)
-                        
-                        Text("Vote Cast")
-                            .font(.title2)
-                            .bold()
-                        
-                        Text("You can change your vote until the deadline.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        Button("Change Vote") {
-                            hasVoted = false
+                if isParticipant {
+                    if hasVoted {
+                        VStack(spacing: 16) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .resizable()
+                                .frame(width: 60, height: 60)
+                                .foregroundColor(.green)
+                            
+                            Text("Vote Cast")
+                                .font(.title2)
+                                .bold()
+                            
+                            Text("You can change your vote until the deadline.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            
+                            Button("Change Vote") {
+                                hasVoted = false
+                            }
+                            .font(.headline)
+                            .padding(.top)
                         }
-                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                        .transition(.opacity)
+                    } else {
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                vote(.approval)
+                            }) {
+                                Text("Vote Winner")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.green)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                            }
+                            
+                            Button(action: {
+                                vote(.abstain)
+                            }) {
+                                Text("Abstain")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.gray.opacity(0.2))
+                                    .foregroundColor(.primary)
+                                    .cornerRadius(12)
+                            }
+                        }
                         .padding(.top)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 40)
-                    .transition(.opacity)
                 } else {
-                    VStack(spacing: 12) {
-                        Button(action: {
-                            vote(.approval)
-                        }) {
-                            Text("Vote Winner")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.green)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                        }
-                        
-                        Button(action: {
-                            vote(.abstain)
-                        }) {
-                            Text("Abstain")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.gray.opacity(0.2))
-                                .foregroundColor(.primary)
-                                .cornerRadius(12)
-                        }
+                    Button(action: {
+                        joinChallenge()
+                    }) {
+                        Text("Join Challenge (Buy-in: \(challenge.buyIn.formatted(.currency(code: "BRL"))))")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
                     }
                     .padding(.top)
                 }
@@ -102,6 +125,9 @@ struct ChallengeVotingView: View {
             .padding()
         }
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            viewModel.setService(mockDataService)
+        }
     }
     
     private func vote(_ type: Vote.VoteType) {
@@ -109,6 +135,12 @@ struct ChallengeVotingView: View {
         withAnimation {
             hasVoted = true
         }
+        let feedback = UIImpactFeedbackGenerator(style: .medium)
+        feedback.impactOccurred()
+    }
+    
+    private func joinChallenge() {
+        viewModel.joinChallenge(challenge: challenge)
         let feedback = UIImpactFeedbackGenerator(style: .medium)
         feedback.impactOccurred()
     }
@@ -122,7 +154,9 @@ struct ChallengeVotingView: View {
             description: "Description of the mock challenge.",
             buyIn: 50,
             deadline: Date().addingTimeInterval(3600),
+            participants: [],
             status: .voting
         ))
+        .environmentObject(MockDataService())
     }
 }
