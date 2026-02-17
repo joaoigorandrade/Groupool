@@ -2,17 +2,23 @@ import SwiftUI
 
 struct GovernanceView: View {
     @EnvironmentObject var mockDataService: MockDataService
+    @EnvironmentObject var coordinator: MainCoordinator
     @StateObject private var viewModel = GovernanceViewModel()
     
     var body: some View {
         NavigationStack {
             List {
                 if viewModel.activeItems.isEmpty {
-                    ContentUnavailableView(
-                        "No Active Votes",
-                        systemImage: "checkmark.circle",
-                        description: Text("There are no active challenges or withdrawal requests at the moment.")
-                    )
+                    ContentUnavailableView {
+                        Label("No Active Votes", systemImage: "checkmark.circle")
+                    } description: {
+                        Text("There are no active challenges or withdrawal requests at the moment.")
+                    } actions: {
+                        Button("Create New Proposal") {
+                            coordinator.presentCreateSheet()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 } else {
                     ForEach(viewModel.activeItems) { item in
                         if case .challenge(let challenge) = item {

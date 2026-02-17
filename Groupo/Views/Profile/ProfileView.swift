@@ -76,11 +76,11 @@ struct ProfileView: View {
                 
                 // Settings Section
                 Section("Settings") {
-                    NavigationLink(destination: Text("PIX Keys Placeholder")) {
+                    NavigationLink(destination: PIXKeysView()) {
                         Label("PIX Keys", systemImage: "qrcode")
                     }
                     
-                    NavigationLink(destination: Text("App Settings Placeholder")) {
+                    NavigationLink(destination: AppSettingsView()) {
                         Label("App Settings", systemImage: "gear")
                     }
                 }

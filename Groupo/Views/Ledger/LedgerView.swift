@@ -2,20 +2,12 @@ import SwiftUI
 
 struct LedgerView: View {
     @EnvironmentObject var dataService: MockDataService
+    @EnvironmentObject var coordinator: MainCoordinator
     @StateObject private var viewModel = LedgerViewModel()
     
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(viewModel.sections) { section in
-                    Section(header: Text(section.title)) {
-                        ForEach(section.transactions) { transaction in
-                            TransactionRow(transaction: transaction)
-                        }
-                    }
-                }
-            }
-            .listStyle(.insetGrouped)
+            view
             .navigationTitle("Extrato")
             .background(Color.primaryBackground)
             .onAppear {
@@ -26,6 +18,34 @@ struct LedgerView: View {
             }
         }
     }
+    
+    @ViewBuilder
+    private var view: some View {
+        if viewModel.sections.isEmpty {
+            ContentUnavailableView {
+                Label("No Transactions", systemImage: "list.clipboard")
+            } description: {
+                Text("Your financial activity will appear here.")
+            } actions: {
+                Button("Add Transaction") {
+                    coordinator.presentCreateSheet()
+                }
+            }
+        } else {
+            List {
+                ForEach(viewModel.sections) { section in
+                    Section(header: Text(section.title)) {
+                        ForEach(section.transactions) { transaction in
+                            NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                TransactionRow(transaction: transaction)
+                            }
+                        }
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+        }
+    }
 }
 
 struct TransactionRow: View {
@@ -33,7 +53,6 @@ struct TransactionRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Icon Background
             ZStack {
                 Circle()
                     .fill(transaction.type.iconColor().opacity(0.1))
@@ -46,7 +65,7 @@ struct TransactionRow: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(transaction.description)
-                    .font(.headline) // Using standard fonts as per user rule, or custom if defined
+                    .font(.headline)
                     .foregroundColor(.primary)
                 
                 Text(transaction.timestamp.formatted(date: .abbreviated, time: .shortened))

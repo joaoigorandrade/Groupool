@@ -8,7 +8,7 @@ class MockDataService: ObservableObject {
     @Published var transactions: [Transaction]
     @Published var votes: [Vote] = []
     @Published var withdrawalRequests: [WithdrawalRequest] = []
-
+    
     init() {
         let user = User(
             id: UUID(),
@@ -26,14 +26,14 @@ class MockDataService: ObservableObject {
         self.currentUser = user
         let member2 = User(id: UUID(), name: "Maria Oliveira", avatar: "person.circle", reputationScore: 90, currentEquity: 500.00, challengesWon: 3, challengesLost: 1, lastWinTimestamp: nil, votingHistory: [], consecutiveMissedVotes: 0, status: .active)
         let member3 = User(id: UUID(), name: "Carlos Pereira", avatar: "person.circle", reputationScore: 85, currentEquity: 500.00, challengesWon: 1, challengesLost: 4, lastWinTimestamp: nil, votingHistory: [], consecutiveMissedVotes: 0, status: .active)
-
+        
         self.currentGroup = Group(
             id: UUID(),
             name: "Férias 2024",
             totalPool: 1500.00,
             members: [user, member2, member3]
         )
-
+        
         self.challenges = [
             Challenge(
                 id: UUID(),
@@ -54,39 +54,47 @@ class MockDataService: ObservableObject {
                 status: .voting
             )
         ]
-
+        
         self.transactions = [
             Transaction(
                 id: UUID(),
                 description: "Vitoria Desafio Semanal",
                 amount: 50.00,
                 type: .win,
-                timestamp: Date().addingTimeInterval(-60 * 60 * 2)
+                timestamp: Date().addingTimeInterval(-60 * 60 * 2),
+                relatedChallengeID: nil,
+                splitDetails: nil
             ),
-             Transaction(
+            Transaction(
                 id: UUID(),
                 description: "Depósito Inicial - João",
                 amount: 500.00,
                 type: .win,
-                timestamp: Date().addingTimeInterval(-60 * 60 * 24 * 2)
+                timestamp: Date().addingTimeInterval(-60 * 60 * 24 * 2),
+                relatedChallengeID: nil,
+                splitDetails: nil
             ),
-             Transaction(
+            Transaction(
                 id: UUID(),
                 description: "Jantar de Comemoração",
                 amount: 200.00,
                 type: .expense,
-                timestamp: Date().addingTimeInterval(-60 * 60 * 24 * 1)
+                timestamp: Date().addingTimeInterval(-60 * 60 * 24 * 1),
+                relatedChallengeID: nil,
+                splitDetails: ["João Silva": 66.66, "Maria Oliveira": 66.67, "Carlos Pereira": 66.67]
             )
         ]
     }
-
+    
     func addExpense(amount: Decimal, description: String) {
         let transaction = Transaction(
             id: UUID(),
             description: description,
             amount: amount,
             type: .expense,
-            timestamp: Date()
+            timestamp: Date(),
+            relatedChallengeID: nil,
+            splitDetails: nil
         )
         transactions.insert(transaction, at: 0)
         
@@ -98,7 +106,7 @@ class MockDataService: ObservableObject {
             members: currentGroup.members
         )
     }
-
+    
     func castVote(targetID: UUID, type: Vote.VoteType, voterID: UUID? = nil) {
         let vote = Vote(
             id: UUID(),
@@ -121,12 +129,10 @@ class MockDataService: ObservableObject {
                 challengesWon: member.challengesWon,
                 challengesLost: member.challengesLost,
                 lastWinTimestamp: member.lastWinTimestamp,
-                votingHistory: member.votingHistory, // Don't add here yet, add in updateVotingParticipation or here?
-                // Spec says: "Reset counter when user votes"
+                votingHistory: member.votingHistory,
                 consecutiveMissedVotes: 0, 
                 status: member.status == .inactive ? .active : member.status // Reactivate if active?
             )
-             // If we just reset, we should update the member
             var newMembers = currentGroup.members
             newMembers[index] = member
             currentGroup = Group(id: currentGroup.id, name: currentGroup.name, totalPool: currentGroup.totalPool, members: newMembers)
@@ -140,9 +146,6 @@ class MockDataService: ObservableObject {
     }
     
     func updateVotingParticipation(for targetID: UUID) {
-        // Find all active members who haven't voted on this targetID
-        // But we need to do this for ALL members
-        
         var newMembers = currentGroup.members
         
         for (index, member) in newMembers.enumerated() {
@@ -153,7 +156,6 @@ class MockDataService: ObservableObject {
             var newStatus = member.status
             
             if hasVoted {
-                // Determine if we should add to history (avoid duplicates)
                 if !newHistory.contains(targetID) {
                     newHistory.append(targetID)
                 }
@@ -182,12 +184,11 @@ class MockDataService: ObservableObject {
         
         currentGroup = Group(id: currentGroup.id, name: currentGroup.name, totalPool: currentGroup.totalPool, members: newMembers)
         
-        // Update currentUser
         if let updatedCurrentUser = newMembers.first(where: { $0.id == currentUser.id }) {
             currentUser = updatedCurrentUser
         }
     }
-
+    
     var hasActiveChallenge: Bool {
         return challenges.contains { $0.status == .active || $0.status == .voting }
     }
@@ -195,7 +196,7 @@ class MockDataService: ObservableObject {
     var activeChallenge: Challenge? {
         return challenges.first { $0.status == .active || $0.status == .voting }
     }
-
+    
     func addChallenge(title: String, description: String, buyIn: Decimal, deadline: Date) {
         if hasActiveChallenge {
             return
@@ -217,7 +218,7 @@ class MockDataService: ObservableObject {
         )
         challenges.insert(newChallenge, at: 0)
     }
-
+    
     var currentUserFrozenBalance: Decimal {
         let activeChallenges = challenges.filter { 
             ($0.status == .active || $0.status == .voting) && 
@@ -229,7 +230,7 @@ class MockDataService: ObservableObject {
     var currentUserAvailableBalance: Decimal {
         return currentUser.currentEquity - currentUserFrozenBalance
     }
-
+    
     func requestWithdrawal(amount: Decimal) {
         let request = WithdrawalRequest(
             id: UUID(),
@@ -272,14 +273,13 @@ class MockDataService: ObservableObject {
         challenges[index] = challenge
         objectWillChange.send()
     }
-
+    
     func resolveChallengeVoting(challengeID: UUID) {
         guard let index = challenges.firstIndex(where: { $0.id == challengeID }) else { return }
         var challenge = challenges[index]
         
         guard challenge.status == .voting else { return }
         
-        // Update voting participation stats before resolving
         updateVotingParticipation(for: challengeID)
         
         let challengeVotes = votes.filter { $0.targetID == challengeID }
@@ -292,31 +292,33 @@ class MockDataService: ObservableObject {
             
             let pot = challenge.buyIn * Decimal(challenge.participants.count)
             let winnerID = challenge.proofSubmissionUserID ?? currentUser.id
-
+            
             if winnerID == currentUser.id {
-                 let profit = pot - challenge.buyIn
-                 currentUser = User(
-                     id: currentUser.id,
-                     name: currentUser.name,
-                     avatar: currentUser.avatar,
-                     reputationScore: currentUser.reputationScore + 10,
-                     currentEquity: currentUser.currentEquity + profit,
-                     challengesWon: currentUser.challengesWon + 1,
-                     challengesLost: currentUser.challengesLost,
-                     lastWinTimestamp: Date(),
-                     votingHistory: currentUser.votingHistory,
-                     consecutiveMissedVotes: currentUser.consecutiveMissedVotes,
-                     status: currentUser.status
-                 )
-                 
-                 let winTransaction = Transaction(
-                     id: UUID(),
-                     description: "Vitoria: \(challenge.title)",
-                     amount: profit,
-                     type: .win,
-                     timestamp: Date()
-                 )
-                 transactions.insert(winTransaction, at: 0)
+                let profit = pot - challenge.buyIn
+                currentUser = User(
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    avatar: currentUser.avatar,
+                    reputationScore: currentUser.reputationScore + 10,
+                    currentEquity: currentUser.currentEquity + profit,
+                    challengesWon: currentUser.challengesWon + 1,
+                    challengesLost: currentUser.challengesLost,
+                    lastWinTimestamp: Date(),
+                    votingHistory: currentUser.votingHistory,
+                    consecutiveMissedVotes: currentUser.consecutiveMissedVotes,
+                    status: currentUser.status
+                )
+                
+                let winTransaction = Transaction(
+                    id: UUID(),
+                    description: "Vitoria: \(challenge.title)",
+                    amount: profit,
+                    type: .win,
+                    timestamp: Date(),
+                    relatedChallengeID: challenge.id,
+                    splitDetails: nil
+                )
+                transactions.insert(winTransaction, at: 0)
             } else if challenge.participants.contains(currentUser.id) {
                 currentUser = User(
                     id: currentUser.id,
@@ -337,7 +339,9 @@ class MockDataService: ObservableObject {
                     description: "Derrota: \(challenge.title)",
                     amount: challenge.buyIn,
                     type: .expense,
-                    timestamp: Date()
+                    timestamp: Date(),
+                    relatedChallengeID: challenge.id,
+                    splitDetails: nil
                 )
                 transactions.insert(lossTransaction, at: 0)
             }
@@ -345,27 +349,29 @@ class MockDataService: ObservableObject {
             challenge.status = .failed
             
             if challenge.participants.contains(currentUser.id) {
-               
+                
             }
             
-             let refundTransaction = Transaction(
-                 id: UUID(),
-                 description: "Reembolso: \(challenge.title)",
-                 amount: 0,
-                 type: .win,
-                 timestamp: Date()
-             )
-             transactions.insert(refundTransaction, at: 0)
+            let refundTransaction = Transaction(
+                id: UUID(),
+                description: "Reembolso: \(challenge.title)",
+                amount: 0,
+                type: .win,
+                timestamp: Date(),
+                relatedChallengeID: challenge.id,
+                splitDetails: nil
+            )
+            transactions.insert(refundTransaction, at: 0)
         }
         
         challenges[index] = challenge
         objectWillChange.send()
     }
-
+    
     func completeChallenge(challengeID: UUID, winnerID: UUID?) {
-         resolveChallengeVoting(challengeID: challengeID)
+        resolveChallengeVoting(challengeID: challengeID)
     }
-
+    
     // MARK: - Withdrawal Auto-Approval Logic (Antifragile)
     
     func verifyExpiredWithdrawals() {
@@ -380,23 +386,18 @@ class MockDataService: ObservableObject {
     private func autoApproveWithdrawal(_ request: WithdrawalRequest) {
         guard let index = withdrawalRequests.firstIndex(where: { $0.id == request.id }) else { return }
         
-        // Count Contest votes
         let requestVotes = votes.filter { $0.targetID == request.id }
         let contestVotes = requestVotes.filter { $0.type == .contest }.count
         let totalMembers = currentGroup.members.count
         let requiredContestVotes = (totalMembers / 2) + 1
         
-        // If Contests are NOT a majority, Auto-Approve
         if contestVotes < requiredContestVotes {
-            // 1. Update Status
             var updatedRequest = request
             updatedRequest.status = .approved
             withdrawalRequests[index] = updatedRequest
             
-            // 0. Update Voting Participation
             updateVotingParticipation(for: request.id)
             
-            // 2. Deduct from Pool
             let newPool = currentGroup.totalPool - request.amount
             currentGroup = Group(
                 id: currentGroup.id,
@@ -405,7 +406,6 @@ class MockDataService: ObservableObject {
                 members: currentGroup.members
             )
             
-            // 3. Deduct from User Equity
             if let userIndex = currentGroup.members.firstIndex(where: { $0.id == request.initiatorID }) {
                 var member = currentGroup.members[userIndex]
                 member = User(
@@ -422,7 +422,6 @@ class MockDataService: ObservableObject {
                     status: member.status
                 )
                 
-                // Update in members list
                 var newMembers = currentGroup.members
                 newMembers[userIndex] = member
                 
@@ -433,30 +432,29 @@ class MockDataService: ObservableObject {
                     members: newMembers
                 )
                 
-                // Update currentUser if it's them
                 if member.id == currentUser.id {
                     currentUser = member
                 }
             }
             
-            // 4. Create Transaction
             let transaction = Transaction(
                 id: UUID(),
                 description: "Withdrawal Approved (Auto)",
                 amount: request.amount,
                 type: .withdrawal,
-                timestamp: Date()
+                timestamp: Date(),
+                relatedChallengeID: nil,
+                splitDetails: nil
             )
             transactions.insert(transaction, at: 0)
             
             print("Auto-approved withdrawal \(request.id)")
             objectWillChange.send()
         } else {
-            // Majority contested -> Reject
-             var updatedRequest = request
-             updatedRequest.status = .rejected
-             withdrawalRequests[index] = updatedRequest
-             objectWillChange.send()
+            var updatedRequest = request
+            updatedRequest.status = .rejected
+            withdrawalRequests[index] = updatedRequest
+            objectWillChange.send()
         }
     }
 }

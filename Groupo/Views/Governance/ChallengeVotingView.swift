@@ -1,14 +1,10 @@
 import SwiftUI
-import PhotosUI
 
 struct ChallengeVotingView: View {
     let challenge: Challenge
     @StateObject private var viewModel = GovernanceViewModel()
     @EnvironmentObject var mockDataService: MockDataService
     
-    @State private var selectedItem: PhotosPickerItem?
-    @State private var selectedImage: Image?
-    @State private var proofImageString: String?
     @State private var hasUserVoted = false
     
     private var currentChallenge: Challenge {
@@ -23,21 +19,21 @@ struct ChallengeVotingView: View {
         currentChallenge.participants.first == mockDataService.currentUser.id
     }
     
-    private var hasProofBeenSubmitted: Bool {
-        if let proof = currentChallenge.proofImage {
-            return !proof.isEmpty
-        }
-        return false
-    }
-    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                headerSection
+                // Shared Detail View
+                ChallengeDetailView(challenge: currentChallenge)
                 
                 Divider()
-                statusContent
-                footerSection
+                
+                // Interactive functionality based on status
+                statusActions
+                
+                if currentChallenge.status != .complete && currentChallenge.status != .failed {
+                     footerSection
+                }
+               
                 Spacer()
             }
             .padding()
@@ -46,36 +42,21 @@ struct ChallengeVotingView: View {
         .onAppear {
             viewModel.setService(mockDataService)
         }
-        .onChange(of: selectedItem) { _, newItem in
-            processPhotoSelection(newItem)
-        }
     }
 }
 
 // MARK: - Subviews
 private extension ChallengeVotingView {
-    var headerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(currentChallenge.title)
-                .font(.title)
-                .bold()
-                .padding(.top)
-            
-            Text(currentChallenge.description)
-                .font(.body)
-                .foregroundColor(.secondary)
-        }
-    }
     
     @ViewBuilder
-    var statusContent: some View {
+    var statusActions: some View {
         switch currentChallenge.status {
         case .active:
-            activePhaseView
+            activePhaseActions
         case .voting:
-            votingPhaseView
+            votingPhaseActions
         case .complete:
-            completedPhaseView
+            EmptyView()
         case .failed:
             EmptyView()
         }
@@ -93,86 +74,13 @@ private extension ChallengeVotingView {
     }
 }
 
-// MARK: - Active Phase Views
+// MARK: - Active Phase Actions
 private extension ChallengeVotingView {
     @ViewBuilder
-    var activePhaseView: some View {
+    var activePhaseActions: some View {
         VStack(spacing: 16) {
-            if isParticipant {
-                participantUploadView
-            } else {
+            if !isParticipant {
                 joinChallengeView
-            }
-        }
-    }
-    
-    var participantUploadView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Submit Your Proof")
-                .font(.headline)
-            
-            if let selectedImage {
-                imagePreviewView(image: selectedImage)
-            } else {
-                imagePickerView
-            }
-        }
-    }
-    
-    func imagePreviewView(image: Image) -> some View {
-        VStack(spacing: 16) {
-            image
-                .resizable()
-                .scaledToFit()
-                .frame(height: 250)
-                .cornerRadius(12)
-                .shadow(radius: 4)
-            
-            HStack(spacing: 12) {
-                Button(action: submitProof) {
-                    Text("Submit & Start Voting")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                
-                Button(action: clearSelection) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.largeTitle)
-                        .foregroundColor(.gray)
-                }
-            }
-        }
-    }
-    
-    var imagePickerView: some View {
-        VStack(spacing: 16) {
-            PhotosPicker(selection: $selectedItem, matching: .images) {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.secondary.opacity(0.1))
-                    .frame(height: 200)
-                    .overlay(
-                        VStack {
-                            Image(systemName: "camera")
-                                .font(.largeTitle)
-                                .foregroundColor(.blue)
-                            Text("Tap to Upload Proof")
-                                .foregroundColor(.blue)
-                        }
-                    )
-            }
-            
-            Button(action: submitProofWithoutImage) {
-                Text("Start Voting Without Proof")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.secondary.opacity(0.15))
-                    .foregroundColor(.primary)
-                    .cornerRadius(12)
             }
         }
     }
@@ -185,12 +93,12 @@ private extension ChallengeVotingView {
             
             Button(action: joinChallenge) {
                 Text("Join Challenge")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(12)
             }
             
             Text("Buy-in: \(currentChallenge.buyIn.formatted(.currency(code: "BRL")))")
@@ -200,10 +108,10 @@ private extension ChallengeVotingView {
     }
 }
 
-// MARK: - Voting Phase Views
+// MARK: - Voting Phase Actions
 private extension ChallengeVotingView {
     @ViewBuilder
-    var votingPhaseView: some View {
+    var votingPhaseActions: some View {
         VStack(spacing: 24) {
             if isParticipant {
                 if hasUserVoted {
@@ -222,36 +130,9 @@ private extension ChallengeVotingView {
     
     @ViewBuilder
     var votingControlsView: some View {
-        if hasProofBeenSubmitted {
-            proofDisplayView
-        } else {
-            Text("No proof was submitted for this challenge.")
-                .italic()
-                .foregroundColor(.secondary)
-                .padding(.vertical)
-        }
-        
-        Divider()
+        // Proof is already displayed in ChallengeDetailView
         
         votingButtons
-    }
-    
-    var proofDisplayView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Submitted Proof")
-                .font(.headline)
-            
-            if let proof = currentChallenge.proofImage,
-               let data = Data(base64Encoded: proof),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 350)
-                    .cornerRadius(12)
-                    .shadow(radius: 2)
-            }
-        }
     }
     
     var voteConfirmationView: some View {
@@ -309,74 +190,17 @@ private extension ChallengeVotingView {
             if isCreator {
                 Button(action: simulateResolution) {
                     Text("Simulate Resolution (Demo)")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .padding(.top)
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .padding(.top)
                 }
             }
-        }
-    }
-}
-
-// MARK: - Completed Phase Views
-private extension ChallengeVotingView {
-    var completedPhaseView: some View {
-        VStack(spacing: 16) {
-            if hasProofBeenSubmitted {
-                proofDisplayView
-            }
-            
-            VStack(spacing: 12) {
-                Image(systemName: "flag.checkered")
-                    .font(.largeTitle)
-                    .foregroundColor(.blue)
-                
-                Text("Challenge Complete")
-                    .font(.title2)
-                    .bold()
-                
-                Text("Results will be displayed here")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.vertical, 20)
         }
     }
 }
 
 // MARK: - Helper Methods
 private extension ChallengeVotingView {
-    func processPhotoSelection(_ newItem: PhotosPickerItem?) {
-        Task {
-            if let data = try? await newItem?.loadTransferable(type: Data.self),
-               let uiImage = UIImage(data: data) {
-                await MainActor.run {
-                    self.selectedImage = Image(uiImage: uiImage)
-                    self.proofImageString = data.base64EncodedString()
-                }
-            }
-        }
-    }
-    
-    func clearSelection() {
-        withAnimation {
-            selectedItem = nil
-            selectedImage = nil
-            proofImageString = nil
-        }
-    }
-    
-    func submitProof() {
-        viewModel.submitProof(challenge: currentChallenge, image: proofImageString)
-        HapticManager.impact(style: .heavy)
-        clearSelection()
-    }
-    
-    func submitProofWithoutImage() {
-        viewModel.submitProof(challenge: currentChallenge, image: nil)
-        HapticManager.impact(style: .medium)
-    }
-    
     func joinChallenge() {
         viewModel.joinChallenge(challenge: currentChallenge)
         HapticManager.impact(style: .medium)

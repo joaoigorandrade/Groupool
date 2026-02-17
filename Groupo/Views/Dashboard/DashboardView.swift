@@ -74,22 +74,25 @@ struct DashboardView: View {
         let activeCount = mockDataService.currentGroup.members.filter { $0.status == .active }.count
         let totalCount = mockDataService.currentGroup.members.count
         
-        return HStack {
-            memberStackPreview
-            Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
-                Label("\(activeCount)", systemImage: "checkmark.circle.fill")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color("AvailableGreen"))
-                
-                if totalCount > activeCount {
-                    Label("\(totalCount - activeCount) Paused", systemImage: "pause.circle.fill")
+        return NavigationLink(destination: MemberListView(mockDataService: mockDataService)) {
+            HStack {
+                memberStackPreview
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Label("\(activeCount)", systemImage: "checkmark.circle.fill")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color("AvailableGreen"))
+                    
+                    if totalCount > activeCount {
+                        Label("\(totalCount - activeCount) Paused", systemImage: "pause.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
+        .buttonStyle(.plain)
     }
     
     private var memberStackPreview: some View {

@@ -6,6 +6,9 @@ struct Transaction: Identifiable, Codable, Hashable {
     let amount: Decimal
     let type: TransactionType
     let timestamp: Date
+    let relatedChallengeID: UUID?
+    let splitDetails: [String: Decimal]?
+
 
     enum TransactionType: String, Codable {
         case expense

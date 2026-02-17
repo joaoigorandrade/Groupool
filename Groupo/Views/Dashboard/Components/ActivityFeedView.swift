@@ -13,9 +13,9 @@ struct ActivityFeedView: View {
             
             if mockDataService.transactions.isEmpty {
                 ContentUnavailableView(
-                    "No Activity Yet",
-                    systemImage: "tray",
-                    description: Text("Transactions will appear here")
+                    "No Recent Activity",
+                    systemImage: "clock",
+                    description: Text("Your latest transactions will show up here")
                 )
                 .frame(height: 150)
             } else {
