@@ -95,7 +95,7 @@ struct InputField: View {
         } else if let text = text {
             TextField(placeholder, text: text, axis: axis)
                 .keyboardType(keyboardType)
-                .onChange(of: text.wrappedValue) { newValue in
+                .onChange(of: text.wrappedValue) { _, newValue in
                     if let limit = characterLimit, newValue.count > limit {
                         text.wrappedValue = String(newValue.prefix(limit))
                     }

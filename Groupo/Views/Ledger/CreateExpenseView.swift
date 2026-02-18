@@ -52,7 +52,7 @@ struct CreateExpenseView: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .onChange(of: viewModel.selectedSplit) { newValue in
+                    .onChange(of: viewModel.selectedSplit) { _, newValue in
                         if newValue == .custom {
                             viewModel.initializeSplits(members: dataService.currentGroup.members)
                         }
@@ -84,8 +84,6 @@ struct CreateExpenseView: View {
                 }
             }
             
-            Spacer()
-            
             PrimaryButton(
                 title: "Create Expense",
                 icon: "checkmark.circle.fill",
@@ -97,10 +95,8 @@ struct CreateExpenseView: View {
                      presentationMode.wrappedValue.dismiss()
                  }
             }
-            .padding(.bottom)
         }
         .padding()
-        .background(Color.appPrimaryBackground.edgesIgnoringSafeArea(.all))
         .sheet(isPresented: $showCustomSplitSheet) {
             CustomSplitView(viewModel: viewModel, members: dataService.currentGroup.members)
         }

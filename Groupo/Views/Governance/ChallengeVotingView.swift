@@ -2,8 +2,13 @@ import SwiftUI
 
 struct ChallengeVotingView: View {
     let challenge: Challenge
-    @StateObject private var viewModel = GovernanceViewModel()
+    @StateObject private var viewModel: GovernanceViewModel
     @EnvironmentObject var mockDataService: MockDataService
+    
+    init(challenge: Challenge, service: MockDataService) {
+        self.challenge = challenge
+        _viewModel = StateObject(wrappedValue: GovernanceViewModel(mockDataService: service))
+    }
     
     @State private var hasUserVoted = false
     
@@ -53,7 +58,6 @@ struct ChallengeVotingView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            viewModel.setService(mockDataService)
             checkUserVoteStatus()
         }
     }
@@ -322,7 +326,7 @@ private extension ChallengeVotingView {
             deadline: Date().addingTimeInterval(3600),
             participants: [],
             status: .active
-        ))
+        ), service: MockDataService.preview)
         .environmentObject(MockDataService.preview)
     }
 }
@@ -337,7 +341,7 @@ private extension ChallengeVotingView {
             deadline: Date().addingTimeInterval(3600),
             participants: [],
             status: .voting
-        ))
+        ), service: MockDataService.preview)
         .environmentObject(MockDataService.preview)
     }
 }
@@ -352,7 +356,7 @@ private extension ChallengeVotingView {
             deadline: Date().addingTimeInterval(-3600),
             participants: [],
             status: .complete
-        ))
+        ), service: MockDataService.preview)
         .environmentObject(MockDataService.preview)
     }
 }

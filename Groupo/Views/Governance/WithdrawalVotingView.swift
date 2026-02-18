@@ -2,8 +2,13 @@ import SwiftUI
 
 struct WithdrawalVotingView: View {
     let withdrawal: WithdrawalRequest
-    @StateObject private var viewModel = GovernanceViewModel()
+    @StateObject private var viewModel: GovernanceViewModel
     @EnvironmentObject var mockDataService: MockDataService
+    
+    init(withdrawal: WithdrawalRequest, service: MockDataService) {
+        self.withdrawal = withdrawal
+        _viewModel = StateObject(wrappedValue: GovernanceViewModel(mockDataService: service))
+    }
     @Environment(\.dismiss) var dismiss
     
     @State private var selectedVote: VoteOption? = nil
@@ -37,7 +42,7 @@ struct WithdrawalVotingView: View {
         .navigationTitle("Withdrawal Request")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            viewModel.setService(mockDataService)
+            // Service injected in init
         }
     }
     
@@ -72,7 +77,6 @@ struct WithdrawalVotingView: View {
             .background(Color.appSecondaryBackground)
             .cornerRadius(16)
             
-            // Auto-Approval Indicator
             HStack {
                 Image(systemName: "timer")
                     .foregroundStyle(.secondary)
@@ -100,111 +104,114 @@ struct WithdrawalVotingView: View {
             
             Divider()
             
-            
-            Text("Your Decision")
-                .font(.headline)
-            
-            HStack(spacing: 12) {
-                Button {
-                    withAnimation {
-                        selectedVote = .approve
-                        HapticManager.selection()
-                    }
-                } label: {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(selectedVote == .approve ? .green : .secondary.opacity(0.3))
-                        
-                        VStack(alignment: .leading) {
-                            Text("Approve")
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.primary)
-                            Text("Standard withdrawal")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .frame(height: 56)
-                        
-                        Spacer()
-                        if selectedVote == .approve {
-                            Image(systemName: "checkmark")
-                                .foregroundStyle(.green)
-                        }
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(selectedVote == .approve ? Color.successGreen : Color.secondary.opacity(0.2), lineWidth: 2)
-                            .background(selectedVote == .approve ? Color.successGreen.opacity(0.1) : Color.clear)
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.plain)
-                
-                Button {
-                    withAnimation {
-                        selectedVote = .contest
-                        HapticManager.selection()
-                    }
-                } label: {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.title2)
-                            .foregroundStyle(selectedVote == .contest ? .orange : .secondary.opacity(0.3))
-                        
-                        VStack(alignment: .leading) {
-                            Text("Contest")
-                                .font(.body)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.primary)
-                            Text("Flag suspicious activity")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .frame(height: 56)
-                        Spacer()
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(selectedVote == .contest ? Color.warningOrange : Color.secondary.opacity(0.2), lineWidth: 2)
-                            .background(selectedVote == .contest ? Color.warningOrange.opacity(0.1) : Color.clear)
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.plain)
-            }
-            
-            if selectedVote == .contest {
+            ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Reason for contesting")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    Text("Your Decision")
+                        .font(.headline)
                     
-                    Menu {
-                        ForEach(ContestReason.allCases) { reason in
-                            Button(reason.rawValue) {
-                                contestReason = reason
+                    HStack(spacing: 12) {
+                        Button {
+                            withAnimation {
+                                selectedVote = .approve
+                                HapticManager.selection()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(selectedVote == .approve ? .green : .secondary.opacity(0.3))
+                                
+                                VStack(alignment: .leading) {
+                                    Text("Approve")
+                                        .font(.body)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(.primary)
+                                    Text("Standard withdrawal")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(height: 56)
+                                
+                                Spacer()
+                                if selectedVote == .approve {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.green)
+                                }
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(selectedVote == .approve ? Color.successGreen : Color.secondary.opacity(0.2), lineWidth: 2)
+                                    .background(selectedVote == .approve ? Color.successGreen.opacity(0.1) : Color.clear)
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        
+                        Button {
+                            withAnimation {
+                                selectedVote = .contest
+                                HapticManager.selection()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(selectedVote == .contest ? .orange : .secondary.opacity(0.3))
+                                
+                                VStack(alignment: .leading) {
+                                    Text("Contest")
+                                        .font(.body)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(.primary)
+                                    Text("Flag suspicious activity")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(height: 56)
+                                Spacer()
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(selectedVote == .contest ? Color.warningOrange : Color.secondary.opacity(0.2), lineWidth: 2)
+                                    .background(selectedVote == .contest ? Color.warningOrange.opacity(0.1) : Color.clear)
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    if selectedVote == .contest {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Reason for contesting")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            Menu {
+                                ForEach(ContestReason.allCases) { reason in
+                                    Button(reason.rawValue) {
+                                        contestReason = reason
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(contestReason.rawValue)
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding()
+                                .background(Color.secondary.opacity(0.1))
+                                .cornerRadius(10)
                             }
                         }
-                    } label: {
-                        HStack {
-                            Text(contestReason.rawValue)
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            Image(systemName: "chevron.down")
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding()
-                        .background(Color.secondary.opacity(0.1))
-                        .cornerRadius(10)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
-                .transition(.move(edge: .top).combined(with: .opacity))
             }
-            
             Spacer()
             
             Button {
@@ -295,7 +302,7 @@ struct WithdrawalVotingView: View {
             status: .pending,
             createdDate: Date(),
             deadline: Date().addingTimeInterval(86400)
-        ))
-        .environmentObject(MockDataService())
+        ), service: MockDataService.preview)
+        .environmentObject(MockDataService.preview)
     }
 }

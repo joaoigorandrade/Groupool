@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @EnvironmentObject var mockDataService: MockDataService
     @StateObject private var coordinator = MainCoordinator()
     
     var body: some View {
@@ -34,7 +35,7 @@ struct MainTabView: View {
                     Label("New", systemImage: "plus.circle.fill")
                 }
             
-            GovernanceView()
+            GovernanceView(service: mockDataService)
                 .tag(MainTab.governance)
                 .tabItem {
                     Label("Governance", systemImage: "checkmark.shield")
@@ -49,11 +50,12 @@ struct MainTabView: View {
         .environmentObject(coordinator)
         .sheet(isPresented: $coordinator.isPresentingCreateSheet) {
             ActionMenuSheet()
-                .presentationDetents([.large])
+                .environmentObject(mockDataService)
         }
     }
 }
 
 #Preview {
     DashboardView()
+        .environmentObject(MockDataService.preview)
 }

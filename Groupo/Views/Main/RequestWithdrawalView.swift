@@ -11,7 +11,6 @@ struct RequestWithdrawalView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
                 VStack(spacing: 24) {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .top, spacing: 12) {
@@ -76,10 +75,6 @@ struct RequestWithdrawalView: View {
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                     
-                    Spacer()
-                    
-                    Spacer()
-                    
                     PrimaryButton(
                         title: "Request Withdrawal",
                         isLoading: viewModel.isLoading,
@@ -96,7 +91,6 @@ struct RequestWithdrawalView: View {
                     }
                 }
                 .padding()
-            }
             .navigationTitle("Request Withdrawal")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -110,10 +104,6 @@ struct RequestWithdrawalView: View {
 
 #Preview("With Cooldown") {
     let service = MockDataService.preview
-    // Simulate cooldown by setting last win timestamp
-    // You might need a way to inject this state more easily if not exposed
-    // For now, standard preview is fine, or we can assume MockDataService.preview has a user
-    // We can try to modify the user directly if access control allows, but let's stick to simple instantiation
     RequestWithdrawalView(dataService: service)
         .environmentObject(ToastManager())
 }

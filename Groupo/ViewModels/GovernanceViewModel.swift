@@ -28,15 +28,9 @@ class GovernanceViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var mockDataService: MockDataService
     
-    init(mockDataService: MockDataService = MockDataService()) {
+    init(mockDataService: MockDataService) {
         self.mockDataService = mockDataService
-        addSubscribers()
-        setupTimer()
-    }
-    
-    func setService(_ service: MockDataService) {
-        self.mockDataService = service
-        self.cancellables.removeAll()
+        print("GovernanceViewModel initialized with service")
         addSubscribers()
         setupTimer()
     }

@@ -3,7 +3,11 @@ import SwiftUI
 struct GovernanceView: View {
     @EnvironmentObject var mockDataService: MockDataService
     @EnvironmentObject var coordinator: MainCoordinator
-    @StateObject private var viewModel = GovernanceViewModel()
+    @StateObject private var viewModel: GovernanceViewModel
+    
+    init(service: MockDataService) {
+        _viewModel = StateObject(wrappedValue: GovernanceViewModel(mockDataService: service))
+    }
     
     var body: some View {
         NavigationStack {
@@ -22,11 +26,11 @@ struct GovernanceView: View {
                 } else {
                     ForEach(viewModel.activeItems) { item in
                         if case .challenge(let challenge) = item {
-                            NavigationLink(destination: ChallengeVotingView(challenge: challenge)) {
+                            NavigationLink(destination: ChallengeVotingView(challenge: challenge, service: mockDataService)) {
                                 GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                             }
                         } else if case .withdrawal(let request) = item {
-                             NavigationLink(destination: WithdrawalVotingView(withdrawal: request)) {
+                             NavigationLink(destination: WithdrawalVotingView(withdrawal: request, service: mockDataService)) {
                                 GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                             }
                         } else {
@@ -42,7 +46,7 @@ struct GovernanceView: View {
             }
             .navigationTitle("Governance")
             .onAppear {
-                viewModel.setService(mockDataService)
+                // Service is now injected via init
             }
         }
     }
@@ -117,17 +121,17 @@ struct GovernanceListRow: View {
 }
 
 #Preview("Populated") {
-    GovernanceView()
+    GovernanceView(service: MockDataService.preview)
         .environmentObject(MockDataService.preview)
 }
 
 #Preview("Empty") {
-    GovernanceView()
+    GovernanceView(service: MockDataService.empty)
         .environmentObject(MockDataService.empty)
 }
 
 #Preview("Dark Mode") {
-    GovernanceView()
+    GovernanceView(service: MockDataService.preview)
         .environmentObject(MockDataService.preview)
         .preferredColorScheme(.dark)
 }

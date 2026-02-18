@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @EnvironmentObject private var mockDataService: MockDataService
     @StateObject private var viewModel = ProfileViewModel()
     
     var body: some View {
@@ -94,6 +95,9 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profile")
+            .onAppear {
+                viewModel.setup(service: mockDataService)
+            }
         }
     }
 }

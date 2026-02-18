@@ -2,15 +2,33 @@ import SwiftUI
 import Combine
 
 class ProfileViewModel: ObservableObject {
-    @Published var user: User
-    private var dataService: MockDataService
+    @Published var user: User = User(
+        id: UUID(),
+        name: "Loading...",
+        avatar: "person.circle.fill",
+        reputationScore: 0,
+        currentEquity: 0,
+        challengesWon: 0,
+        challengesLost: 0,
+        lastWinTimestamp: nil,
+        votingHistory: [],
+        consecutiveMissedVotes: 0,
+        status: .active
+    )
+    private var dataService: MockDataService?
     private var cancellables = Set<AnyCancellable>()
     
-    init(dataService: MockDataService = MockDataService()) {
-        self.dataService = dataService
-        self.user = dataService.currentUser
+    init() {
         
-        // Subscribe to changes in the data service
+    }
+    
+    func setup(service: MockDataService) {
+        self.dataService = service
+        setupSubscribers()
+    }
+    
+    private func setupSubscribers() {
+        guard let dataService = dataService else { return }
         dataService.$currentUser
             .assign(to: \.user, on: self)
             .store(in: &cancellables)
