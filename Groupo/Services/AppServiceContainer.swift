@@ -16,6 +16,10 @@ final class AppServiceContainer: ObservableObject {
     let voteService: any VoteServiceProtocol
     let withdrawalService: any WithdrawalServiceProtocol
 
+    // MARK: - Private
+    
+    private let store: MockStore?
+
     // MARK: - Designated Init
 
     init(
@@ -24,7 +28,8 @@ final class AppServiceContainer: ObservableObject {
         challengeService: any ChallengeServiceProtocol,
         transactionService: any TransactionServiceProtocol,
         voteService: any VoteServiceProtocol,
-        withdrawalService: any WithdrawalServiceProtocol
+        withdrawalService: any WithdrawalServiceProtocol,
+        store: MockStore? = nil
     ) {
         self.userService = userService
         self.groupService = groupService
@@ -32,6 +37,13 @@ final class AppServiceContainer: ObservableObject {
         self.transactionService = transactionService
         self.voteService = voteService
         self.withdrawalService = withdrawalService
+        self.store = store
+    }
+    
+    // MARK: - Helper Methods
+    
+    func resetMockData() {
+        store?.reset()
     }
 }
 
@@ -48,7 +60,8 @@ extension AppServiceContainer {
             challengeService: MockChallengeService(store: store),
             transactionService: MockTransactionService(store: store),
             voteService: MockVoteService(store: store),
-            withdrawalService: MockWithdrawalService(store: store)
+            withdrawalService: MockWithdrawalService(store: store),
+            store: store
         )
     }
 
@@ -61,7 +74,8 @@ extension AppServiceContainer {
             challengeService: MockChallengeService(store: store),
             transactionService: MockTransactionService(store: store),
             voteService: MockVoteService(store: store),
-            withdrawalService: MockWithdrawalService(store: store)
+            withdrawalService: MockWithdrawalService(store: store),
+            store: store
         )
     }
 

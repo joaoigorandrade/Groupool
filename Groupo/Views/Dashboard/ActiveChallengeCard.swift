@@ -21,7 +21,7 @@ struct ActiveChallengeCard: View {
             }
         }
         .padding(20)
-        .background(Color("SecondaryBackground")) // Fallback if not defined, or use material
+        .background(Color("SecondaryBackground")
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay {
@@ -54,7 +54,7 @@ struct ActiveChallengeCard: View {
                     
                     Spacer()
                     
-                    Text("ENDS IN 2D") // Placeholder for now or calculated
+                    Text("ENDS IN 2D")
                         .font(.caption2)
                         .fontWeight(.bold)
                         .foregroundStyle(.secondary)
@@ -77,7 +77,6 @@ struct ActiveChallengeCard: View {
                 }
                 
                 HStack {
-                    // Quick status indicator
                      statusBadge(for: challenge)
                     
                     Spacer()

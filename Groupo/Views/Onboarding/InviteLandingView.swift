@@ -2,7 +2,10 @@
 import SwiftUI
 
 struct InviteLandingView: View {
+    @EnvironmentObject var container: AppServiceContainer
     @StateObject private var viewModel = InviteLandingViewModel()
+    
+    var onJoin: () -> Void
     
     var body: some View {
         NavigationView {
@@ -68,18 +71,28 @@ struct InviteLandingView: View {
                     
                     Spacer()
                     
-                    PrimaryButton(title: "Connect PIX & Deposit", icon: "arrow.right") {
-                        viewModel.connectAndDeposit()
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .padding()
+                            .padding(.bottom, 20)
+                    } else {
+                        PrimaryButton(title: "Connect PIX & Deposit", icon: "arrow.right") {
+                            viewModel.connectAndDeposit(onJoin: onJoin)
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 20)
                     }
-                    .padding(.horizontal)
-                    .padding(.bottom, 20)
                 }
             }
             .navigationBarHidden(true)
+            .onAppear {
+                viewModel.load(container: container)
+            }
         }
     }
 }
 
 #Preview {
-    InviteLandingView()
+    InviteLandingView(onJoin: {})
+        .environmentObject(AppServiceContainer.preview(seed: .pendingInvite))
 }

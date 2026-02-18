@@ -58,7 +58,10 @@ struct AppSettingsView: View {
                 }
                 
                 NavigationLink("Invite Landing (Preview)") {
-                    InviteLandingView()
+                    InviteLandingView(onJoin: {
+                        print("Joined!")
+                    })
+                    .environmentObject(AppServiceContainer.preview(seed: .pendingInvite))
                 }
             }
         }
@@ -66,7 +69,7 @@ struct AppSettingsView: View {
         .alert("Reset Data?", isPresented: $showingResetAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Reset", role: .destructive) {
-                // TODO: Implement reset via AppServiceContainer
+                services.resetMockData()
             }
         } message: {
             Text("This will delete all current data and restore the initial mock state. This action cannot be undone.")

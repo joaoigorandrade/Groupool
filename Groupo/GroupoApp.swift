@@ -11,17 +11,46 @@ import SwiftUI
 struct GroupoApp: App {
     @StateObject private var services = AppServiceContainer.mock()
     @StateObject private var toastManager = ToastManager()
+    @StateObject private var sessionManager = SessionManager()
 
     var body: some Scene {
         WindowGroup {
             ZStack {
-                MainTabView()
+                switch sessionManager.session {
+                case .unknown:
+                    // Splash screen or loading state while session is being restored
+                    Color.black.ignoresSafeArea()
+                    
+                case .unauthenticated:
+                    PhoneEntryView()
+                        .environmentObject(services)
+                        .environmentObject(toastManager)
+                        .environmentObject(sessionManager)
+                        .transition(.opacity)
+                    
+                case .authenticated:
+                    InviteLandingView(onJoin: {
+                        withAnimation {
+                            sessionManager.completeOnboarding()
+                        }
+                    })
                     .environmentObject(services)
                     .environmentObject(toastManager)
+                    .environmentObject(sessionManager)
+                    .transition(.opacity)
+                    
+                case .onboarded:
+                    MainTabView()
+                        .environmentObject(services)
+                        .environmentObject(toastManager)
+                        .environmentObject(sessionManager)
+                        .transition(.opacity)
+                }
 
                 ToastView()
                     .environmentObject(toastManager)
             }
+            .animation(.default, value: sessionManager.session)
         }
     }
 }

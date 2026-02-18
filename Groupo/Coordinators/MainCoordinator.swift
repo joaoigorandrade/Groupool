@@ -4,7 +4,7 @@ import Combine
 enum MainTab: Hashable {
     case dashboard
     case ledger
-    case create // The middle "button"
+    case create
     case governance
     case profile
 }
@@ -13,9 +13,7 @@ class MainCoordinator: Coordinator {
     @Published var selectedTab: MainTab = .dashboard
     @Published var isPresentingCreateSheet: Bool = false
     
-    func start() {
-        // Initial setup if needed
-    }
+    func start() { }
     
     func selectTab(_ tab: MainTab) {
         selectedTab = tab

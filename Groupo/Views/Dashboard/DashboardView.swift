@@ -4,8 +4,16 @@ struct DashboardView: View {
     @EnvironmentObject private var services: AppServiceContainer
     @StateObject private var viewModel: DashboardViewModel
 
-    init(groupService: any GroupServiceProtocol) {
-        _viewModel = StateObject(wrappedValue: DashboardViewModel(groupService: groupService))
+    init(
+        groupService: any GroupServiceProtocol,
+        userService: any UserServiceProtocol,
+        challengeService: any ChallengeServiceProtocol
+    ) {
+        _viewModel = StateObject(wrappedValue: DashboardViewModel(
+            groupService: groupService,
+            userService: userService,
+            challengeService: challengeService
+        ))
     }
     
     var body: some View {
@@ -55,9 +63,9 @@ struct DashboardView: View {
     
     private var personalStakeCard: some View {
         PersonalStakeCard(
-            available: 0, // TODO: Wire from UserService
-            frozen: 0,
-            total: 0
+            available: viewModel.availableStake,
+            frozen: viewModel.frozenStake,
+            total: viewModel.totalStake
         )
     }
 
@@ -168,21 +176,33 @@ struct DashboardView: View {
 
 #Preview("Populated") {
     let services = AppServiceContainer.preview()
-    DashboardView(groupService: services.groupService)
+    DashboardView(
+        groupService: services.groupService,
+        userService: services.userService,
+        challengeService: services.challengeService
+    )
         .environmentObject(services)
         .environmentObject(MainCoordinator())
 }
 
 #Preview("Empty") {
     let services = AppServiceContainer.preview()
-    DashboardView(groupService: services.groupService)
+    DashboardView(
+        groupService: services.groupService,
+        userService: services.userService,
+        challengeService: services.challengeService
+    )
         .environmentObject(services)
         .environmentObject(MainCoordinator())
 }
 
 #Preview("Dark Mode") {
     let services = AppServiceContainer.preview()
-    DashboardView(groupService: services.groupService)
+    DashboardView(
+        groupService: services.groupService,
+        userService: services.userService,
+        challengeService: services.challengeService
+    )
         .environmentObject(services)
         .environmentObject(MainCoordinator())
         .preferredColorScheme(.dark)

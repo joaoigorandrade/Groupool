@@ -177,4 +177,61 @@ extension MockSeed {
             withdrawalRequests: base.withdrawalRequests
         )
     }()
+    static let pendingInvite: MockSeed = {
+        let inviter = User(
+            id: UUID(),
+            name: "Alice Silva",
+            avatar: "person.circle",
+            reputationScore: 95,
+            currentEquity: 1000.00,
+            challengesWon: 10,
+            challengesLost: 2,
+            lastWinTimestamp: nil,
+            votingHistory: [],
+            consecutiveMissedVotes: 0,
+            status: .active
+        )
+        
+        let group = Group(
+            id: UUID(),
+            name: "Férias em Noronha 2024",
+            totalPool: 2000.00,
+            members: [inviter]
+        )
+        
+        let challenge = Challenge(
+            id: UUID(),
+            title: "Challenge",
+            description: "Description",
+            buyIn: 500.00,
+            createdDate: Date(),
+            deadline: Date(),
+            participants: [],
+            status: .active,
+            proofImage: nil,
+            proofSubmissionUserID: nil,
+            votingFailureReason: nil
+        )
+        
+        return MockSeed(
+            user: User(
+                id: UUID(),
+                name: "Pending User",
+                avatar: "person.circle",
+                reputationScore: 0,
+                currentEquity: 0,
+                challengesWon: 0,
+                challengesLost: 0,
+                lastWinTimestamp: nil,
+                votingHistory: [],
+                consecutiveMissedVotes: 0,
+                status: .active
+            ),
+            group: group,
+            challenges: [challenge],
+            transactions: [],
+            votes: [],
+            withdrawalRequests: []
+        )
+    }()
 }

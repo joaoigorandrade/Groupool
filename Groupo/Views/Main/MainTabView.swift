@@ -16,7 +16,11 @@ struct MainTabView: View {
         )
         
         TabView(selection: tabBinding) {
-            DashboardView(groupService: services.groupService)
+            DashboardView(
+                groupService: services.groupService,
+                userService: services.userService,
+                challengeService: services.challengeService
+            )
                 .tag(MainTab.dashboard)
                 .tabItem {
                     Label("Dashboard", systemImage: "square.grid.2x2")

@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @EnvironmentObject private var sessionManager: SessionManager
     @StateObject private var viewModel: ProfileViewModel
+    @State private var showLogoutConfirmation = false
     
     init(userService: any UserServiceProtocol) {
         _viewModel = StateObject(wrappedValue: ProfileViewModel(userService: userService))
@@ -91,13 +93,21 @@ struct ProfileView: View {
                 
                 Section {
                     Button(role: .destructive) {
-                        // Logout action (placeholder)
+                        showLogoutConfirmation = true
                     } label: {
                         Label("Log Out", systemImage: "arrow.right.square")
                     }
                 }
             }
             .navigationTitle("Profile")
+            .alert("Log Out", isPresented: $showLogoutConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Log Out", role: .destructive) {
+                    sessionManager.logout()
+                }
+            } message: {
+                Text("Are you sure you want to log out?")
+            }
         }
     }
 }
