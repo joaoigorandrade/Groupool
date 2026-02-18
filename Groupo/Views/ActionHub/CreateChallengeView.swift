@@ -22,15 +22,20 @@ struct CreateChallengeView: View {
                 remainingTime: viewModel.activeChallengeRemainingTime
             )
         } else {
-            CreateChallengeFormView(viewModel: viewModel) {
-                viewModel.createChallenge { success, errorMessage in
-                    if success {
-                        toastManager.show(style: .success, message: "Desafio criado com sucesso!")
-                        dismiss()
-                    } else if let errorMessage {
-                        toastManager.show(style: .error, message: errorMessage)
+            NavigationStack {
+                CreateChallengeStep1View(viewModel: viewModel)
+                    .navigationDestination(for: String.self) { _ in
+                        CreateChallengeStep2View(viewModel: viewModel) {
+                            viewModel.createChallenge { success, errorMessage in
+                                if success {
+                                    toastManager.show(style: .success, message: "Desafio criado com sucesso!")
+                                    dismiss()
+                                } else if let errorMessage {
+                                    toastManager.show(style: .error, message: errorMessage)
+                                }
+                            }
+                        }
                     }
-                }
             }
         }
     }
@@ -91,52 +96,85 @@ private struct ActiveChallengeView: View {
     }
 }
 
-// MARK: - Create Challenge Form
+// MARK: - Step 1: Details
 
-private struct CreateChallengeFormView: View {
+private struct CreateChallengeStep1View: View {
+    @ObservedObject var viewModel: CreateChallengeViewModel
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                ChallengeDetailsSection(viewModel: viewModel)
+                ChallengeDateSection(viewModel: viewModel)
+
+                NavigationLink(value: "step2") {
+                    Text("Próximo")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(viewModel.isStep1Valid ? Color.brandTeal : Color.gray.opacity(0.3))
+                        .foregroundColor(.white)
+                        .cornerRadius(14)
+                }
+                .disabled(!viewModel.isStep1Valid)
+            }
+            .padding()
+        }
+        .background(Color(uiColor: .systemBackground))
+        .navigationTitle("Detalhes")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Step 2: Stakes & Confirm
+
+private struct CreateChallengeStep2View: View {
     @ObservedObject var viewModel: CreateChallengeViewModel
     let onSubmit: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
-            // Cool-off Warning
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "hourglass")
-                    .foregroundStyle(.orange)
-                    .font(.title3)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Cooling-off Period")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
+        ScrollView {
+            VStack(spacing: 20) {
+                // Cool-off Warning
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "hourglass")
+                        .foregroundStyle(.orange)
+                        .font(.title3)
                     
-                    Text("By creating this, you are entering a cooling-off period of 48h for new challenges.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Cooling-off Period")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        
+                        Text("By creating this, you are entering a cooling-off period of 48h for new challenges.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
+
+                ChallengeBetsSection(viewModel: viewModel)
+
+                PrimaryButton(
+                    title: "Criar Desafio",
+                    isLoading: viewModel.isLoading,
+                    isDisabled: !viewModel.isValid || !viewModel.canCreateChallenge,
+                    action: onSubmit
+                )
             }
             .padding()
-            .background(Color.orange.opacity(0.1))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-            )
-            
-            ChallengeDetailsSection(viewModel: viewModel)
-            ChallengeBetsSection(viewModel: viewModel)
-            ChallengeDateSection(viewModel: viewModel)
-
-            PrimaryButton(
-                title: "Criar Desafio",
-                isLoading: viewModel.isLoading,
-                isDisabled: !viewModel.isValid || !viewModel.canCreateChallenge,
-                action: onSubmit
-            )
         }
-        .padding()
         .background(Color(uiColor: .systemBackground))
+        .navigationTitle("Apostas")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

@@ -90,17 +90,19 @@ class CreateChallengeViewModel: ObservableObject {
         return buyInAmount * memberCount
     }
     
-    var isValid: Bool {
-        // Trigger all validations to ensure state is correct before final check
-        // Although subscribers handle real-time, this is a safe check
+    var isStep1Valid: Bool {
         return titleError == nil &&
                descriptionError == nil &&
-               amountError == nil &&
                dateError == nil &&
                !title.isEmpty &&
                !description.isEmpty &&
-               buyInAmount > 0 &&
                deadline > Date()
+    }
+
+    var isValid: Bool {
+        return isStep1Valid &&
+               amountError == nil &&
+               buyInAmount > 0
     }
     
     var activeChallenge: Challenge? {

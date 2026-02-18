@@ -48,14 +48,8 @@ struct MainTabView: View {
         }
         .environmentObject(coordinator)
         .adaptiveSheet(isPresent: $coordinator.isPresentingCreateSheet) {
-            ViewThatFits {
-                ActionMenuSheet(destination: $coordinator.activeSheetDestination)
-                    .environmentObject(mockDataService)
-                ScrollView {
-                    ActionMenuSheet(destination: $coordinator.activeSheetDestination)
-                        .environmentObject(mockDataService)
-                }
-            }
+            ActionMenuSheet(destination: $coordinator.activeSheetDestination)
+                .environmentObject(mockDataService)
         }
         .onChange(of: coordinator.isPresentingCreateSheet) { _, isPresented in
             if !isPresented { coordinator.activeSheetDestination = .menu }
