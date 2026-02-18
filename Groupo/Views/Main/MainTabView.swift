@@ -3,8 +3,6 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject var mockDataService: MockDataService
     @StateObject private var coordinator = MainCoordinator()
-    @State private var sheetDestination: ActionMenuSheet.Destination = .menu
-    
     var body: some View {
         let tabBinding = Binding<MainTab>(
             get: { coordinator.selectedTab },
@@ -51,16 +49,16 @@ struct MainTabView: View {
         .environmentObject(coordinator)
         .adaptiveSheet(isPresent: $coordinator.isPresentingCreateSheet) {
             ViewThatFits {
-                ActionMenuSheet(destination: $sheetDestination)
+                ActionMenuSheet(destination: $coordinator.activeSheetDestination)
                     .environmentObject(mockDataService)
                 ScrollView {
-                    ActionMenuSheet(destination: $sheetDestination)
+                    ActionMenuSheet(destination: $coordinator.activeSheetDestination)
                         .environmentObject(mockDataService)
                 }
             }
         }
         .onChange(of: coordinator.isPresentingCreateSheet) { _, isPresented in
-            if !isPresented { sheetDestination = .menu }
+            if !isPresented { coordinator.activeSheetDestination = .menu }
         }
     }
 }

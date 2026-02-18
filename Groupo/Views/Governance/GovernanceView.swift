@@ -27,14 +27,14 @@ struct GovernanceView: View {
                     ForEach(viewModel.activeItems) { item in
                         if case .challenge(let challenge) = item {
                             NavigationLink(destination: ChallengeVotingView(challenge: challenge, service: mockDataService)) {
-                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
+                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), progress: viewModel.progress(for: item), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                             }
                         } else if case .withdrawal(let request) = item {
                              NavigationLink(destination: WithdrawalVotingView(withdrawal: request, service: mockDataService)) {
-                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
+                                GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), progress: viewModel.progress(for: item), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                             }
                         } else {
-                            GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
+                            GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), progress: viewModel.progress(for: item), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                         }
                     }
                 }
@@ -55,6 +55,7 @@ struct GovernanceView: View {
 struct GovernanceListRow: View {
     let item: GovernanceItem
     let time: String
+    let progress: Double
     var showVoteRequired: Bool = false
     
     var body: some View {
@@ -82,6 +83,10 @@ struct GovernanceListRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
+                
+                ProgressView(value: progress)
+                    .tint(progressColor)
+                    .scaleEffect(x: 1, y: 0.5, anchor: .center)
             }
             
             Spacer()
@@ -117,6 +122,12 @@ struct GovernanceListRow: View {
         case .challenge(let challenge): return challenge.title
         case .withdrawal: return "Withdrawal Request"
         }
+    }
+    
+    private var progressColor: Color {
+        if progress > 0.75 { return .red }
+        if progress > 0.5 { return .orange }
+        return .green
     }
 }
 

@@ -14,6 +14,7 @@ struct DashboardView: View {
                     VStack(spacing: 24) {
                         poolHeroCard
                         personalStakeCard
+                        activeChallengeCard
                         activitySection
                     }
                     .padding(.horizontal)
@@ -57,6 +58,10 @@ struct DashboardView: View {
             frozen: mockDataService.currentUserFrozenBalance,
             total: mockDataService.currentUser.currentEquity
         )
+    }
+
+    private var activeChallengeCard: some View {
+        ActiveChallengeCard()
     }
     
     private var poolValueDisplay: some View {
@@ -160,15 +165,18 @@ struct DashboardView: View {
 #Preview("Populated") {
     DashboardView()
         .environmentObject(MockDataService.preview)
+        .environmentObject(MainCoordinator())
 }
 
 #Preview("Empty") {
     DashboardView()
         .environmentObject(MockDataService.empty)
+        .environmentObject(MainCoordinator())
 }
 
 #Preview("Dark Mode") {
     DashboardView()
         .environmentObject(MockDataService.preview)
+        .environmentObject(MainCoordinator())
         .preferredColorScheme(.dark)
 }

@@ -55,8 +55,8 @@ struct ChallengeDetailContent: View {
             
             if let proof = challenge.proofImage, !proof.isEmpty {
                 proofSection(proof: proof)
-            } else if challenge.status == .active && isParticipant {
-                // Only show upload section if active, user is participant, and no proof yet
+            } else if challenge.status == .active && isParticipant && (challenge.validationMode ?? .proof) == .proof {
+                // Only show upload section if active, user is participant, no proof yet, AND mode is proof
                 uploadSection
             }
             
@@ -327,7 +327,8 @@ private extension ChallengeDetailContent {
             title: "Mock Challenge",
             description: "Description of the mock challenge.",
             buyIn: 50,
-            deadline: Date().addingTimeInterval(3600),
+            createdDate: Date(),
+            deadline: Date().addingTimeInterval(86400),
             participants: [],
             status: .active
         ))
@@ -342,6 +343,7 @@ private extension ChallengeDetailContent {
             title: "Completed Challenge",
             description: "Challenge finished.",
             buyIn: 50,
+            createdDate: Date().addingTimeInterval(-86400),
             deadline: Date().addingTimeInterval(-3600),
             participants: [],
             status: .complete
@@ -357,7 +359,8 @@ private extension ChallengeDetailContent {
             title: "Mock Challenge",
             description: "Description of the mock challenge.",
             buyIn: 50,
-            deadline: Date().addingTimeInterval(3600),
+            createdDate: Date(),
+            deadline: Date().addingTimeInterval(86400),
             participants: [],
             status: .active
         ))

@@ -30,7 +30,10 @@ struct MemberListView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(viewModel.filteredMembers) { member in
-                            MemberRow(member: member, viewModel: viewModel)
+                            NavigationLink(destination: MemberDetailView(member: member, viewModel: viewModel)) {
+                                MemberRow(member: member, viewModel: viewModel)
+                            }
+                            .buttonStyle(.plain)
                             Divider()
                                 .padding(.leading, 76) 
                         }

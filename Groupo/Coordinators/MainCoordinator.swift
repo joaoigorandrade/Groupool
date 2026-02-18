@@ -28,4 +28,11 @@ class MainCoordinator: Coordinator {
     func dismissSheet() {
         isPresentingCreateSheet = false
     }
+    
+    @Published var activeSheetDestination: ActionMenuSheet.Destination = .menu
+    
+    func presentSheet(_ destination: ActionMenuSheet.Destination) {
+        activeSheetDestination = destination
+        isPresentingCreateSheet = true
+    }
 }

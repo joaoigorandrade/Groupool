@@ -100,6 +100,10 @@ private extension ChallengeVotingView {
             if !isParticipant {
                 joinChallengeView
             }
+            
+            if isCreator && currentChallenge.validationMode == .votingOnly {
+                startVotingView
+            }
         }
     }
     
@@ -121,6 +125,24 @@ private extension ChallengeVotingView {
             Text("Buy-in: \(currentChallenge.buyIn.formatted(.currency(code: "BRL")))")
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+    
+    var startVotingView: some View {
+        VStack(spacing: 12) {
+            Text("Desafio aceita apenas votação. Inicie a votação quando estiver pronto.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
+            PrimaryButton(
+                title: "Iniciar Votação",
+                isLoading: viewModel.isLoading
+            ) {
+                Task {
+                    await viewModel.startVoting(challenge: currentChallenge)
+                }
+            }
         }
     }
 }
@@ -226,6 +248,14 @@ private extension ChallengeVotingView {
                 vote(.approval)
             }
             
+            PrimaryButton(
+                title: "Contest ✗",
+                backgroundColor: .red,
+                isLoading: viewModel.isLoading
+            ) {
+                vote(.contest)
+            }
+            
             Button(action: { vote(.abstain) }) {
                 Text("Abstain")
                     .font(.headline)
@@ -323,7 +353,8 @@ private extension ChallengeVotingView {
             title: "Mock Challenge",
             description: "Description of the mock challenge.",
             buyIn: 50,
-            deadline: Date().addingTimeInterval(3600),
+            createdDate: Date(),
+            deadline: Date().addingTimeInterval(86400),
             participants: [],
             status: .active
         ), service: MockDataService.preview)
@@ -338,7 +369,8 @@ private extension ChallengeVotingView {
             title: "Voting Challenge",
             description: "Voting in progress.",
             buyIn: 50,
-            deadline: Date().addingTimeInterval(3600),
+            createdDate: Date(),
+            deadline: Date().addingTimeInterval(86400),
             participants: [],
             status: .voting
         ), service: MockDataService.preview)
@@ -353,6 +385,7 @@ private extension ChallengeVotingView {
             title: "Completed Challenge",
             description: "Challenge finished.",
             buyIn: 50,
+            createdDate: Date().addingTimeInterval(-86400),
             deadline: Date().addingTimeInterval(-3600),
             participants: [],
             status: .complete

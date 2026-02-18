@@ -56,6 +56,10 @@ struct AppSettingsView: View {
                 } label: {
                     Text("Reset Mock Data")
                 }
+                
+                NavigationLink("Invite Landing (Preview)") {
+                    InviteLandingView()
+                }
             }
         }
         .navigationTitle("App Settings")

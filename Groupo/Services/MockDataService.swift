@@ -254,7 +254,7 @@ class MockDataService: ObservableObject {
         return challenges.first { $0.status == .active || $0.status == .voting }
     }
     
-    func addChallenge(title: String, description: String, buyIn: Decimal, deadline: Date) {
+    func addChallenge(title: String, description: String, buyIn: Decimal, deadline: Date, validationMode: Challenge.ValidationMode = .proof) {
         if hasActiveChallenge {
             return
         }
@@ -264,18 +264,33 @@ class MockDataService: ObservableObject {
             return
         }
         
-        let newChallenge = Challenge(
+        var newChallenge = Challenge(
             id: UUID(),
             title: title,
             description: description,
             buyIn: buyIn,
+            createdDate: Date(),
             deadline: deadline,
             participants: [currentUser.id],
             status: .active
         )
+        newChallenge.validationMode = validationMode
         challenges.insert(newChallenge, at: 0)
         
         saveData()
+    }
+    
+    func startVoting(challengeID: UUID) {
+        guard let index = challenges.firstIndex(where: { $0.id == challengeID }) else { return }
+        var challenge = challenges[index]
+        
+        guard challenge.status == .active else { return }
+        
+        challenge.status = .voting
+        
+        challenges[index] = challenge
+        saveData()
+        objectWillChange.send()
     }
     
     var currentUserFrozenBalance: Decimal {
@@ -435,24 +450,22 @@ class MockDataService: ObservableObject {
     
     private func refundChallenge(_ challenge: Challenge) {
         if challenge.participants.contains(currentUser.id) {
-            // Refund logic: User gets buy-in back (essentially just visual if we didn't deduct, but we assume deduction logic exists or is implied)
-            // In this mock, we calculate available balance dynamically, so removing the challenge from 'active' status effectively 'refunds' the frozen amount.
-            // We can log a transaction for clarity.
+            // Refund logic: User gets buy-in back (visual representation of unfreezing funds)
         }
         
-        let refundTransaction = Transaction(
-            id: UUID(),
-            description: "Reembolso: \(challenge.title)",
-            amount: 0, // 0 because funds were frozen, not spent? Or show buyIn amount? Let's show 0 indicating 'Unfrozen' or actual amount if we were deducting.
-            // Current model uses 'currentUserFrozenBalance' calculated from active challenges.
-            // By setting status to .failed, it's no longer 'active', so funds unfreeze automatically.
-            // We'll log 0 just as a record.
-            type: .win, // Using win type to show green/positive
-            timestamp: Date(),
-            relatedChallengeID: challenge.id,
-            splitDetails: nil
-        )
-        transactions.insert(refundTransaction, at: 0)
+        // Only create transaction if user was a participant
+        if challenge.participants.contains(currentUser.id) {
+            let refundTransaction = Transaction(
+                id: UUID(),
+                description: "Reembolso: \(challenge.title)",
+                amount: challenge.buyIn, 
+                type: .refund,
+                timestamp: Date(),
+                relatedChallengeID: challenge.id,
+                splitDetails: nil
+            )
+            transactions.insert(refundTransaction, at: 0)
+        }
     }
     
     private func updateUserStats(win: Bool, profit: Decimal, buyIn: Decimal = 0) {

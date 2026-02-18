@@ -6,6 +6,7 @@ class CreateChallengeViewModel: ObservableObject {
     @Published var description: String = ""
     @Published var buyInAmount: Decimal = 0.0
     @Published var deadline: Date = Date()
+    @Published var validationMode: Challenge.ValidationMode = .proof
 
     
     @Published var titleError: String? = nil
@@ -148,7 +149,13 @@ class CreateChallengeViewModel: ObservableObject {
         Task {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             
-            dataService.addChallenge(title: title, description: description, buyIn: buyInAmount, deadline: deadline)
+            dataService.addChallenge(
+                title: title, 
+                description: description, 
+                buyIn: buyInAmount, 
+                deadline: deadline,
+                validationMode: validationMode
+            )
             HapticManager.notificationSuccess()
             
             isLoading = false

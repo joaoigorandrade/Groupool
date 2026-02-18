@@ -99,6 +99,31 @@ private struct CreateChallengeFormView: View {
 
     var body: some View {
         VStack(spacing: 20) {
+            // Cool-off Warning
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "hourglass")
+                    .foregroundStyle(.orange)
+                    .font(.title3)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Cooling-off Period")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    
+                    Text("By creating this, you are entering a cooling-off period of 48h for new challenges.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding()
+            .background(Color.orange.opacity(0.1))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+            )
+            
             ChallengeDetailsSection(viewModel: viewModel)
             ChallengeBetsSection(viewModel: viewModel)
             ChallengeDateSection(viewModel: viewModel)
@@ -143,6 +168,19 @@ private struct ChallengeDetailsSection: View {
                 showCharacterCount: true
             )
             .lineLimit(3...6)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Modo de Validação")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 4)
+                
+                Picker("Modo de Validação", selection: $viewModel.validationMode) {
+                    Text("Comprovante + Votação").tag(Challenge.ValidationMode.proof)
+                    Text("Apenas Votação").tag(Challenge.ValidationMode.votingOnly)
+                }
+                .pickerStyle(.segmented)
+            }
         }
     }
 }
