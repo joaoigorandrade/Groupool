@@ -110,8 +110,12 @@ struct CustomSplitView: View {
 }
 
 #Preview {
+    let services = AppServiceContainer.preview()
     CustomSplitView(
-        viewModel: CreateExpenseViewModel(),
+        viewModel: CreateExpenseViewModel(
+            transactionService: services.transactionService,
+            groupService: services.groupService
+        ),
         members: []
     )
 }

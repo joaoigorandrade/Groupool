@@ -597,11 +597,8 @@ class MockDataService: ObservableObject {
 extension MockDataService {
     static var preview: MockDataService {
         let service = MockDataService()
-        // Ensure we have some default data
         if service.currentUser.name.isEmpty {
-             // Force initialization if empty (though init checks loadData)
-             // This is just to be safe for previews which might use a fresh instance
-            service.resetData() 
+            service.resetData()
         }
         return service
     }
@@ -619,9 +616,6 @@ extension MockDataService {
     
     static var loading: MockDataService {
         let service = MockDataService()
-        // You might have an isLoading property to toggle, 
-        // or just rely on views interpreting 'empty but loading' state if designed that way.
-        // For now, we return a standard service, but views might use this to toggle their own isRedacted state.
         return service
     }
 }

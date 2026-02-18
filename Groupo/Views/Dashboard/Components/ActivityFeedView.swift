@@ -1,8 +1,11 @@
 import SwiftUI
+import Combine
 
 struct ActivityFeedView: View {
-    @EnvironmentObject private var mockDataService: MockDataService
+    @EnvironmentObject private var services: AppServiceContainer
     @EnvironmentObject private var coordinator: MainCoordinator
+    
+    @State private var transactions: [Transaction] = []
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -11,7 +14,7 @@ struct ActivityFeedView: View {
                 .foregroundStyle(.secondary)
                 .padding(.leading, 4)
             
-            if mockDataService.transactions.isEmpty {
+            if transactions.isEmpty {
                 ContentUnavailableView(
                     "No Recent Activity",
                     systemImage: "clock",
@@ -20,7 +23,7 @@ struct ActivityFeedView: View {
                 .frame(height: 150)
             } else {
                 LazyVStack(spacing: 12) {
-                    ForEach(Array(mockDataService.transactions.prefix(3))) { transaction in
+                    ForEach(Array(transactions.prefix(3))) { transaction in
                         activityRow(for: transaction)
                             .onTapGesture {
                                 coordinator.selectTab(.ledger)
@@ -28,6 +31,9 @@ struct ActivityFeedView: View {
                     }
                 }
             }
+        }
+        .onReceive(services.transactionService.transactions.receive(on: DispatchQueue.main)) {
+            transactions = $0
         }
     }
     
@@ -74,12 +80,13 @@ struct ActivityFeedView: View {
 }
 
 #Preview {
+    let services = AppServiceContainer.preview()
     ZStack {
         Color("PrimaryBackground")
             .ignoresSafeArea()
         
         ActivityFeedView()
-            .environmentObject(MockDataService())
+            .environmentObject(services)
             .environmentObject(MainCoordinator())
             .padding()
     }

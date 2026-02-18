@@ -5,8 +5,14 @@ struct RequestWithdrawalView: View {
     @EnvironmentObject var toastManager: ToastManager
     @StateObject private var viewModel: RequestWithdrawalViewModel
     
-    init(dataService: MockDataService = MockDataService()) {
-        _viewModel = StateObject(wrappedValue: RequestWithdrawalViewModel(dataService: dataService))
+    init(
+        withdrawalService: any WithdrawalServiceProtocol,
+        userService: any UserServiceProtocol
+    ) {
+        _viewModel = StateObject(wrappedValue: RequestWithdrawalViewModel(
+            withdrawalService: withdrawalService,
+            userService: userService
+        ))
     }
     
     var body: some View {
@@ -69,7 +75,7 @@ struct RequestWithdrawalView: View {
                                 .frame(maxWidth: .infinity, alignment: .center)
                         }
                         
-                        Text("Available: \(viewModel.dataService.currentUserAvailableBalance.formatted(.currency(code: "BRL")))")
+                        Text("Available: \(viewModel.availableBalance.formatted(.currency(code: "BRL")))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -98,18 +104,29 @@ struct RequestWithdrawalView: View {
 }
 
 #Preview("Default") {
-    RequestWithdrawalView(dataService: MockDataService.preview)
-        .environmentObject(ToastManager())
+    let services = AppServiceContainer.preview()
+    RequestWithdrawalView(
+        withdrawalService: services.withdrawalService,
+        userService: services.userService
+    )
+    .environmentObject(ToastManager())
 }
 
 #Preview("With Cooldown") {
-    let service = MockDataService.preview
-    RequestWithdrawalView(dataService: service)
-        .environmentObject(ToastManager())
+    let services = AppServiceContainer.preview()
+    RequestWithdrawalView(
+        withdrawalService: services.withdrawalService,
+        userService: services.userService
+    )
+    .environmentObject(ToastManager())
 }
 
 #Preview("Dark Mode") {
-    RequestWithdrawalView(dataService: MockDataService.preview)
-        .environmentObject(ToastManager())
-        .preferredColorScheme(.dark)
+    let services = AppServiceContainer.preview()
+    RequestWithdrawalView(
+        withdrawalService: services.withdrawalService,
+        userService: services.userService
+    )
+    .environmentObject(ToastManager())
+    .preferredColorScheme(.dark)
 }

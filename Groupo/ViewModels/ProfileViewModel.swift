@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 class ProfileViewModel: ObservableObject {
     @Published var user: User = User(
@@ -15,31 +15,29 @@ class ProfileViewModel: ObservableObject {
         consecutiveMissedVotes: 0,
         status: .active
     )
-    private var dataService: MockDataService?
+    @Published var errorMessage: String?
+
+    private let userService: any UserServiceProtocol
     private var cancellables = Set<AnyCancellable>()
-    
-    init() {
-        
-    }
-    
-    func setup(service: MockDataService) {
-        self.dataService = service
+
+    init(userService: any UserServiceProtocol) {
+        self.userService = userService
         setupSubscribers()
     }
-    
+
     private func setupSubscribers() {
-        guard let dataService = dataService else { return }
-        dataService.$currentUser
+        userService.currentUser
+            .receive(on: DispatchQueue.main)
             .assign(to: \.user, on: self)
             .store(in: &cancellables)
     }
-    
+
     var reliabilityScore: Double {
         let totalChallenges = user.challengesWon + user.challengesLost
         guard totalChallenges > 0 else { return 0.0 }
         return Double(user.challengesWon) / Double(totalChallenges)
     }
-    
+
     var statusColor: Color {
         switch user.status {
         case .active:
@@ -50,7 +48,7 @@ class ProfileViewModel: ObservableObject {
             return .red
         }
     }
-    
+
     var statusText: String {
         switch user.status {
         case .active:

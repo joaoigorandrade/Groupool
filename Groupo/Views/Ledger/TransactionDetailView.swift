@@ -2,30 +2,17 @@ import SwiftUI
 
 struct TransactionDetailView: View {
     let transaction: Transaction
-    @EnvironmentObject var mockDataService: MockDataService
-    
-    private var relatedChallenge: Challenge? {
-        guard let challengeID = transaction.relatedChallengeID else { return nil }
-        return mockDataService.challenges.first(where: { $0.id == challengeID })
-    }
+    @EnvironmentObject var services: AppServiceContainer
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Header
                 headerSection
                 
                 Divider()
                 
-                // Info
                 infoSection
                 
-                // Related Challenge
-                if let challenge = relatedChallenge {
-                    challengeSection(challenge: challenge)
-                }
-                
-                // Split Details
                 if let splitDetails = transaction.splitDetails {
                     splitSection(details: splitDetails)
                 }
@@ -89,42 +76,6 @@ private extension TransactionDetailView {
         }
     }
     
-    func challengeSection(challenge: Challenge) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Desafio Relacionado")
-                .font(.headline)
-            
-            NavigationLink(destination: ChallengeDetailView(challenge: challenge)) {
-                HStack(spacing: 16) {
-                    Image(systemName: "trophy")
-                        .font(.title2)
-                        .foregroundColor(.orange)
-                        .frame(width: 40, height: 40)
-                        .background(Color.orange.opacity(0.1))
-                        .clipShape(Circle())
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(challenge.title)
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        Text(challenge.status.rawValue.capitalized)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
-                        .font(.caption)
-                }
-                .padding()
-                .background(Color.gray.opacity(0.05)) // Use a subtle background
-                .cornerRadius(12)
-            }
-        }
-    }
-    
     func splitSection(details: [String: Decimal]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Divisão")
@@ -155,6 +106,7 @@ private extension TransactionDetailView {
 }
 
 #Preview("Expense") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
         TransactionDetailView(transaction: Transaction(
             id: UUID(),
@@ -165,11 +117,12 @@ private extension TransactionDetailView {
             relatedChallengeID: nil,
             splitDetails: ["João Silva": 66.66, "Maria Oliveira": 66.67, "Carlos Pereira": 66.67]
         ))
-        .environmentObject(MockDataService.preview)
+        .environmentObject(services)
     }
 }
 
 #Preview("Win") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
         TransactionDetailView(transaction: Transaction(
             id: UUID(),
@@ -180,11 +133,12 @@ private extension TransactionDetailView {
             relatedChallengeID: nil,
             splitDetails: nil
         ))
-        .environmentObject(MockDataService.preview)
+        .environmentObject(services)
     }
 }
 
 #Preview("Withdrawal") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
         TransactionDetailView(transaction: Transaction(
             id: UUID(),
@@ -195,6 +149,6 @@ private extension TransactionDetailView {
             relatedChallengeID: nil,
             splitDetails: nil
         ))
-        .environmentObject(MockDataService.preview)
+        .environmentObject(services)
     }
 }

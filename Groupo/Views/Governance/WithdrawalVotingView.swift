@@ -3,11 +3,23 @@ import SwiftUI
 struct WithdrawalVotingView: View {
     let withdrawal: WithdrawalRequest
     @StateObject private var viewModel: GovernanceViewModel
-    @EnvironmentObject var mockDataService: MockDataService
     
-    init(withdrawal: WithdrawalRequest, service: MockDataService) {
+    init(
+        withdrawal: WithdrawalRequest,
+        challengeService: any ChallengeServiceProtocol,
+        voteService: any VoteServiceProtocol,
+        withdrawalService: any WithdrawalServiceProtocol,
+        userService: any UserServiceProtocol,
+        groupService: any GroupServiceProtocol
+    ) {
         self.withdrawal = withdrawal
-        _viewModel = StateObject(wrappedValue: GovernanceViewModel(mockDataService: service))
+        _viewModel = StateObject(wrappedValue: GovernanceViewModel(
+            challengeService: challengeService,
+            voteService: voteService,
+            withdrawalService: withdrawalService,
+            userService: userService,
+            groupService: groupService
+        ))
     }
     @Environment(\.dismiss) var dismiss
     
@@ -41,9 +53,6 @@ struct WithdrawalVotingView: View {
         .padding()
         .navigationTitle("Withdrawal Request")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            // Service injected in init
-        }
     }
     
     private var votingFormView: some View {
@@ -294,15 +303,23 @@ struct WithdrawalVotingView: View {
 }
 
 #Preview {
+    let services = AppServiceContainer.preview()
     NavigationStack {
-        WithdrawalVotingView(withdrawal: WithdrawalRequest(
-            id: UUID(),
-            initiatorID: UUID(),
-            amount: 500.00,
-            status: .pending,
-            createdDate: Date(),
-            deadline: Date().addingTimeInterval(86400)
-        ), service: MockDataService.preview)
-        .environmentObject(MockDataService.preview)
+        WithdrawalVotingView(
+            withdrawal: WithdrawalRequest(
+                id: UUID(),
+                initiatorID: UUID(),
+                amount: 500.00,
+                status: .pending,
+                createdDate: Date(),
+                deadline: Date().addingTimeInterval(86400)
+            ),
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
+        .environmentObject(services)
     }
 }

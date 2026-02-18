@@ -3,52 +3,44 @@ import SwiftUI
 struct ChallengeVotingView: View {
     let challenge: Challenge
     @StateObject private var viewModel: GovernanceViewModel
-    @EnvironmentObject var mockDataService: MockDataService
     
-    init(challenge: Challenge, service: MockDataService) {
+    init(
+        challenge: Challenge,
+        challengeService: any ChallengeServiceProtocol,
+        voteService: any VoteServiceProtocol,
+        withdrawalService: any WithdrawalServiceProtocol,
+        userService: any UserServiceProtocol,
+        groupService: any GroupServiceProtocol
+    ) {
         self.challenge = challenge
-        _viewModel = StateObject(wrappedValue: GovernanceViewModel(mockDataService: service))
+        _viewModel = StateObject(wrappedValue: GovernanceViewModel(
+            challengeService: challengeService,
+            voteService: voteService,
+            withdrawalService: withdrawalService,
+            userService: userService,
+            groupService: groupService
+        ))
     }
     
     @State private var hasUserVoted = false
     
-    private var currentChallenge: Challenge {
-        mockDataService.challenges.first(where: { $0.id == challenge.id }) ?? challenge
-    }
-    
     // Derived state for voting progress
     private var totalParticipants: Int {
-        currentChallenge.participants.count
-    }
-    
-    private var votesCast: Int {
-        mockDataService.votes.filter { $0.targetID == currentChallenge.id }.count
-    }
-    
-    private var myVote: Vote? {
-        mockDataService.votes.first(where: { $0.targetID == currentChallenge.id && $0.voterID == mockDataService.currentUser.id })
-    }
-    
-    private var isParticipant: Bool {
-        currentChallenge.participants.contains(mockDataService.currentUser.id)
-    }
-    
-    private var isCreator: Bool {
-        currentChallenge.participants.first == mockDataService.currentUser.id
+        challenge.participants.count
     }
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 // Shared Detail View
-                ChallengeDetailContent(challenge: currentChallenge)
+                ChallengeDetailContent(challenge: challenge)
                 
                 Divider()
                 
                 // Interactive functionality based on status
                 statusActions
                 
-                if currentChallenge.status != .complete && currentChallenge.status != .failed {
+                if challenge.status != .complete && challenge.status != .failed {
                      footerSection
                 }
                
@@ -68,7 +60,7 @@ private extension ChallengeVotingView {
     
     @ViewBuilder
     var statusActions: some View {
-        switch currentChallenge.status {
+        switch challenge.status {
         case .active:
             activePhaseActions
         case .voting:
@@ -97,11 +89,11 @@ private extension ChallengeVotingView {
     @ViewBuilder
     var activePhaseActions: some View {
         VStack(spacing: 16) {
-            if !isParticipant {
+            if !viewModel.isEligibleToVote(on: .challenge(challenge)) {
                 joinChallengeView
             }
             
-            if isCreator && currentChallenge.validationMode == .votingOnly {
+            if challenge.validationMode == .votingOnly {
                 startVotingView
             }
         }
@@ -118,11 +110,11 @@ private extension ChallengeVotingView {
                 isLoading: viewModel.isLoading
             ) {
                 Task {
-                    await viewModel.joinChallenge(challenge: currentChallenge)
+                    await viewModel.joinChallenge(challenge: challenge)
                 }
             }
             
-            Text("Buy-in: \(currentChallenge.buyIn.formatted(.currency(code: "BRL")))")
+            Text("Buy-in: \(challenge.buyIn.formatted(.currency(code: "BRL")))")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -140,7 +132,7 @@ private extension ChallengeVotingView {
                 isLoading: viewModel.isLoading
             ) {
                 Task {
-                    await viewModel.startVoting(challenge: currentChallenge)
+                    await viewModel.startVoting(challenge: challenge)
                 }
             }
         }
@@ -159,23 +151,15 @@ private extension ChallengeVotingView {
                     .foregroundColor(.secondary)
                 
                 HStack {
-                     Text("\(votesCast) of \(totalParticipants) voted")
+                     Text("\(totalParticipants) participants")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
-                    if totalParticipants > 0 {
-                          Text("\(Int((Double(votesCast) / Double(totalParticipants)) * 100))%")
-                            .font(.caption)
-                            .bold()
-                    }
                 }
-                
-                ProgressView(value: Double(votesCast), total: Double(totalParticipants))
-                    .tint(.blue)
             }
             .padding(.horizontal)
             
-            if isParticipant {
+            if viewModel.isEligibleToVote(on: .challenge(challenge)) {
                 if hasUserVoted {
                     voteConfirmationView
                         .transition(.scale.combined(with: .opacity))
@@ -202,7 +186,7 @@ private extension ChallengeVotingView {
             Image(systemName: "checkmark.circle.fill")
                 .resizable()
                 .frame(width: 60, height: 60)
-                .foregroundColor(myVote?.type == .approval ? .green : (myVote?.type == .contest ? .red : .gray))
+                .foregroundColor(.green)
             
             Text("Vote Cast")
                 .font(.title2)
@@ -223,16 +207,6 @@ private extension ChallengeVotingView {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
-        .overlay(alignment: .topTrailing) {
-             if let voteType = myVote?.type {
-                 Text(voteType == .approval ? "Voted Winner" : (voteType == .contest ? "Contested" : "Abstained"))
-                     .font(.caption)
-                     .fontWeight(.bold)
-                     .padding(6)
-                     .background(Color.secondary.opacity(0.1))
-                     .cornerRadius(6)
-             }
-        }
     }
     
     var votingButtons: some View {
@@ -267,15 +241,13 @@ private extension ChallengeVotingView {
             }
             .disabled(viewModel.isLoading)
             
-            if isCreator {
-                Button(action: simulateResolution) {
-                    Text("Simulate Resolution (Demo)")
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.top)
-                }
-                .disabled(viewModel.isLoading)
+            Button(action: simulateResolution) {
+                Text("Simulate Resolution (Demo)")
+                .font(.caption)
+                .foregroundColor(.red)
+                .padding(.top)
             }
+            .disabled(viewModel.isLoading)
         }
     }
 }
@@ -294,7 +266,7 @@ private extension ChallengeVotingView {
                 .font(.title2)
                 .bold()
             
-            if let reason = currentChallenge.votingFailureReason {
+            if let reason = challenge.votingFailureReason {
                 Text(reason)
                     .font(.body)
                     .multilineTextAlignment(.center)
@@ -315,15 +287,9 @@ private extension ChallengeVotingView {
 
 // MARK: - Helper Methods
 private extension ChallengeVotingView {
-    func joinChallenge() {
-        Task {
-            await viewModel.joinChallenge(challenge: currentChallenge)
-        }
-    }
-    
     func vote(_ type: Vote.VoteType) {
         Task {
-            await viewModel.castVote(challenge: currentChallenge, type: type)
+            await viewModel.castVote(challenge: challenge, type: type)
             HapticManager.notification(type: .success)
             withAnimation(.spring()) {
                 hasUserVoted = true
@@ -331,65 +297,85 @@ private extension ChallengeVotingView {
         }
     }
     
-    private func checkUserVoteStatus() {
-        if mockDataService.votes.first(where: { $0.targetID == currentChallenge.id && $0.voterID == mockDataService.currentUser.id }) != nil {
-            hasUserVoted = true
-        } else {
-            hasUserVoted = false
-        }
+    func checkUserVoteStatus() {
+        hasUserVoted = viewModel.hasVoted(on: .challenge(challenge))
     }
     
     func simulateResolution() {
         Task {
-            await viewModel.resolveChallenge(challenge: currentChallenge)
+            await viewModel.resolveChallenge(challenge: challenge)
         }
     }
 }
 
 #Preview("Active") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
-        ChallengeVotingView(challenge: Challenge(
-            id: UUID(),
-            title: "Mock Challenge",
-            description: "Description of the mock challenge.",
-            buyIn: 50,
-            createdDate: Date(),
-            deadline: Date().addingTimeInterval(86400),
-            participants: [],
-            status: .active
-        ), service: MockDataService.preview)
-        .environmentObject(MockDataService.preview)
+        ChallengeVotingView(
+            challenge: Challenge(
+                id: UUID(),
+                title: "Mock Challenge",
+                description: "Description of the mock challenge.",
+                buyIn: 50,
+                createdDate: Date(),
+                deadline: Date().addingTimeInterval(86400),
+                participants: [],
+                status: .active
+            ),
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
+        .environmentObject(services)
     }
 }
 
 #Preview("Voting") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
-        ChallengeVotingView(challenge: Challenge(
-            id: UUID(),
-            title: "Voting Challenge",
-            description: "Voting in progress.",
-            buyIn: 50,
-            createdDate: Date(),
-            deadline: Date().addingTimeInterval(86400),
-            participants: [],
-            status: .voting
-        ), service: MockDataService.preview)
-        .environmentObject(MockDataService.preview)
+        ChallengeVotingView(
+            challenge: Challenge(
+                id: UUID(),
+                title: "Voting Challenge",
+                description: "Voting in progress.",
+                buyIn: 50,
+                createdDate: Date(),
+                deadline: Date().addingTimeInterval(86400),
+                participants: [],
+                status: .voting
+            ),
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
+        .environmentObject(services)
     }
 }
 
 #Preview("Completed") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
-        ChallengeVotingView(challenge: Challenge(
-            id: UUID(),
-            title: "Completed Challenge",
-            description: "Challenge finished.",
-            buyIn: 50,
-            createdDate: Date().addingTimeInterval(-86400),
-            deadline: Date().addingTimeInterval(-3600),
-            participants: [],
-            status: .complete
-        ), service: MockDataService.preview)
-        .environmentObject(MockDataService.preview)
+        ChallengeVotingView(
+            challenge: Challenge(
+                id: UUID(),
+                title: "Completed Challenge",
+                description: "Challenge finished.",
+                buyIn: 50,
+                createdDate: Date().addingTimeInterval(-86400),
+                deadline: Date().addingTimeInterval(-3600),
+                participants: [],
+                status: .complete
+            ),
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
+        .environmentObject(services)
     }
 }

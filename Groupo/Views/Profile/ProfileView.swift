@@ -1,8 +1,11 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @EnvironmentObject private var mockDataService: MockDataService
-    @StateObject private var viewModel = ProfileViewModel()
+    @StateObject private var viewModel: ProfileViewModel
+    
+    init(userService: any UserServiceProtocol) {
+        _viewModel = StateObject(wrappedValue: ProfileViewModel(userService: userService))
+    }
     
     var body: some View {
         NavigationStack {
@@ -95,20 +98,19 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profile")
-            .onAppear {
-                viewModel.setup(service: mockDataService)
-            }
         }
     }
 }
 
 #Preview("Populated") {
-    ProfileView()
-        .environmentObject(MockDataService.preview)
+    let services = AppServiceContainer.preview()
+    ProfileView(userService: services.userService)
+        .environmentObject(services)
 }
 
 #Preview("Dark Mode") {
-    ProfileView()
-        .environmentObject(MockDataService.preview)
+    let services = AppServiceContainer.preview()
+    ProfileView(userService: services.userService)
+        .environmentObject(services)
         .preferredColorScheme(.dark)
 }

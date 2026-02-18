@@ -9,16 +9,16 @@ import SwiftUI
 
 @main
 struct GroupoApp: App {
-    @StateObject private var mockDataService = MockDataService()
+    @StateObject private var services = AppServiceContainer.mock()
     @StateObject private var toastManager = ToastManager()
 
     var body: some Scene {
         WindowGroup {
             ZStack {
                 MainTabView()
-                    .environmentObject(mockDataService)
+                    .environmentObject(services)
                     .environmentObject(toastManager)
-                
+
                 ToastView()
                     .environmentObject(toastManager)
             }

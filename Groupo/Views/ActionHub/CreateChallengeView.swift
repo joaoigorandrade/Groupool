@@ -5,8 +5,16 @@ struct CreateChallengeView: View {
     @EnvironmentObject var toastManager: ToastManager
     @StateObject private var viewModel: CreateChallengeViewModel
 
-    init(dataService: MockDataService) {
-        _viewModel = StateObject(wrappedValue: CreateChallengeViewModel(dataService: dataService))
+    init(
+        challengeService: any ChallengeServiceProtocol,
+        userService: any UserServiceProtocol,
+        groupService: any GroupServiceProtocol
+    ) {
+        _viewModel = StateObject(wrappedValue: CreateChallengeViewModel(
+            challengeService: challengeService,
+            userService: userService,
+            groupService: groupService
+        ))
     }
 
     var body: some View {
@@ -308,13 +316,21 @@ private struct SectionHeader: View {
 // MARK: - Previews
 
 #Preview("Default") {
-    CreateChallengeView(dataService: MockDataService.preview)
-        .environmentObject(ToastManager())
+    let services = AppServiceContainer.preview()
+    CreateChallengeView(
+        challengeService: services.challengeService,
+        userService: services.userService,
+        groupService: services.groupService
+    )
+    .environmentObject(ToastManager())
 }
 
 #Preview("Active Challenge") {
-    let service = MockDataService.preview
-    service.addChallenge(title: "Existing Challenge", description: "Test", buyIn: 10, deadline: Date().addingTimeInterval(3600))
-    return CreateChallengeView(dataService: service)
-        .environmentObject(ToastManager())
+    let services = AppServiceContainer.preview()
+    CreateChallengeView(
+        challengeService: services.challengeService,
+        userService: services.userService,
+        groupService: services.groupService
+    )
+    .environmentObject(ToastManager())
 }

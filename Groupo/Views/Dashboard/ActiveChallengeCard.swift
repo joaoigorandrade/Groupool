@@ -1,13 +1,20 @@
 
 import SwiftUI
+import Combine
 
 struct ActiveChallengeCard: View {
-    @EnvironmentObject var mockDataService: MockDataService
+    @EnvironmentObject var services: AppServiceContainer
     @EnvironmentObject var coordinator: MainCoordinator
+    
+    @State private var challenges: [Challenge] = []
+    
+    private var activeChallenge: Challenge? {
+        challenges.first { $0.status == .active || $0.status == .voting }
+    }
     
     var body: some View {
         SwiftUI.Group {
-            if let challenge = mockDataService.activeChallenge {
+            if let challenge = activeChallenge {
                 activeChallengeView(for: challenge)
             } else {
                 noActiveChallengeView
@@ -22,10 +29,20 @@ struct ActiveChallengeCard: View {
                 .stroke(.white.opacity(0.1), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+        .onReceive(services.challengeService.challenges.receive(on: DispatchQueue.main)) {
+            challenges = $0
+        }
     }
     
     private func activeChallengeView(for challenge: Challenge) -> some View {
-        NavigationLink(destination: ChallengeVotingView(challenge: challenge, service: mockDataService)) {
+        NavigationLink(destination: ChallengeVotingView(
+            challenge: challenge,
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Label("Active Challenge", systemImage: "flag.fill")
@@ -128,10 +145,11 @@ struct ActiveChallengeCard: View {
 }
 
 #Preview {
+    let services = AppServiceContainer.preview()
     ZStack {
         Color.black.ignoresSafeArea()
         ActiveChallengeCard()
-            .environmentObject(MockDataService.preview)
+            .environmentObject(services)
             .environmentObject(MainCoordinator())
             .padding()
     }

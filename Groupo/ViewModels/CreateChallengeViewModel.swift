@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 class CreateChallengeViewModel: ObservableObject {
     @Published var title: String = ""
@@ -8,45 +8,85 @@ class CreateChallengeViewModel: ObservableObject {
     @Published var deadline: Date = Date()
     @Published var validationMode: Challenge.ValidationMode = .proof
 
-    
     @Published var titleError: String? = nil
     @Published var descriptionError: String? = nil
     @Published var amountError: String? = nil
     @Published var dateError: String? = nil
-    
+
     @Published var isLoading: Bool = false
-    
-    private let dataService: MockDataService
+    @Published var errorMessage: String?
+
+    private let challengeService: any ChallengeServiceProtocol
+    private let userService: any UserServiceProtocol
+    private let groupService: any GroupServiceProtocol
     private var subscribers = Set<AnyCancellable>()
-    
-    init(dataService: MockDataService) {
-        self.dataService = dataService
+
+    private var currentUser: User?
+    private var currentGroup: Group?
+    private var latestChallenges: [Challenge] = []
+
+    init(
+        challengeService: any ChallengeServiceProtocol,
+        userService: any UserServiceProtocol,
+        groupService: any GroupServiceProtocol
+    ) {
+        self.challengeService = challengeService
+        self.userService = userService
+        self.groupService = groupService
         self.deadline = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+        setupSubscribers()
         setupValidation()
     }
-    
+
+    // MARK: - Subscribers
+
+    private func setupSubscribers() {
+        userService.currentUser
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] user in
+                self?.currentUser = user
+            }
+            .store(in: &subscribers)
+
+        groupService.currentGroup
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] group in
+                self?.currentGroup = group
+            }
+            .store(in: &subscribers)
+
+        challengeService.challenges
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] challenges in
+                self?.latestChallenges = challenges
+            }
+            .store(in: &subscribers)
+    }
+
+    // MARK: - Validation
+
     private func setupValidation() {
         $title
             .dropFirst()
             .sink { [weak self] _ in self?.validateTitle() }
             .store(in: &subscribers)
-        
+
         $description
             .dropFirst()
             .sink { [weak self] _ in self?.validateDescription() }
             .store(in: &subscribers)
-            
+
         $buyInAmount
             .dropFirst()
             .sink { [weak self] _ in self?.validateAmount() }
             .store(in: &subscribers)
-            
+
         $deadline
             .dropFirst()
             .sink { [weak self] _ in self?.validateDate() }
             .store(in: &subscribers)
     }
-    
+
     private func validateTitle() {
         if title.isEmpty {
             titleError = "O título é obrigatório."
@@ -56,7 +96,7 @@ class CreateChallengeViewModel: ObservableObject {
             titleError = nil
         }
     }
-    
+
     private func validateDescription() {
         if description.isEmpty {
             descriptionError = "A descrição é obrigatória."
@@ -66,7 +106,7 @@ class CreateChallengeViewModel: ObservableObject {
             descriptionError = nil
         }
     }
-    
+
     private func validateAmount() {
         if buyInAmount <= 0 {
             amountError = "O valor deve ser maior que zero."
@@ -76,7 +116,7 @@ class CreateChallengeViewModel: ObservableObject {
             amountError = nil
         }
     }
-    
+
     private func validateDate() {
         if deadline <= Date() {
             dateError = "A data deve ser futura."
@@ -84,12 +124,14 @@ class CreateChallengeViewModel: ObservableObject {
             dateError = nil
         }
     }
-    
+
+    // MARK: - Computed Properties
+
     var projectedPrizePool: Decimal {
-        let memberCount = Decimal(dataService.currentGroup.members.count)
+        let memberCount = Decimal(currentGroup?.members.count ?? 0)
         return buyInAmount * memberCount
     }
-    
+
     var isStep1Valid: Bool {
         return titleError == nil &&
                descriptionError == nil &&
@@ -104,11 +146,11 @@ class CreateChallengeViewModel: ObservableObject {
                amountError == nil &&
                buyInAmount > 0
     }
-    
+
     var activeChallenge: Challenge? {
-        return dataService.activeChallenge
+        return latestChallenges.first { $0.status == .active || $0.status == .voting }
     }
-    
+
     var activeChallengeRemainingTime: String {
         guard let challenge = activeChallenge else { return "" }
         let formatter = RelativeDateTimeFormatter()
@@ -117,51 +159,61 @@ class CreateChallengeViewModel: ObservableObject {
     }
 
     var canCreateChallenge: Bool {
-        return !dataService.hasActiveChallenge
+        return !challengeService.hasActiveChallenge
     }
-    
+
     var availableBalance: Decimal {
-        return dataService.currentUserAvailableBalance
+        guard let user = currentUser else { return 0 }
+        let frozenBalance = latestChallenges
+            .filter { ($0.status == .active || $0.status == .voting) && $0.participants.contains(user.id) }
+            .reduce(0) { $0 + $1.buyIn }
+        return user.currentEquity - frozenBalance
     }
-    
+
+    // MARK: - Actions
+
     @MainActor
     func createChallenge(completion: @escaping (Bool, String?) -> Void) {
-        if dataService.hasActiveChallenge {
+        if challengeService.hasActiveChallenge {
             completion(false, "Existe um desafio ativo. Aguarde o término para criar outro.")
             return
         }
-        
+
         validateTitle()
         validateDescription()
         validateAmount()
         validateDate()
-        
+
         guard isValid else {
             completion(false, "Verifique os erros no formulário.")
             return
         }
-        
+
         guard buyInAmount <= availableBalance else {
             completion(false, "Saldo insuficiente. Disponível: \(availableBalance.formatted(.currency(code: "BRL")))")
             return
         }
-        
+
         isLoading = true
-        
+
         Task {
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-            
-            dataService.addChallenge(
-                title: title, 
-                description: description, 
-                buyIn: buyInAmount, 
-                deadline: deadline,
-                validationMode: validationMode
-            )
-            HapticManager.notificationSuccess()
-            
-            isLoading = false
-            completion(true, nil)
+            do {
+                try await challengeService.addChallenge(
+                    title: title,
+                    description: description,
+                    buyIn: buyInAmount,
+                    deadline: deadline,
+                    validationMode: validationMode
+                )
+                HapticManager.notificationSuccess()
+                isLoading = false
+                completion(true, nil)
+            } catch {
+                isLoading = false
+                let message = error.localizedDescription
+                errorMessage = message
+                completion(false, message)
+            }
         }
     }
 }

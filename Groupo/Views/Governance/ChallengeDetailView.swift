@@ -3,7 +3,7 @@ import PhotosUI
 
 struct ChallengeDetailView: View {
     let challenge: Challenge
-    @EnvironmentObject var mockDataService: MockDataService
+    @EnvironmentObject var services: AppServiceContainer
     
     var body: some View {
         ScrollView {
@@ -17,28 +17,16 @@ struct ChallengeDetailView: View {
 
 struct ChallengeDetailContent: View {
     let challenge: Challenge
-    @EnvironmentObject var mockDataService: MockDataService
+    @EnvironmentObject var services: AppServiceContainer
     
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage? = nil
     @State private var isSubmitting = false
     
-    // Resolve participants from IDs
-    private var participants: [User] {
-        mockDataService.currentGroup.members.filter { challenge.participants.contains($0.id) }
-    }
-    
-    private var winner: User? {
-        guard challenge.status == .complete, let winnerID = challenge.proofSubmissionUserID else { return nil }
-        return mockDataService.currentGroup.members.first(where: { $0.id == winnerID })
-    }
-    
+    // TODO: Resolve participants and winner from GroupServiceProtocol publisher
+    // For now these are derived from the challenge data itself
     private var prizePool: Decimal {
         challenge.buyIn * Decimal(challenge.participants.count)
-    }
-    
-    private var isParticipant: Bool {
-        challenge.participants.contains(mockDataService.currentUser.id)
     }
     
     var body: some View {
@@ -49,14 +37,13 @@ struct ChallengeDetailContent: View {
             
             infoSection
             
-            if !participants.isEmpty {
+            if !challenge.participants.isEmpty {
                 participantsSection
             }
             
             if let proof = challenge.proofImage, !proof.isEmpty {
                 proofSection(proof: proof)
-            } else if challenge.status == .active && isParticipant && (challenge.validationMode ?? .proof) == .proof {
-                // Only show upload section if active, user is participant, no proof yet, AND mode is proof
+            } else if challenge.status == .active && (challenge.validationMode ?? .proof) == .proof {
                 uploadSection
             }
             
@@ -144,29 +131,12 @@ private extension ChallengeDetailContent {
     
     var participantsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Participants")
+            Text("Participants (\(challenge.participants.count))")
                 .font(.headline)
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(participants) { participant in
-                        VStack(spacing: 8) {
-                            Image(systemName: participant.avatar) // Using SF Symbol as avatar for now based on MockData
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 40, height: 40)
-                                .foregroundColor(.gray)
-                                .background(Color.gray.opacity(0.1))
-                                .clipShape(Circle())
-                            
-                            Text(participant.name.split(separator: " ").first ?? "")
-                                .font(.caption)
-                                .lineLimit(1)
-                        }
-                        .frame(width: 60)
-                    }
-                }
-            }
+            Text("Participant details will be shown when connected to live services.")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
     }
     
@@ -257,16 +227,9 @@ private extension ChallengeDetailContent {
                         .font(.headline)
                         .foregroundColor(.green)
                     
-                    if let winner = winner {
-                        Text(winner.name)
-                            .font(.title3)
-                            .bold()
-                        Text("Won \(prizePool.formatted(.currency(code: "BRL")))")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    } else {
-                        Text("Unknown")
-                    }
+                    Text("Won \(prizePool.formatted(.currency(code: "BRL")))")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
                 
                 Spacer()
@@ -306,21 +269,20 @@ private extension ChallengeDetailContent {
         guard let image = selectedImage else { return }
         isSubmitting = true
         
-        // Convert to base64
         guard let imageData = image.jpegData(compressionQuality: 0.5) else {
             isSubmitting = false
             return
         }
-        let base64String = imageData.base64EncodedString()
         
-        // Submit
-        mockDataService.submitProof(challengeID: challenge.id, image: base64String)
-        
-        isSubmitting = false
+        Task {
+            try? await services.challengeService.submitProof(challengeID: challenge.id, imageData: imageData)
+            isSubmitting = false
+        }
     }
 }
 
 #Preview("Active") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
         ChallengeDetailView(challenge: Challenge(
             id: UUID(),
@@ -332,11 +294,12 @@ private extension ChallengeDetailContent {
             participants: [],
             status: .active
         ))
-        .environmentObject(MockDataService.preview)
+        .environmentObject(services)
     }
 }
 
 #Preview("Completed") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
         ChallengeDetailView(challenge: Challenge(
             id: UUID(),
@@ -348,11 +311,12 @@ private extension ChallengeDetailContent {
             participants: [],
             status: .complete
         ))
-        .environmentObject(MockDataService.preview)
+        .environmentObject(services)
     }
 }
 
 #Preview("Dark Mode") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
         ChallengeDetailView(challenge: Challenge(
             id: UUID(),
@@ -364,8 +328,7 @@ private extension ChallengeDetailContent {
             participants: [],
             status: .active
         ))
-        .environmentObject(MockDataService.preview)
+        .environmentObject(services)
         .preferredColorScheme(.dark)
     }
 }
-

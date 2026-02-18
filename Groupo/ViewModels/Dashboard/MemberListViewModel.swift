@@ -1,25 +1,33 @@
-import Foundation
 import Combine
+import Foundation
 
 class MemberListViewModel: ObservableObject {
     @Published var members: [User] = []
     @Published var filteredMembers: [User] = []
     @Published var selectedStatus: UserStatusFilter = .all
     @Published var isLoading: Bool = true
-    
+    @Published var errorMessage: String?
+
     private var cancellables = Set<AnyCancellable>()
-    private let mockDataService: MockDataService
-    
+    private let groupService: any GroupServiceProtocol
+    private let challengeService: any ChallengeServiceProtocol
+
+    private var latestChallenges: [Challenge] = []
+
     enum UserStatusFilter: String, CaseIterable, Identifiable {
         case all = "All"
         case active = "Active"
         case inactive = "Inactive"
-        
+
         var id: String { self.rawValue }
     }
-    
-    init(mockDataService: MockDataService) {
-        self.mockDataService = mockDataService
+
+    init(
+        groupService: any GroupServiceProtocol,
+        challengeService: any ChallengeServiceProtocol
+    ) {
+        self.groupService = groupService
+        self.challengeService = challengeService
         // Simulate initial load
         Task {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -29,23 +37,31 @@ class MemberListViewModel: ObservableObject {
             }
         }
     }
-    
+
     private func addSubscribers() {
-        mockDataService.$currentGroup
+        groupService.currentGroup
+            .receive(on: DispatchQueue.main)
             .map { $0.members }
             .sink { [weak self] returnedMembers in
                 self?.members = returnedMembers
                 self?.filterMembers()
             }
             .store(in: &cancellables)
-            
+
+        challengeService.challenges
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] challenges in
+                self?.latestChallenges = challenges
+            }
+            .store(in: &cancellables)
+
         $selectedStatus
             .sink { [weak self] _ in
                 self?.filterMembers()
             }
             .store(in: &cancellables)
     }
-    
+
     private func filterMembers() {
         switch selectedStatus {
         case .all:
@@ -60,17 +76,17 @@ class MemberListViewModel: ObservableObject {
                 .sorted(by: { $0.currentEquity > $1.currentEquity })
         }
     }
-    
+
     func isFrozen(member: User) -> Bool {
-        let activeChallenges = mockDataService.challenges.filter {
+        let activeChallenges = latestChallenges.filter {
             ($0.status == .active || $0.status == .voting) &&
             $0.participants.contains(member.id)
         }
         return !activeChallenges.isEmpty
     }
-    
+
     func getFrozenAmount(for member: User) -> Decimal {
-         let activeChallenges = mockDataService.challenges.filter {
+        let activeChallenges = latestChallenges.filter {
             ($0.status == .active || $0.status == .voting) &&
             $0.participants.contains(member.id)
         }

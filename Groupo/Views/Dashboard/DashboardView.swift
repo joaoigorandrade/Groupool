@@ -1,8 +1,12 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @EnvironmentObject private var mockDataService: MockDataService
-    @StateObject private var viewModel = DashboardViewModel()
+    @EnvironmentObject private var services: AppServiceContainer
+    @StateObject private var viewModel: DashboardViewModel
+
+    init(groupService: any GroupServiceProtocol) {
+        _viewModel = StateObject(wrappedValue: DashboardViewModel(groupService: groupService))
+    }
     
     var body: some View {
         NavigationStack {
@@ -30,9 +34,6 @@ struct DashboardView: View {
             }
             .navigationTitle("Dashboard")
             .toolbarBackground(.visible, for: .navigationBar)
-            .onAppear {
-                viewModel.setup(service: mockDataService)
-            }
         }
     }
     
@@ -54,9 +55,9 @@ struct DashboardView: View {
     
     private var personalStakeCard: some View {
         PersonalStakeCard(
-            available: mockDataService.currentUserAvailableBalance,
-            frozen: mockDataService.currentUserFrozenBalance,
-            total: mockDataService.currentUser.currentEquity
+            available: 0, // TODO: Wire from UserService
+            frozen: 0,
+            total: 0
         )
     }
 
@@ -87,7 +88,10 @@ struct DashboardView: View {
         let activeCount = viewModel.members.filter { $0.status == .active }.count
         let totalCount = viewModel.members.count
         
-        return NavigationLink(destination: MemberListView(mockDataService: mockDataService)) {
+        return NavigationLink(destination: MemberListView(
+            groupService: services.groupService,
+            challengeService: services.challengeService
+        )) {
             HStack {
                 memberStackPreview
                 Spacer()
@@ -163,20 +167,23 @@ struct DashboardView: View {
 }
 
 #Preview("Populated") {
-    DashboardView()
-        .environmentObject(MockDataService.preview)
+    let services = AppServiceContainer.preview()
+    DashboardView(groupService: services.groupService)
+        .environmentObject(services)
         .environmentObject(MainCoordinator())
 }
 
 #Preview("Empty") {
-    DashboardView()
-        .environmentObject(MockDataService.empty)
+    let services = AppServiceContainer.preview()
+    DashboardView(groupService: services.groupService)
+        .environmentObject(services)
         .environmentObject(MainCoordinator())
 }
 
 #Preview("Dark Mode") {
-    DashboardView()
-        .environmentObject(MockDataService.preview)
+    let services = AppServiceContainer.preview()
+    DashboardView(groupService: services.groupService)
+        .environmentObject(services)
         .environmentObject(MainCoordinator())
         .preferredColorScheme(.dark)
 }

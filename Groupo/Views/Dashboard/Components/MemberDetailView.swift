@@ -128,7 +128,26 @@ struct StatCard: View {
 }
 
 #Preview {
+    let services = AppServiceContainer.preview()
     NavigationStack {
-        MemberDetailView(member: MockDataService.preview.currentGroup.members.first!, viewModel: MemberListViewModel(mockDataService: MockDataService.preview))
+        MemberDetailView(
+            member: User(
+                id: UUID(),
+                name: "Preview User",
+                avatar: "person.circle.fill",
+                reputationScore: 85,
+                currentEquity: 500,
+                challengesWon: 3,
+                challengesLost: 1,
+                lastWinTimestamp: nil,
+                votingHistory: [],
+                consecutiveMissedVotes: 0,
+                status: .active
+            ),
+            viewModel: MemberListViewModel(
+                groupService: services.groupService,
+                challengeService: services.challengeService
+            )
+        )
     }
 }

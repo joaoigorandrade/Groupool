@@ -1,21 +1,18 @@
 import SwiftUI
 
 struct LedgerView: View {
-    @EnvironmentObject var dataService: MockDataService
     @EnvironmentObject var coordinator: MainCoordinator
-    @StateObject private var viewModel = LedgerViewModel()
+    @StateObject private var viewModel: LedgerViewModel
+    
+    init(transactionService: any TransactionServiceProtocol) {
+        _viewModel = StateObject(wrappedValue: LedgerViewModel(transactionService: transactionService))
+    }
     
     var body: some View {
         NavigationStack {
             view
             .navigationTitle("Extrato")
             .background(Color.appPrimaryBackground)
-            .onAppear {
-                viewModel.update(transactions: dataService.transactions)
-            }
-            .onChange(of: dataService.transactions) { _, newValue in
-                viewModel.update(transactions: newValue)
-            }
         }
     }
     
@@ -50,7 +47,7 @@ struct LedgerView: View {
             }
             .listStyle(.insetGrouped)
             .refreshable {
-                await viewModel.refresh(transactions: dataService.transactions)
+                await viewModel.refresh()
             }
         }
     }
@@ -92,17 +89,20 @@ struct TransactionRow: View {
 }
 
 #Preview("Populated") {
-    LedgerView()
-        .environmentObject(MockDataService.preview)
+    let services = AppServiceContainer.preview()
+    LedgerView(transactionService: services.transactionService)
+        .environmentObject(services)
 }
 
 #Preview("Empty") {
-    LedgerView()
-        .environmentObject(MockDataService.empty)
+    let services = AppServiceContainer.preview()
+    LedgerView(transactionService: services.transactionService)
+        .environmentObject(services)
 }
 
 #Preview("Dark Mode") {
-    LedgerView()
-        .environmentObject(MockDataService.preview)
+    let services = AppServiceContainer.preview()
+    LedgerView(transactionService: services.transactionService)
+        .environmentObject(services)
         .preferredColorScheme(.dark)
 }

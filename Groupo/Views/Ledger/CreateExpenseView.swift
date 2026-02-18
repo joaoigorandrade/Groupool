@@ -2,10 +2,20 @@ import SwiftUI
 
 struct CreateExpenseView: View {
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var dataService: MockDataService
+    @EnvironmentObject var services: AppServiceContainer
     @EnvironmentObject var toastManager: ToastManager
-    @StateObject private var viewModel = CreateExpenseViewModel()
+    @StateObject private var viewModel: CreateExpenseViewModel
     @State private var showCustomSplitSheet = false
+    
+    init(
+        transactionService: any TransactionServiceProtocol,
+        groupService: any GroupServiceProtocol
+    ) {
+        _viewModel = StateObject(wrappedValue: CreateExpenseViewModel(
+            transactionService: transactionService,
+            groupService: groupService
+        ))
+    }
     
     var body: some View {
         VStack(spacing: 24) {
@@ -35,9 +45,9 @@ struct CreateExpenseView: View {
                 
                 HStack {
                     Spacer()
-                    Text("Available: \(dataService.currentUserAvailableBalance.formatted(.currency(code: "BRL")))")
+                    Text("Available: \(viewModel.currentGroupBalance.formatted(.currency(code: "BRL")))")
                         .font(.caption)
-                        .foregroundStyle(viewModel.amount > Double(truncating: dataService.currentUserAvailableBalance as NSNumber) ? .red : .secondary)
+                        .foregroundStyle(viewModel.amount > Double(truncating: viewModel.currentGroupBalance as NSNumber) ? .red : .secondary)
                 }
                 .padding(.top, -12)
                 
@@ -54,7 +64,7 @@ struct CreateExpenseView: View {
                     .pickerStyle(.segmented)
                     .onChange(of: viewModel.selectedSplit) { _, newValue in
                         if newValue == .custom {
-                            viewModel.initializeSplits(members: dataService.currentGroup.members)
+                            viewModel.initializeSplits(members: viewModel.currentGroupMembers)
                         }
                     }
                     
@@ -90,7 +100,7 @@ struct CreateExpenseView: View {
                 isLoading: viewModel.isLoading,
                 isDisabled: !viewModel.isValid
             ) {
-                 viewModel.createExpense(service: dataService) {
+                 viewModel.createExpense {
                      toastManager.show(style: .success, message: "Expense created successfully")
                      dismiss()
                  }
@@ -98,20 +108,28 @@ struct CreateExpenseView: View {
         }
         .padding()
         .sheet(isPresented: $showCustomSplitSheet) {
-            CustomSplitView(viewModel: viewModel, members: dataService.currentGroup.members)
+            CustomSplitView(viewModel: viewModel, members: viewModel.currentGroupMembers)
         }
     }
 }
 
 #Preview("Default") {
-    CreateExpenseView()
-        .environmentObject(MockDataService.preview)
-        .environmentObject(ToastManager())
+    let services = AppServiceContainer.preview()
+    CreateExpenseView(
+        transactionService: services.transactionService,
+        groupService: services.groupService
+    )
+    .environmentObject(services)
+    .environmentObject(ToastManager())
 }
 
 #Preview("Dark Mode") {
-    CreateExpenseView()
-        .environmentObject(MockDataService.preview)
-        .environmentObject(ToastManager())
-        .preferredColorScheme(.dark)
+    let services = AppServiceContainer.preview()
+    CreateExpenseView(
+        transactionService: services.transactionService,
+        groupService: services.groupService
+    )
+    .environmentObject(services)
+    .environmentObject(ToastManager())
+    .preferredColorScheme(.dark)
 }

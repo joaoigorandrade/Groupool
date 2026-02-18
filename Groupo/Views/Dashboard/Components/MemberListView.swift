@@ -2,10 +2,15 @@ import SwiftUI
 
 struct MemberListView: View {
     @StateObject private var viewModel: MemberListViewModel
-    @EnvironmentObject private var mockDataService: MockDataService
     
-    init(mockDataService: MockDataService) {
-        _viewModel = StateObject(wrappedValue: MemberListViewModel(mockDataService: mockDataService))
+    init(
+        groupService: any GroupServiceProtocol,
+        challengeService: any ChallengeServiceProtocol
+    ) {
+        _viewModel = StateObject(wrappedValue: MemberListViewModel(
+            groupService: groupService,
+            challengeService: challengeService
+        ))
     }
     
     var body: some View {
@@ -181,23 +186,35 @@ struct MemberRow: View {
 
 
 #Preview("Populated") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
-        MemberListView(mockDataService: MockDataService.preview)
-            .environmentObject(MockDataService.preview)
+        MemberListView(
+            groupService: services.groupService,
+            challengeService: services.challengeService
+        )
+        .environmentObject(services)
     }
 }
 
 #Preview("Empty") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
-        MemberListView(mockDataService: MockDataService.empty)
-            .environmentObject(MockDataService.empty)
+        MemberListView(
+            groupService: services.groupService,
+            challengeService: services.challengeService
+        )
+        .environmentObject(services)
     }
 }
 
 #Preview("Dark Mode") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
-        MemberListView(mockDataService: MockDataService.preview)
-            .environmentObject(MockDataService.preview)
+        MemberListView(
+            groupService: services.groupService,
+            challengeService: services.challengeService
+        )
+        .environmentObject(services)
     }
     .preferredColorScheme(.dark)
 }

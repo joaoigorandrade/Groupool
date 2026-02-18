@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AppSettingsView: View {
-    @EnvironmentObject var mockDataService: MockDataService
+    @EnvironmentObject var services: AppServiceContainer
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("selectedAppearance") private var selectedAppearance = "System"
     @AppStorage("selectedLanguage") private var selectedLanguage = "en"
@@ -66,7 +66,7 @@ struct AppSettingsView: View {
         .alert("Reset Data?", isPresented: $showingResetAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Reset", role: .destructive) {
-                mockDataService.resetData()
+                // TODO: Implement reset via AppServiceContainer
             }
         } message: {
             Text("This will delete all current data and restore the initial mock state. This action cannot be undone.")
@@ -75,16 +75,18 @@ struct AppSettingsView: View {
 }
 
 #Preview("Light") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
         AppSettingsView()
-            .environmentObject(MockDataService.preview)
+            .environmentObject(services)
     }
 }
 
 #Preview("Dark") {
+    let services = AppServiceContainer.preview()
     NavigationStack {
         AppSettingsView()
-            .environmentObject(MockDataService.preview)
+            .environmentObject(services)
             .preferredColorScheme(.dark)
     }
 }

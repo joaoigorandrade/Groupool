@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @EnvironmentObject var mockDataService: MockDataService
+    @EnvironmentObject var services: AppServiceContainer
     @StateObject private var coordinator = MainCoordinator()
     var body: some View {
         let tabBinding = Binding<MainTab>(
@@ -16,13 +16,13 @@ struct MainTabView: View {
         )
         
         TabView(selection: tabBinding) {
-            DashboardView()
+            DashboardView(groupService: services.groupService)
                 .tag(MainTab.dashboard)
                 .tabItem {
                     Label("Dashboard", systemImage: "square.grid.2x2")
                 }
             
-            LedgerView()
+            LedgerView(transactionService: services.transactionService)
                 .tag(MainTab.ledger)
                 .tabItem {
                     Label("Ledger", systemImage: "list.bullet.rectangle.portrait")
@@ -34,13 +34,19 @@ struct MainTabView: View {
                     Label("New", systemImage: "plus.circle.fill")
                 }
             
-            GovernanceView(service: mockDataService)
+            GovernanceView(
+                challengeService: services.challengeService,
+                voteService: services.voteService,
+                withdrawalService: services.withdrawalService,
+                userService: services.userService,
+                groupService: services.groupService
+            )
                 .tag(MainTab.governance)
                 .tabItem {
                     Label("Governance", systemImage: "checkmark.shield")
                 }
             
-            ProfileView()
+            ProfileView(userService: services.userService)
                 .tag(MainTab.profile)
                 .tabItem {
                     Label("Profile", systemImage: "person.circle")
@@ -49,7 +55,7 @@ struct MainTabView: View {
         .environmentObject(coordinator)
         .adaptiveSheet(isPresent: $coordinator.isPresentingCreateSheet) {
             ActionMenuSheet(destination: $coordinator.activeSheetDestination)
-                .environmentObject(mockDataService)
+                .environmentObject(services)
         }
         .onChange(of: coordinator.isPresentingCreateSheet) { _, isPresented in
             if !isPresented { coordinator.activeSheetDestination = .menu }
@@ -58,6 +64,7 @@ struct MainTabView: View {
 }
 
 #Preview {
-    DashboardView()
-        .environmentObject(MockDataService.preview)
+    let services = AppServiceContainer.preview()
+    MainTabView()
+        .environmentObject(services)
 }

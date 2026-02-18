@@ -1,50 +1,35 @@
 
-import Foundation
 import Combine
+import Foundation
 
 class DashboardViewModel: ObservableObject {
     @Published var totalPool: Decimal = 0
     @Published var members: [User] = []
-    
     @Published var isLoading: Bool = false
-    
+    @Published var errorMessage: String?
+
     private var cancellables = Set<AnyCancellable>()
-    private var dataService: MockDataService?
-    
-    init(service: MockDataService? = nil) {
-        self.dataService = service
+    private let groupService: any GroupServiceProtocol
+
+    init(groupService: any GroupServiceProtocol) {
+        self.groupService = groupService
         setupSubscribers()
     }
-    
-    func setup(service: MockDataService) {
-        self.dataService = service
-        setupSubscribers()
-    }
-    
+
     @MainActor
     func refresh() async {
         isLoading = true
-        // Simulate network delay
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        
-        // In a real app, this would re-fetch data. 
-        // For now, we just ensure subscribers are active and maybe force an update if MockDataService supports it.
-        // Since MockDataService is local, the data is already "up to date", but we simulate the UX.
-        
         isLoading = false
     }
-    
+
     private func setupSubscribers() {
-        guard let dataService = dataService else { return }
-        
-        dataService.$currentGroup
-            .map { $0.totalPool }
-            .assign(to: \.totalPool, on: self)
-            .store(in: &cancellables)
-            
-        dataService.$currentGroup
-            .map { $0.members }
-            .assign(to: \.members, on: self)
+        groupService.currentGroup
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] group in
+                self?.totalPool = group.totalPool
+                self?.members = group.members
+            }
             .store(in: &cancellables)
     }
 }

@@ -1,12 +1,24 @@
 import SwiftUI
 
 struct GovernanceView: View {
-    @EnvironmentObject var mockDataService: MockDataService
+    @EnvironmentObject var services: AppServiceContainer
     @EnvironmentObject var coordinator: MainCoordinator
     @StateObject private var viewModel: GovernanceViewModel
     
-    init(service: MockDataService) {
-        _viewModel = StateObject(wrappedValue: GovernanceViewModel(mockDataService: service))
+    init(
+        challengeService: any ChallengeServiceProtocol,
+        voteService: any VoteServiceProtocol,
+        withdrawalService: any WithdrawalServiceProtocol,
+        userService: any UserServiceProtocol,
+        groupService: any GroupServiceProtocol
+    ) {
+        _viewModel = StateObject(wrappedValue: GovernanceViewModel(
+            challengeService: challengeService,
+            voteService: voteService,
+            withdrawalService: withdrawalService,
+            userService: userService,
+            groupService: groupService
+        ))
     }
     
     var body: some View {
@@ -26,11 +38,25 @@ struct GovernanceView: View {
                 } else {
                     ForEach(viewModel.activeItems) { item in
                         if case .challenge(let challenge) = item {
-                            NavigationLink(destination: ChallengeVotingView(challenge: challenge, service: mockDataService)) {
+                            NavigationLink(destination: ChallengeVotingView(
+                                challenge: challenge,
+                                challengeService: services.challengeService,
+                                voteService: services.voteService,
+                                withdrawalService: services.withdrawalService,
+                                userService: services.userService,
+                                groupService: services.groupService
+                            )) {
                                 GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), progress: viewModel.progress(for: item), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                             }
                         } else if case .withdrawal(let request) = item {
-                             NavigationLink(destination: WithdrawalVotingView(withdrawal: request, service: mockDataService)) {
+                             NavigationLink(destination: WithdrawalVotingView(
+                                withdrawal: request,
+                                challengeService: services.challengeService,
+                                voteService: services.voteService,
+                                withdrawalService: services.withdrawalService,
+                                userService: services.userService,
+                                groupService: services.groupService
+                             )) {
                                 GovernanceListRow(item: item, time: viewModel.timeRemaining(for: item.deadline), progress: viewModel.progress(for: item), showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item))
                             }
                         } else {
@@ -45,9 +71,6 @@ struct GovernanceView: View {
                 await viewModel.refresh()
             }
             .navigationTitle("Governance")
-            .onAppear {
-                // Service is now injected via init
-            }
         }
     }
 }
@@ -132,17 +155,38 @@ struct GovernanceListRow: View {
 }
 
 #Preview("Populated") {
-    GovernanceView(service: MockDataService.preview)
-        .environmentObject(MockDataService.preview)
+    let services = AppServiceContainer.preview()
+    GovernanceView(
+        challengeService: services.challengeService,
+        voteService: services.voteService,
+        withdrawalService: services.withdrawalService,
+        userService: services.userService,
+        groupService: services.groupService
+    )
+    .environmentObject(services)
 }
 
 #Preview("Empty") {
-    GovernanceView(service: MockDataService.empty)
-        .environmentObject(MockDataService.empty)
+    let services = AppServiceContainer.preview()
+    GovernanceView(
+        challengeService: services.challengeService,
+        voteService: services.voteService,
+        withdrawalService: services.withdrawalService,
+        userService: services.userService,
+        groupService: services.groupService
+    )
+    .environmentObject(services)
 }
 
 #Preview("Dark Mode") {
-    GovernanceView(service: MockDataService.preview)
-        .environmentObject(MockDataService.preview)
-        .preferredColorScheme(.dark)
+    let services = AppServiceContainer.preview()
+    GovernanceView(
+        challengeService: services.challengeService,
+        voteService: services.voteService,
+        withdrawalService: services.withdrawalService,
+        userService: services.userService,
+        groupService: services.groupService
+    )
+    .environmentObject(services)
+    .preferredColorScheme(.dark)
 }
