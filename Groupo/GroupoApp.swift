@@ -18,7 +18,6 @@ struct GroupoApp: App {
             ZStack {
                 switch sessionManager.session {
                 case .unknown:
-                    // Splash screen or loading state while session is being restored
                     Color.black.ignoresSafeArea()
                     
                 case .unauthenticated:

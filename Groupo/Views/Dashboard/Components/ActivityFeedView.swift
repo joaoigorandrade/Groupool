@@ -8,11 +8,26 @@ struct ActivityFeedView: View {
     @State private var transactions: [Transaction] = []
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Activity")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .padding(.leading, 4)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("RECENT ACTIVITY")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.secondary)
+                    .tracking(1)
+                
+                Spacer()
+                
+                Button(action: {
+                    coordinator.selectTab(.ledger)
+                }) {
+                    Text("View All")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.brandTeal)
+                }
+                .buttonStyle(.plain)
+            }
             
             if transactions.isEmpty {
                 ContentUnavailableView(
@@ -20,11 +35,18 @@ struct ActivityFeedView: View {
                     systemImage: "clock",
                     description: Text("Your latest transactions will show up here")
                 )
-                .frame(height: 150)
+                .frame(height: 100)
             } else {
-                LazyVStack(spacing: 12) {
-                    ForEach(Array(transactions.prefix(3))) { transaction in
+                VStack(spacing: 0) {
+                    ForEach(Array(transactions.prefix(5).enumerated()), id: \.element.id) { index, transaction in
+                        if index > 0 {
+                            Divider()
+                                .overlay(Color.white.opacity(0.1))
+                                .padding(.leading, 44)
+                        }
+                        
                         activityRow(for: transaction)
+                            .contentShape(Rectangle())
                             .onTapGesture {
                                 coordinator.selectTab(.ledger)
                             }
@@ -32,50 +54,53 @@ struct ActivityFeedView: View {
                 }
             }
         }
+        .padding(20)
+        .background(Color("SecondaryBackground"))
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(.white.opacity(0.1), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
         .onReceive(services.transactionService.transactions.receive(on: DispatchQueue.main)) {
             transactions = $0
         }
     }
     
     private func activityRow(for transaction: Transaction) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
+            // Icon
             ZStack {
                 Circle()
-                    .fill(Color("SecondaryBackground"))
-                    .frame(width: 44, height: 44)
-                    .shadow(radius: 2)
+                    .fill(transaction.type.iconColor().opacity(0.1))
+                    .frame(width: 32, height: 32)
                 
                 Image(systemName: transaction.type.iconName())
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(transaction.type.iconColor())
             }
             
-            VStack(alignment: .leading, spacing: 4) {
+            // Details
+            VStack(alignment: .leading, spacing: 1) {
                 Text(transaction.description)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.primary)
+                    .lineLimit(1)
                 
                 Text(transaction.timestamp, style: .relative)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             
-            Image(systemName: "chevron.right")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            Spacer()
+            
+            // Amount
+            Text(transaction.formattedAmount())
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(transaction.type.amountColor())
         }
-        .padding(16)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
-        .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(.white.opacity(0.1), lineWidth: 1)
-        }
+        .padding(.vertical, 10)
     }
 }
 

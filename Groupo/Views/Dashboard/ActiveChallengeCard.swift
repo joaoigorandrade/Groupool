@@ -13,24 +13,27 @@ struct ActiveChallengeCard: View {
     }
     
     var body: some View {
-        SwiftUI.Group {
-            if let challenge = activeChallenge {
-                activeChallengeView(for: challenge)
-            } else {
-                noActiveChallengeView
+        view
+            .onReceive(services.challengeService.challenges.receive(on: DispatchQueue.main)) {
+                challenges = $0
             }
-        }
-        .padding(20)
-        .background(Color("SecondaryBackground")
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(.white.opacity(0.1), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-        .onReceive(services.challengeService.challenges.receive(on: DispatchQueue.main)) {
-            challenges = $0
+    }
+    
+    @ViewBuilder
+    var view: some View {
+        if let challenge = activeChallenge {
+            activeChallengeView(for: challenge)
+                .padding(20)
+                .background(Color("SecondaryBackground"))
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(.white.opacity(0.1), lineWidth: 1)
+                }
+                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+        } else {
+            noActiveChallengeView
         }
     }
     
@@ -43,43 +46,59 @@ struct ActiveChallengeCard: View {
             userService: services.userService,
             groupService: services.groupService
         )) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("ACTIVE CHALLENGE")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.orange)
+                            .tracking(1)
+                        
+                        Text(challenge.title)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                    }
+                    
+                    Spacer()
+                    
+                    statusBadge(for: challenge)
+                }
+                
+                HStack(spacing: 24) {
+                    metricView(
+                        label: "Pot",
+                        value: (challenge.buyIn * Decimal(challenge.participants.count)).formatted(.currency(code: "BRL"))
+                    )
+                    
+                    metricView(
+                        label: "Buy-in",
+                        value: challenge.buyIn.formatted(.currency(code: "BRL"))
+                    )
+                    
+                    metricView(
+                        label: "Players",
+                        value: "\(challenge.participants.count)"
+                    )
+                    
+                    Spacer()
+                }
+                
+                Divider()
+                    .overlay(Color.white.opacity(0.1))
                 HStack {
-                    Label("Active Challenge", systemImage: "flag.fill")
+                    Label(timeRemaining(until: challenge.deadline), systemImage: "clock")
                         .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.orange)
-                        .textCase(.uppercase)
-                        .tracking(1)
+                        .foregroundStyle(.secondary)
                     
                     Spacer()
                     
-                    Text("ENDS IN 2D")
-                        .font(.caption2)
-                        .fontWeight(.bold)
+                    Text("View Details")
+                        .font(.caption)
+                        .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(challenge.title)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                    
-                    Text("Buy-in: \(challenge.buyIn.formatted(.currency(code: "BRL")))")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                
-                HStack {
-                     statusBadge(for: challenge)
-                    
-                    Spacer()
                     
                     Image(systemName: "chevron.right")
                         .font(.caption)
@@ -91,30 +110,43 @@ struct ActiveChallengeCard: View {
         .buttonStyle(.plain)
     }
     
+    private func metricView(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fontWeight(.medium)
+            
+            Text(value)
+                .font(.callout)
+                .fontWeight(.bold)
+                .foregroundStyle(.primary)
+        }
+    }
+    
+    private func timeRemaining(until deadline: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return "Ends " + formatter.localizedString(for: deadline, relativeTo: Date())
+    }
+    
     private var noActiveChallengeView: some View {
         Button(action: {
             coordinator.presentSheet(.challenge)
         }) {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(Color.brandTeal.opacity(0.1))
-                        .frame(width: 48, height: 48)
-                    
-                    Image(systemName: "plus")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.brandTeal)
-                }
+            HStack(spacing: 12) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(Color.brandTeal)
                 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("No Active Challenge")
+                HStack(spacing: 4) {
+                    Text("No Active Challenge.")
                         .font(.subheadline)
-                        .fontWeight(.semibold)
+                        .fontWeight(.bold)
                         .foregroundStyle(.primary)
                     
-                    Text("Tap to create one")
-                        .font(.caption)
+                    Text("Tap to create one.")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 
@@ -125,6 +157,10 @@ struct ActiveChallengeCard: View {
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary.opacity(0.5))
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.brandTeal.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
     }
