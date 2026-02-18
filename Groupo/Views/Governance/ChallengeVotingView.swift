@@ -41,7 +41,7 @@ struct ChallengeVotingView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 // Shared Detail View
-                ChallengeDetailView(challenge: currentChallenge)
+                ChallengeDetailContent(challenge: currentChallenge)
                 
                 Divider()
                 

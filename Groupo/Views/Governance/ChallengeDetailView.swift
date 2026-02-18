@@ -5,6 +5,20 @@ struct ChallengeDetailView: View {
     let challenge: Challenge
     @EnvironmentObject var mockDataService: MockDataService
     
+    var body: some View {
+        ScrollView {
+            ChallengeDetailContent(challenge: challenge)
+                .padding()
+        }
+        .navigationTitle("Challenge Details")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct ChallengeDetailContent: View {
+    let challenge: Challenge
+    @EnvironmentObject var mockDataService: MockDataService
+    
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage? = nil
     @State private var isSubmitting = false
@@ -28,40 +42,35 @@ struct ChallengeDetailView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                headerSection
-                
-                Divider()
-                
-                infoSection
-                
-                if !participants.isEmpty {
-                    participantsSection
-                }
-                
-                if let proof = challenge.proofImage, !proof.isEmpty {
-                    proofSection(proof: proof)
-                } else if challenge.status == .active && isParticipant {
-                    // Only show upload section if active, user is participant, and no proof yet
-                    uploadSection
-                }
-                
-                if challenge.status == .complete {
-                    resultsSection
-                } else if challenge.status == .failed {
-                     failedSection
-                }
+        VStack(alignment: .leading, spacing: 20) {
+            headerSection
+            
+            Divider()
+            
+            infoSection
+            
+            if !participants.isEmpty {
+                participantsSection
             }
-            .padding()
+            
+            if let proof = challenge.proofImage, !proof.isEmpty {
+                proofSection(proof: proof)
+            } else if challenge.status == .active && isParticipant {
+                // Only show upload section if active, user is participant, and no proof yet
+                uploadSection
+            }
+            
+            if challenge.status == .complete {
+                resultsSection
+            } else if challenge.status == .failed {
+                 failedSection
+            }
         }
-        .navigationTitle("Challenge Details")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
 // MARK: - Subviews
-private extension ChallengeDetailView {
+private extension ChallengeDetailContent {
     var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
@@ -356,3 +365,4 @@ private extension ChallengeDetailView {
         .preferredColorScheme(.dark)
     }
 }
+

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CreateExpenseView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataService: MockDataService
     @EnvironmentObject var toastManager: ToastManager
     @StateObject private var viewModel = CreateExpenseViewModel()
@@ -92,7 +92,7 @@ struct CreateExpenseView: View {
             ) {
                  viewModel.createExpense(service: dataService) {
                      toastManager.show(style: .success, message: "Expense created successfully")
-                     presentationMode.wrappedValue.dismiss()
+                     dismiss()
                  }
             }
         }

@@ -10,8 +10,7 @@ import SwiftUI
 struct ActionMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var dataService: MockDataService
-    @State private var destination: Destination = .menu
-    @State private var sheetHeight: CGFloat = 600
+    @Binding var destination: Destination
     
     enum Destination { case menu, expense, challenge, withdrawal }
     
@@ -25,22 +24,8 @@ struct ActionMenuSheet: View {
                     removal: .move(edge: .leading)
                 ))
                 .padding(.bottom, 20)
-                .background(
-                    GeometryReader { geo in
-                        Color.clear.preference(key: HeightPreferenceKey.self, value: geo.size.height)
-                    }
-                )
         }
         .animation(.spring(response: 0.35), value: destination)
-        .onPreferenceChange(HeightPreferenceKey.self) { height in
-            let headerHeight: CGFloat = destination == .menu ? 30 : 50
-            let safeAreaBottom: CGFloat = 34
-            let totalHeight = height + headerHeight + safeAreaBottom
-            let maxHeight = UIScreen.main.bounds.height * 0.9
-            sheetHeight = min(totalHeight, maxHeight)
-            print(sheetHeight, maxHeight)
-        }
-        .presentationDetents([.height(sheetHeight)])
     }
     
     private var navigationTitle: String {
@@ -116,16 +101,7 @@ private struct MenuButtonLabel: View {
     }
 }
 
-struct HeightPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        print("HeightPrefernceKey:", value, nextValue())
-        let nextValue = nextValue()
-        if nextValue > 0 {
-            value = nextValue
-        }
-    }
-}
 #Preview {
-    ActionMenuSheet()
+    ActionMenuSheet(destination: .constant(.menu))
+        .environmentObject(MockDataService.preview)
 }
