@@ -24,11 +24,6 @@ struct ChallengeVotingView: View {
     
     @State private var hasUserVoted = false
     
-    // Derived state for voting progress
-    private var totalParticipants: Int {
-        challenge.participants.count
-    }
-    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -38,10 +33,14 @@ struct ChallengeVotingView: View {
                 Divider()
                 
                 // Interactive functionality based on status
-                statusActions
+                StatusActionsView(
+                    challenge: challenge,
+                    viewModel: viewModel,
+                    hasUserVoted: $hasUserVoted
+                )
                 
                 if challenge.status != .complete && challenge.status != .failed {
-                     footerSection
+                     FooterSection()
                 }
                
                 Spacer()
@@ -50,29 +49,38 @@ struct ChallengeVotingView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            checkUserVoteStatus()
+            hasUserVoted = viewModel.hasVoted(on: .challenge(challenge))
         }
     }
 }
 
 // MARK: - Subviews
-private extension ChallengeVotingView {
+
+private struct StatusActionsView: View {
+    let challenge: Challenge
+    @ObservedObject var viewModel: GovernanceViewModel
+    @Binding var hasUserVoted: Bool
     
-    @ViewBuilder
-    var statusActions: some View {
+    var body: some View {
         switch challenge.status {
         case .active:
-            activePhaseActions
+            ActivePhaseActions(challenge: challenge, viewModel: viewModel)
         case .voting:
-            votingPhaseActions
+            VotingPhaseActions(
+                challenge: challenge,
+                viewModel: viewModel,
+                hasUserVoted: $hasUserVoted
+            )
         case .complete:
             EmptyView()
         case .failed:
-            failedPhaseActions
+            FailedPhaseActions(challenge: challenge)
         }
     }
-    
-    var footerSection: some View {
+}
+
+private struct FooterSection: View {
+    var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "info.circle")
                 .foregroundColor(.secondary)
@@ -84,10 +92,11 @@ private extension ChallengeVotingView {
     }
 }
 
-// MARK: - Active Phase Actions
-private extension ChallengeVotingView {
-    @ViewBuilder
-    var activePhaseActions: some View {
+private struct ActivePhaseActions: View {
+    let challenge: Challenge
+    @ObservedObject var viewModel: GovernanceViewModel
+
+    var body: some View {
         VStack(spacing: 16) {
             if !viewModel.isEligibleToVote(on: .challenge(challenge)) {
                 joinChallengeView
@@ -139,10 +148,16 @@ private extension ChallengeVotingView {
     }
 }
 
-// MARK: - Voting Phase Actions
-private extension ChallengeVotingView {
-    @ViewBuilder
-    var votingPhaseActions: some View {
+private struct VotingPhaseActions: View {
+    let challenge: Challenge
+    @ObservedObject var viewModel: GovernanceViewModel
+    @Binding var hasUserVoted: Bool
+
+    var totalParticipants: Int {
+        challenge.participants.count
+    }
+
+    var body: some View {
         VStack(spacing: 24) {
             // Voting Progress
             VStack(spacing: 8) {
@@ -161,11 +176,15 @@ private extension ChallengeVotingView {
             
             if viewModel.isEligibleToVote(on: .challenge(challenge)) {
                 if hasUserVoted {
-                    voteConfirmationView
+                    VoteConfirmationView(hasUserVoted: $hasUserVoted, isLoading: viewModel.isLoading)
                         .transition(.scale.combined(with: .opacity))
                 } else {
-                    votingControlsView
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    VotingControlsView(
+                        challenge: challenge,
+                        viewModel: viewModel,
+                        hasUserVoted: $hasUserVoted
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             } else {
                 Text("Only participants can vote")
@@ -175,13 +194,13 @@ private extension ChallengeVotingView {
             }
         }
     }
+}
+
+private struct VoteConfirmationView: View {
+    @Binding var hasUserVoted: Bool
+    let isLoading: Bool
     
-    @ViewBuilder
-    var votingControlsView: some View {
-        votingButtons
-    }
-    
-    var voteConfirmationView: some View {
+    var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
                 .resizable()
@@ -203,13 +222,19 @@ private extension ChallengeVotingView {
             }
             .font(.headline)
             .padding(.top)
-            .disabled(viewModel.isLoading)
+            .disabled(isLoading)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
     }
+}
+
+private struct VotingControlsView: View {
+    let challenge: Challenge
+    @ObservedObject var viewModel: GovernanceViewModel
+    @Binding var hasUserVoted: Bool
     
-    var votingButtons: some View {
+    var body: some View {
         VStack(spacing: 12) {
             Text("Cast Your Vote")
                 .font(.headline)
@@ -250,12 +275,28 @@ private extension ChallengeVotingView {
             .disabled(viewModel.isLoading)
         }
     }
+
+    func vote(_ type: Vote.VoteType) {
+        Task {
+            await viewModel.castVote(challenge: challenge, type: type)
+            HapticManager.notification(type: .success)
+            withAnimation(.spring()) {
+                hasUserVoted = true
+            }
+        }
+    }
+
+    func simulateResolution() {
+        Task {
+            await viewModel.resolveChallenge(challenge: challenge)
+        }
+    }
 }
 
-// MARK: - Failed Phase Actions
-private extension ChallengeVotingView {
-    @ViewBuilder
-    var failedPhaseActions: some View {
+private struct FailedPhaseActions: View {
+    let challenge: Challenge
+
+    var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .resizable()
@@ -282,29 +323,6 @@ private extension ChallengeVotingView {
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(radius: 2)
-    }
-}
-
-// MARK: - Helper Methods
-private extension ChallengeVotingView {
-    func vote(_ type: Vote.VoteType) {
-        Task {
-            await viewModel.castVote(challenge: challenge, type: type)
-            HapticManager.notification(type: .success)
-            withAnimation(.spring()) {
-                hasUserVoted = true
-            }
-        }
-    }
-    
-    func checkUserVoteStatus() {
-        hasUserVoted = viewModel.hasVoted(on: .challenge(challenge))
-    }
-    
-    func simulateResolution() {
-        Task {
-            await viewModel.resolveChallenge(challenge: challenge)
-        }
     }
 }
 

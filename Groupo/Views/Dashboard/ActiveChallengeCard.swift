@@ -1,4 +1,3 @@
-
 import SwiftUI
 import Combine
 
@@ -6,17 +5,10 @@ struct ActiveChallengeCard: View {
     @EnvironmentObject var services: AppServiceContainer
     @EnvironmentObject var coordinator: MainCoordinator
     
-    @State private var challenges: [Challenge] = []
-    
-    private var activeChallenge: Challenge? {
-        challenges.first { $0.status == .active || $0.status == .voting }
-    }
+    let activeChallenge: Challenge?
     
     var body: some View {
         view
-            .onReceive(services.challengeService.challenges.receive(on: DispatchQueue.main)) {
-                challenges = $0
-            }
     }
     
     @ViewBuilder
@@ -183,7 +175,7 @@ struct ActiveChallengeCard: View {
     let services = AppServiceContainer.preview()
     ZStack {
         Color.black.ignoresSafeArea()
-        ActiveChallengeCard()
+        ActiveChallengeCard(activeChallenge: nil)
             .environmentObject(services)
             .environmentObject(MainCoordinator())
             .padding()

@@ -7,12 +7,14 @@ struct DashboardView: View {
     init(
         groupService: any GroupServiceProtocol,
         userService: any UserServiceProtocol,
-        challengeService: any ChallengeServiceProtocol
+        challengeService: any ChallengeServiceProtocol,
+        transactionService: any TransactionServiceProtocol
     ) {
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
             groupService: groupService,
             userService: userService,
-            challengeService: challengeService
+            challengeService: challengeService,
+            transactionService: transactionService
         ))
     }
     
@@ -79,11 +81,11 @@ struct DashboardView: View {
     }
 
     private var activeChallengeCard: some View {
-        ActiveChallengeCard()
+        ActiveChallengeCard(activeChallenge: viewModel.activeChallenge)
     }
     
     private var activitySection: some View {
-        ActivityFeedView()
+        ActivityFeedView(transactions: viewModel.recentTransactions)
     }
 }
 
@@ -92,7 +94,8 @@ struct DashboardView: View {
     DashboardView(
         groupService: services.groupService,
         userService: services.userService,
-        challengeService: services.challengeService
+        challengeService: services.challengeService,
+        transactionService: services.transactionService
     )
         .environmentObject(services)
         .environmentObject(MainCoordinator())
@@ -103,7 +106,8 @@ struct DashboardView: View {
     DashboardView(
         groupService: services.groupService,
         userService: services.userService,
-        challengeService: services.challengeService
+        challengeService: services.challengeService,
+        transactionService: services.transactionService
     )
         .environmentObject(services)
         .environmentObject(MainCoordinator())
@@ -114,7 +118,8 @@ struct DashboardView: View {
     DashboardView(
         groupService: services.groupService,
         userService: services.userService,
-        challengeService: services.challengeService
+        challengeService: services.challengeService,
+        transactionService: services.transactionService
     )
         .environmentObject(services)
         .environmentObject(MainCoordinator())
