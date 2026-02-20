@@ -53,7 +53,8 @@ class LedgerViewModel: ObservableObject {
         self.sections = sortedKeys.map { date in
             let title = getSectionTitle(for: date)
             let transactions = grouped[date] ?? []
-            return TransactionSection(title: title, transactions: transactions)
+            // MARK: - Performance: Use date as stable ID to prevent unnecessary re-renders
+            return TransactionSection(id: date, title: title, transactions: transactions)
         }
         
         generateDailySummaries(from: transactions)
@@ -64,11 +65,17 @@ class LedgerViewModel: ObservableObject {
         let today = calendar.startOfDay(for: Date())
         var summaries: [DailySummary] = []
         
+        // MARK: - Performance: Group transactions by day first (O(N)) to avoid O(N*60) loop
+        let groupedByDay = Dictionary(grouping: transactions) { tx in
+            calendar.startOfDay(for: tx.timestamp)
+        }
+
         // Generate last 60 days summaries for calendar
         for i in 0..<60 {
             guard let date = calendar.date(byAdding: .day, value: -i, to: today) else { continue }
             
-            let dayTransactions = transactions.filter { calendar.isDate($0.timestamp, inSameDayAs: date) }
+            // O(1) lookup
+            let dayTransactions = groupedByDay[date] ?? []
             
             var netAmount: Decimal = 0
             for tx in dayTransactions {
@@ -78,7 +85,8 @@ class LedgerViewModel: ObservableObject {
                 }
             }
             
-            summaries.append(DailySummary(date: date, netAmount: netAmount, transactionCount: dayTransactions.count))
+            // MARK: - Performance: Use date as stable ID
+            summaries.append(DailySummary(id: date, date: date, netAmount: netAmount, transactionCount: dayTransactions.count))
         }
         
         self.dailySummaries = summaries.reversed() // Oldest to newest for calendar rendering
@@ -93,7 +101,7 @@ class LedgerViewModel: ObservableObject {
 }
 
 struct TransactionSection: Identifiable, Equatable {
-    let id = UUID()
+    let id: Date
     let title: String
     let transactions: [Transaction]
     
@@ -103,7 +111,7 @@ struct TransactionSection: Identifiable, Equatable {
 }
 
 struct DailySummary: Identifiable, Equatable {
-    let id = UUID()
+    let id: Date
     let date: Date
     let netAmount: Decimal
     let transactionCount: Int
