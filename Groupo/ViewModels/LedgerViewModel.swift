@@ -3,6 +3,7 @@ import Foundation
 
 class LedgerViewModel: ObservableObject {
     @Published var sections: [TransactionSection] = []
+    @Published var dailySummaries: [DailySummary] = []
     @Published var isLoading: Bool = true
     @Published var errorMessage: String?
 
@@ -43,7 +44,8 @@ class LedgerViewModel: ObservableObject {
     private func processTransactions(_ transactions: [Transaction]) {
         let sortedTransactions = transactions.sorted { $0.timestamp > $1.timestamp }
         let grouped = Dictionary(grouping: sortedTransactions) { (transaction) -> Date in
-            return Calendar.current.startOfDay(for: transaction.timestamp)
+            let components = Calendar.current.dateComponents([.year, .month], from: transaction.timestamp)
+            return Calendar.current.date(from: components) ?? transaction.timestamp
         }
 
         let sortedKeys = grouped.keys.sorted(by: >)
@@ -53,25 +55,60 @@ class LedgerViewModel: ObservableObject {
             let transactions = grouped[date] ?? []
             return TransactionSection(title: title, transactions: transactions)
         }
+        
+        generateDailySummaries(from: transactions)
+    }
+
+    private func generateDailySummaries(from transactions: [Transaction]) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var summaries: [DailySummary] = []
+        
+        // Generate last 60 days summaries for calendar
+        for i in 0..<60 {
+            guard let date = calendar.date(byAdding: .day, value: -i, to: today) else { continue }
+            
+            let dayTransactions = transactions.filter { calendar.isDate($0.timestamp, inSameDayAs: date) }
+            
+            var netAmount: Decimal = 0
+            for tx in dayTransactions {
+                switch tx.type {
+                case .win, .refund: netAmount += tx.amount
+                case .expense, .withdrawal: netAmount -= tx.amount
+                }
+            }
+            
+            summaries.append(DailySummary(date: date, netAmount: netAmount, transactionCount: dayTransactions.count))
+        }
+        
+        self.dailySummaries = summaries.reversed() // Oldest to newest for calendar rendering
     }
 
     private func getSectionTitle(for date: Date) -> String {
-        let calendar = Calendar.current
-        if calendar.isDateInToday(date) {
-            return "Hoje"
-        } else if calendar.isDateInYesterday(date) {
-            return "Ontem"
-        } else {
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "pt_BR")
-            formatter.dateFormat = "MMMM yyyy"
-            return formatter.string(from: date).capitalized
-        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "MMM yyyy"
+        return formatter.string(from: date).capitalized
     }
 }
 
-struct TransactionSection: Identifiable {
+struct TransactionSection: Identifiable, Equatable {
     let id = UUID()
     let title: String
     let transactions: [Transaction]
+    
+    static func == (lhs: TransactionSection, rhs: TransactionSection) -> Bool {
+        lhs.id == rhs.id && lhs.title == rhs.title && lhs.transactions == rhs.transactions
+    }
+}
+
+struct DailySummary: Identifiable, Equatable {
+    let id = UUID()
+    let date: Date
+    let netAmount: Decimal
+    let transactionCount: Int
+    
+    static func == (lhs: DailySummary, rhs: DailySummary) -> Bool {
+        lhs.id == rhs.id && lhs.date == rhs.date && lhs.netAmount == rhs.netAmount && lhs.transactionCount == rhs.transactionCount
+    }
 }

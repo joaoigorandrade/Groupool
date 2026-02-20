@@ -26,34 +26,23 @@ struct MainTabView: View {
                     Label("Dashboard", systemImage: "square.grid.2x2")
                 }
             
-            LedgerView(transactionService: services.transactionService)
-                .tag(MainTab.ledger)
-                .tabItem {
-                    Label("Ledger", systemImage: "list.bullet.rectangle.portrait")
-                }
-            
             Color.clear
                 .tag(MainTab.create)
                 .tabItem {
                     Label("New", systemImage: "plus.circle.fill")
                 }
             
-            GovernanceView(
-                challengeService: services.challengeService,
-                voteService: services.voteService,
-                withdrawalService: services.withdrawalService,
-                userService: services.userService,
-                groupService: services.groupService
-            )
-                .tag(MainTab.governance)
+            TreasuryView(
+                 transactionService: services.transactionService,
+                 challengeService: services.challengeService,
+                 voteService: services.voteService,
+                 withdrawalService: services.withdrawalService,
+                 userService: services.userService,
+                 groupService: services.groupService
+             )
+                .tag(MainTab.treasury)
                 .tabItem {
-                    Label("Governance", systemImage: "checkmark.shield")
-                }
-            
-            ProfileView(userService: services.userService)
-                .tag(MainTab.profile)
-                .tabItem {
-                    Label("Profile", systemImage: "person.circle")
+                    Label("Treasury", systemImage: "building.columns")
                 }
         }
         .environmentObject(coordinator)

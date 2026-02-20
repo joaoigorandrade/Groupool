@@ -3,10 +3,8 @@ import Combine
 
 enum MainTab: Hashable {
     case dashboard
-    case ledger
     case create
-    case governance
-    case profile
+    case treasury
 }
 
 class MainCoordinator: Coordinator {

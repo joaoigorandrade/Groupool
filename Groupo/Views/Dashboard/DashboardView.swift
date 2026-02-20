@@ -41,6 +41,26 @@ struct DashboardView: View {
             }
             .navigationTitle("Dashboard")
             .toolbarBackground(.visible, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(destination: ProfileView(userService: services.userService)) {
+                        if let user = viewModel.currentUser {
+                            Image(systemName: user.avatar)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 32, height: 32)
+                                .clipShape(Circle())
+                                .foregroundStyle(.primary)
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 32, height: 32)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
         }
     }
     

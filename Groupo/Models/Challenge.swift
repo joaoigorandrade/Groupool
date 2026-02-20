@@ -27,3 +27,22 @@ struct Challenge: Identifiable, Codable, Hashable {
         case votingOnly // No proof, creator starts voting manually
     }
 }
+
+extension Challenge {
+    static func preview() -> Challenge {
+        Challenge(
+            id: UUID(),
+            title: "Summer Body Challenge",
+            description: "Go to the gym 5 times a week for 4 weeks.",
+            buyIn: 100.00,
+            createdDate: Date().addingTimeInterval(-86400 * 2),
+            deadline: Date().addingTimeInterval(86400 * 5),
+            participants: [UUID(), UUID()],
+            status: .active,
+            proofImage: nil,
+            proofSubmissionUserID: nil,
+            votingFailureReason: nil,
+            validationMode: .proof
+        )
+    }
+}

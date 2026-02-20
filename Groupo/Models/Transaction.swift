@@ -50,3 +50,17 @@ struct Transaction: Identifiable, Codable, Hashable {
         }
     }
 }
+
+extension Transaction {
+    static func preview(type: TransactionType = .win) -> Transaction {
+        Transaction(
+            id: UUID(),
+            description: type == .win ? "Challenge Win" : "Dinner Party",
+            amount: 50.00,
+            type: type,
+            timestamp: Date(),
+            relatedChallengeID: nil,
+            splitDetails: nil
+        )
+    }
+}

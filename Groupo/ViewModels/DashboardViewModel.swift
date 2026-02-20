@@ -10,6 +10,8 @@ class DashboardViewModel: ObservableObject {
     @Published var frozenStake: Decimal = 0
     @Published var availableStake: Decimal = 0
     
+    @Published var currentUser: User?
+    
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -53,6 +55,7 @@ class DashboardViewModel: ObservableObject {
         Publishers.CombineLatest(userService.currentUser, challengeService.challenges)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] user, challenges in
+                self?.currentUser = user
                 self?.calculateStake(user: user, challenges: challenges)
             }
             .store(in: &cancellables)

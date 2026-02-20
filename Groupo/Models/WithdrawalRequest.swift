@@ -14,3 +14,16 @@ struct WithdrawalRequest: Identifiable, Codable, Hashable {
         case rejected
     }
 }
+
+extension WithdrawalRequest {
+    static func preview() -> WithdrawalRequest {
+        WithdrawalRequest(
+            id: UUID(),
+            initiatorID: UUID(),
+            amount: 250.00,
+            status: .pending,
+            createdDate: Date().addingTimeInterval(-3600),
+            deadline: Date().addingTimeInterval(86400)
+        )
+    }
+}

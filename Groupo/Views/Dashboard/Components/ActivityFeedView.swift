@@ -19,7 +19,7 @@ struct ActivityFeedView: View {
                 Spacer()
                 
                 Button(action: {
-                    coordinator.selectTab(.ledger)
+                    coordinator.selectTab(.treasury)
                 }) {
                     Text("View All")
                         .font(.caption)
@@ -48,7 +48,7 @@ struct ActivityFeedView: View {
                         activityRow(for: transaction)
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                coordinator.selectTab(.ledger)
+                                coordinator.selectTab(.treasury)
                             }
                     }
                 }
