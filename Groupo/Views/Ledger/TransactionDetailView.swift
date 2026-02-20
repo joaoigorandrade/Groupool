@@ -7,14 +7,14 @@ struct TransactionDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                headerSection
+                TransactionHeader(transaction: transaction)
                 
                 Divider()
                 
-                infoSection
+                TransactionInfo(transaction: transaction)
                 
                 if let splitDetails = transaction.splitDetails {
-                    splitSection(details: splitDetails)
+                    TransactionSplit(splitDetails: splitDetails)
                 }
                 
                 Spacer()
@@ -27,8 +27,11 @@ struct TransactionDetailView: View {
 }
 
 // MARK: - Subviews
-private extension TransactionDetailView {
-    var headerSection: some View {
+
+private struct TransactionHeader: View {
+    let transaction: Transaction
+
+    var body: some View {
         VStack(alignment: .center, spacing: 16) {
             ZStack {
                 Circle()
@@ -54,19 +57,28 @@ private extension TransactionDetailView {
         }
         .padding(.vertical, 10)
     }
+}
+
+private struct TransactionInfo: View {
+    let transaction: Transaction
     
-    var infoSection: some View {
+    var body: some View {
         VStack(spacing: 16) {
-            detailRow(title: "Data", value: transaction.timestamp.formatted(date: .long, time: .shortened))
-            detailRow(title: "Tipo", value: transaction.type.rawValue.capitalized)
-            detailRow(title: "ID", value: transaction.id.uuidString.prefix(8).uppercased())
+            DetailRow(title: "Data", value: transaction.timestamp.formatted(date: .long, time: .shortened))
+            DetailRow(title: "Tipo", value: transaction.type.rawValue.capitalized)
+            DetailRow(title: "ID", value: transaction.id.uuidString.prefix(8).uppercased())
         }
         .padding()
         .background(Color.gray.opacity(0.05))
         .cornerRadius(12)
     }
+}
+
+private struct DetailRow: View {
+    let title: String
+    let value: String
     
-    func detailRow(title: String, value: String) -> some View {
+    var body: some View {
         HStack {
             Text(title)
                 .foregroundColor(.secondary)
@@ -75,14 +87,18 @@ private extension TransactionDetailView {
                 .fontWeight(.medium)
         }
     }
+}
+
+private struct TransactionSplit: View {
+    let splitDetails: [String: Decimal]
     
-    func splitSection(details: [String: Decimal]) -> some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Divisão")
                 .font(.headline)
             
             VStack(spacing: 0) {
-                ForEach(details.sorted(by: { $0.key < $1.key }), id: \.key) { name, amount in
+                ForEach(splitDetails.sorted(by: { $0.key < $1.key }), id: \.key) { name, amount in
                     HStack {
                         Image(systemName: "person.circle.fill")
                             .foregroundColor(.gray)
@@ -93,7 +109,7 @@ private extension TransactionDetailView {
                     }
                     .padding()
                     
-                    if name != details.sorted(by: { $0.key < $1.key }).last?.key {
+                    if name != splitDetails.sorted(by: { $0.key < $1.key }).last?.key {
                         Divider()
                             .padding(.leading, 50)
                     }

@@ -12,6 +12,9 @@ class DashboardViewModel: ObservableObject {
     
     @Published var currentUser: User?
     
+    @Published var activeChallenge: Challenge?
+    @Published var recentTransactions: [Transaction] = []
+
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -19,15 +22,18 @@ class DashboardViewModel: ObservableObject {
     private let groupService: any GroupServiceProtocol
     private let userService: any UserServiceProtocol
     private let challengeService: any ChallengeServiceProtocol
+    private let transactionService: any TransactionServiceProtocol
 
     init(
         groupService: any GroupServiceProtocol,
         userService: any UserServiceProtocol,
-        challengeService: any ChallengeServiceProtocol
+        challengeService: any ChallengeServiceProtocol,
+        transactionService: any TransactionServiceProtocol
     ) {
         self.groupService = groupService
         self.userService = userService
         self.challengeService = challengeService
+        self.transactionService = transactionService
         setupSubscribers()
     }
 
@@ -58,6 +64,24 @@ class DashboardViewModel: ObservableObject {
                 self?.currentUser = user
                 self?.calculateStake(user: user, challenges: challenges)
             }
+            .store(in: &cancellables)
+
+        // Active Challenge
+        challengeService.challenges
+            .receive(on: DispatchQueue.main)
+            .map { challenges in
+                challenges.first { $0.status == .active || $0.status == .voting }
+            }
+            .assign(to: \.activeChallenge, on: self)
+            .store(in: &cancellables)
+
+        // Recent Transactions
+        transactionService.transactions
+            .receive(on: DispatchQueue.main)
+            .map { transactions in
+                Array(transactions.prefix(5))
+            }
+            .assign(to: \.recentTransactions, on: self)
             .store(in: &cancellables)
     }
     

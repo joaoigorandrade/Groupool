@@ -19,7 +19,8 @@ struct MainTabView: View {
             DashboardView(
                 groupService: services.groupService,
                 userService: services.userService,
-                challengeService: services.challengeService
+                challengeService: services.challengeService,
+                transactionService: services.transactionService
             )
                 .tag(MainTab.dashboard)
                 .tabItem {

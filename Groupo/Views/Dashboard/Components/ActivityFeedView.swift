@@ -2,10 +2,9 @@ import SwiftUI
 import Combine
 
 struct ActivityFeedView: View {
-    @EnvironmentObject private var services: AppServiceContainer
     @EnvironmentObject private var coordinator: MainCoordinator
     
-    @State private var transactions: [Transaction] = []
+    let transactions: [Transaction]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -63,9 +62,6 @@ struct ActivityFeedView: View {
                 .stroke(.white.opacity(0.1), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-        .onReceive(services.transactionService.transactions.receive(on: DispatchQueue.main)) {
-            transactions = $0
-        }
     }
     
     private func activityRow(for transaction: Transaction) -> some View {
@@ -110,7 +106,7 @@ struct ActivityFeedView: View {
         Color("PrimaryBackground")
             .ignoresSafeArea()
         
-        ActivityFeedView()
+        ActivityFeedView(transactions: [])
             .environmentObject(services)
             .environmentObject(MainCoordinator())
             .padding()
