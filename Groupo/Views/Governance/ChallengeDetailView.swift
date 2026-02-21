@@ -72,7 +72,7 @@ class ChallengeDetailViewModel {
 
 struct ChallengeDetailView: View {
     let challenge: Challenge
-    @EnvironmentObject var services: AppServiceContainer
+    @Environment(\.services) var services
     @State private var viewModel: ChallengeDetailViewModel?
     
     var body: some View {
@@ -408,7 +408,7 @@ private struct FailedView: View {
             participants: [],
             status: .active
         ))
-        .environmentObject(services)
+        .environment(\.services, services)
     }
 }
 
@@ -425,7 +425,7 @@ private struct FailedView: View {
             participants: [],
             status: .complete
         ))
-        .environmentObject(services)
+        .environment(\.services, services)
     }
 }
 
@@ -442,7 +442,7 @@ private struct FailedView: View {
             participants: [],
             status: .active
         ))
-        .environmentObject(services)
+        .environment(\.services, services)
         .preferredColorScheme(.dark)
     }
 }

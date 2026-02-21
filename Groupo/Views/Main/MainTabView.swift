@@ -1,22 +1,37 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @EnvironmentObject var services: AppServiceContainer
+    @Environment(\.services) var services
     @State private var coordinator = MainCoordinator()
+    @State private var governanceViewModel: GovernanceViewModel?
     
     var body: some View {
-        TabView(selection: tabBinding) {
-            dashboardTab
-            createTab
-            treasuryTab
-        }
-        .environment(coordinator)
-        .adaptiveSheet(isPresented: $coordinator.isPresentingCreateSheet) {
-            ActionMenuSheet(destination: $coordinator.activeSheetDestination)
-                .environmentObject(services)
-        }
-        .onChange(of: coordinator.isPresentingCreateSheet) { _, isPresented in
-            if !isPresented { coordinator.activeSheetDestination = .menu }
+        view
+            .adaptiveSheet(isPresented: $coordinator.isPresentingCreateSheet) {
+                ActionMenuSheet(destination: $coordinator.activeSheetDestination)
+                    .environment(\.services, services)
+            }
+            .onChange(of: coordinator.isPresentingCreateSheet) { _, isPresented in
+                if !isPresented { coordinator.activeSheetDestination = .menu }
+            }
+    }
+    
+    @ViewBuilder
+    private var view: some View {
+        if let gvm = governanceViewModel {
+            TabView(selection: tabBinding) {
+                dashboardTab(governanceViewModel: gvm)
+                createTab
+                treasuryTab(governanceViewModel: gvm)
+            }
+            .environment(coordinator)
+        } else {
+            ProgressView()
+                .onAppear {
+                    if governanceViewModel == nil {
+                        governanceViewModel = GovernanceViewModel(services: services)
+                    }
+                }
         }
     }
 }
@@ -39,12 +54,13 @@ private extension MainTabView {
 
 // MARK: - Subviews
 private extension MainTabView {
-    private var dashboardTab: some View {
+    private func dashboardTab(governanceViewModel: GovernanceViewModel) -> some View {
         DashboardView(
             groupService: services.groupService,
             userService: services.userService,
             challengeService: services.challengeService,
-            transactionService: services.transactionService
+            transactionService: services.transactionService,
+            governanceViewModel: governanceViewModel
         )
         .tag(MainTab.dashboard)
         .tabItem {
@@ -60,14 +76,11 @@ private extension MainTabView {
             }
     }
     
-    private var treasuryTab: some View {
+    private func treasuryTab(governanceViewModel: GovernanceViewModel) -> some View {
         TreasuryView(
             transactionService: services.transactionService,
-            challengeService: services.challengeService,
-            voteService: services.voteService,
-            withdrawalService: services.withdrawalService,
             userService: services.userService,
-            groupService: services.groupService
+            governanceViewModel: governanceViewModel
         )
         .tag(MainTab.treasury)
         .tabItem {
@@ -79,5 +92,5 @@ private extension MainTabView {
 #Preview {
     let services = AppServiceContainer.preview()
     MainTabView()
-        .environmentObject(services)
+        .environment(\.services, services)
 }

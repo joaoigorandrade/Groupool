@@ -86,41 +86,19 @@ final class MockWithdrawalService: WithdrawalServiceProtocol {
 
             // Deduct from pool
             let newPool = store.currentGroup.totalPool - request.amount
-            store.currentGroup = Group(
-                id: store.currentGroup.id,
-                name: store.currentGroup.name,
-                totalPool: newPool,
-                members: store.currentGroup.members
-            )
+            store.currentGroup = store.currentGroup.updating(totalPool: newPool)
 
             // Deduct from member equity
             if let userIndex = store.currentGroup.members.firstIndex(where: {
                 $0.id == request.initiatorID
             }) {
                 let member = store.currentGroup.members[userIndex]
-                let updatedMember = User(
-                    id: member.id,
-                    name: member.name,
-                    avatar: member.avatar,
-                    reputationScore: member.reputationScore,
-                    currentEquity: member.currentEquity - request.amount,
-                    challengesWon: member.challengesWon,
-                    challengesLost: member.challengesLost,
-                    lastWinTimestamp: member.lastWinTimestamp,
-                    votingHistory: member.votingHistory,
-                    consecutiveMissedVotes: member.consecutiveMissedVotes,
-                    status: member.status
-                )
+                let updatedMember = member.updating(currentEquity: member.currentEquity - request.amount)
 
                 var newMembers = store.currentGroup.members
                 newMembers[userIndex] = updatedMember
 
-                store.currentGroup = Group(
-                    id: store.currentGroup.id,
-                    name: store.currentGroup.name,
-                    totalPool: store.currentGroup.totalPool,
-                    members: newMembers
-                )
+                store.currentGroup = store.currentGroup.updating(members: newMembers)
 
                 if updatedMember.id == store.currentUser.id {
                     store.currentUser = updatedMember
@@ -148,57 +126,6 @@ final class MockWithdrawalService: WithdrawalServiceProtocol {
     }
 
     private func updateVotingParticipation(for targetID: UUID) {
-        var newMembers = store.currentGroup.members
-
-        for (memberIndex, member) in newMembers.enumerated() {
-            let hasVoted = store.votes.contains {
-                $0.targetID == targetID && $0.voterID == member.id
-            }
-
-            var newHistory = member.votingHistory
-            var newConsecutive = member.consecutiveMissedVotes
-            var newStatus = member.status
-
-            if hasVoted {
-                if !newHistory.contains(targetID) {
-                    newHistory.append(targetID)
-                }
-                newConsecutive = 0
-            } else {
-                newConsecutive += 1
-                if newConsecutive >= 3 {
-                    newStatus = .inactive
-                }
-            }
-
-            newMembers[memberIndex] = User(
-                id: member.id,
-                name: member.name,
-                avatar: member.avatar,
-                reputationScore: member.reputationScore,
-                currentEquity: member.currentEquity,
-                challengesWon: member.challengesWon,
-                challengesLost: member.challengesLost,
-                lastWinTimestamp: member.lastWinTimestamp,
-                votingHistory: newHistory,
-                consecutiveMissedVotes: newConsecutive,
-                status: newStatus
-            )
-        }
-
-        store.currentGroup = Group(
-            id: store.currentGroup.id,
-            name: store.currentGroup.name,
-            totalPool: store.currentGroup.totalPool,
-            members: newMembers
-        )
-
-        if let updatedCurrentUser = newMembers.first(where: {
-            $0.id == store.currentUser.id
-        }) {
-            store.currentUser = updatedCurrentUser
-        }
-
-        store.save()
+        store.updateVotingParticipation(for: targetID)
     }
 }

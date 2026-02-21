@@ -64,6 +64,16 @@ class GovernanceViewModel {
         setupTimer()
     }
 
+    convenience init(services: AppServiceContainer) {
+        self.init(
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
+    }
+
     @MainActor
     func refresh() async {
         isLoading = true

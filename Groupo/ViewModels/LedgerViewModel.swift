@@ -12,9 +12,16 @@ class LedgerViewModel {
     private var hasLoaded: Bool = false
     private var cancellables = Set<AnyCancellable>()
     private let transactionService: any TransactionServiceProtocol
+    private let userService: any UserServiceProtocol
 
-    init(transactionService: any TransactionServiceProtocol) {
+    var currentUser: User?
+
+    init(
+        transactionService: any TransactionServiceProtocol,
+        userService: any UserServiceProtocol
+    ) {
         self.transactionService = transactionService
+        self.userService = userService
         setupSubscribers()
     }
 
@@ -39,6 +46,13 @@ class LedgerViewModel {
                 } else {
                     processTransactions(transactions)
                 }
+            }
+            .store(in: &cancellables)
+
+        userService.currentUser
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] user in
+                self?.currentUser = user
             }
             .store(in: &cancellables)
     }

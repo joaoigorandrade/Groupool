@@ -65,36 +65,27 @@ final class SessionManager: ObservableObject {
     func sendOTP(phone: String) {
         print("Sending OTP to \(phone)...")
         self.tempPhone = phone
-        // In a real app, this would trigger a backend request.
     }
     
-    /// Verifies the OTP code and establishes a session.
-    /// - Parameter code: The OTP code entered by the user.
-    func verifyOTP(code: String) {
+    /// Establishes a session using a verified identity token.
+    /// - Parameter token: The verified identity token (mock).
+    func establishSession(token: String) {
         guard let phone = tempPhone else {
             print("Error: No phone number associated with this verification attempt.")
             return
         }
         
-        print("Verifying OTP: \(code) for \(phone)")
+        print("Establishing session with token for \(phone)")
         
-        if code == "123456" {
-            // Success
-            // Save persistence data
-            userDefaults.set(phone, forKey: keyPhone)
-            userDefaults.set("mock_auth_token_123", forKey: keyToken)
-            
-            // Clear temporary state
-            tempPhone = nil
-            
-            // Update session state
-            self.session = .authenticated
-        } else {
-            print("Invalid OTP")
-            // In a real app, we would throw an error or publish an error state.
-            // For now, the view model handles the "123456" check before calling this for positive flow,
-            // but strictly speaking this manager should enforce it too or return a result.
-        }
+        // Save persistence data
+        userDefaults.set(phone, forKey: keyPhone)
+        userDefaults.set(token, forKey: keyToken)
+        
+        // Clear temporary state
+        tempPhone = nil
+        
+        // Update session state
+        self.session = .authenticated
     }
     
     /// Completes the onboarding process and transitions the user to the main app experience.

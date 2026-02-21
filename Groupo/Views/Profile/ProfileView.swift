@@ -133,12 +133,10 @@ private extension ProfileView {
 #Preview("Populated") {
     let services = AppServiceContainer.preview()
     ProfileView(userService: services.userService)
-        .environmentObject(services)
 }
 
 #Preview("Dark Mode") {
     let services = AppServiceContainer.preview()
     ProfileView(userService: services.userService)
-        .environmentObject(services)
         .preferredColorScheme(.dark)
 }

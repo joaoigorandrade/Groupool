@@ -152,4 +152,63 @@ final class MockStore {
     var currentUserAvailableBalance: Decimal {
         currentUser.currentEquity - currentUserFrozenBalance
     }
+
+    // MARK: - Mutations
+
+    func updateVotingParticipation(for targetID: UUID) {
+        var newMembers = currentGroup.members
+
+        for (index, member) in newMembers.enumerated() {
+            let hasVoted = votes.contains {
+                $0.targetID == targetID && $0.voterID == member.id
+            }
+
+            var newHistory = member.votingHistory
+            var newConsecutive = member.consecutiveMissedVotes
+            var newStatus = member.status
+
+            if hasVoted {
+                if !newHistory.contains(targetID) {
+                    newHistory.append(targetID)
+                }
+                newConsecutive = 0
+            } else {
+                newConsecutive += 1
+                if newConsecutive >= 3 {
+                    newStatus = .inactive
+                }
+            }
+
+            newMembers[index] = member.updating(
+                votingHistory: newHistory,
+                consecutiveMissedVotes: newConsecutive,
+                status: newStatus
+            )
+        }
+
+        currentGroup = currentGroup.updating(members: newMembers)
+
+        if let updatedCurrentUser = newMembers.first(where: { $0.id == currentUser.id }) {
+            currentUser = updatedCurrentUser
+        }
+
+        save()
+    }
+
+    func updateUserStats(win: Bool, profit: Decimal, buyIn: Decimal = 0) {
+        if win {
+            currentUser = currentUser.updating(
+                reputationScore: currentUser.reputationScore + 10,
+                currentEquity: currentUser.currentEquity + profit,
+                challengesWon: currentUser.challengesWon + 1,
+                lastWinTimestamp: Date()
+            )
+        } else {
+            currentUser = currentUser.updating(
+                currentEquity: currentUser.currentEquity - buyIn,
+                challengesLost: currentUser.challengesLost + 1
+            )
+        }
+        save()
+    }
 }

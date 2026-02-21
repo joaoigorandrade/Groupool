@@ -1,15 +1,17 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @EnvironmentObject private var services: AppServiceContainer
+    @Environment(\.services) private var services
     @Environment(MainCoordinator.self) private var coordinator
     @State private var viewModel: DashboardViewModel
+    let governanceViewModel: GovernanceViewModel
 
     init(
         groupService: any GroupServiceProtocol,
         userService: any UserServiceProtocol,
         challengeService: any ChallengeServiceProtocol,
-        transactionService: any TransactionServiceProtocol
+        transactionService: any TransactionServiceProtocol,
+        governanceViewModel: GovernanceViewModel
     ) {
         _viewModel = State(wrappedValue: DashboardViewModel(
             groupService: groupService,
@@ -17,6 +19,7 @@ struct DashboardView: View {
             challengeService: challengeService,
             transactionService: transactionService
         ))
+        self.governanceViewModel = governanceViewModel
     }
     
     var body: some View {
@@ -95,7 +98,8 @@ struct DashboardView: View {
             onCreateChallenge: {
                 coordinator.presentSheet(.challenge)
             },
-            services: services
+            services: services,
+            governanceViewModel: governanceViewModel
         )
     }
     
@@ -118,9 +122,16 @@ struct DashboardView: View {
         groupService: services.groupService,
         userService: services.userService,
         challengeService: services.challengeService,
-        transactionService: services.transactionService
+        transactionService: services.transactionService,
+        governanceViewModel: GovernanceViewModel(
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
     )
-        .environmentObject(services)
+        .environment(\.services, services)
         .environment(MainCoordinator())
 }
 
@@ -130,9 +141,16 @@ struct DashboardView: View {
         groupService: services.groupService,
         userService: services.userService,
         challengeService: services.challengeService,
-        transactionService: services.transactionService
+        transactionService: services.transactionService,
+        governanceViewModel: GovernanceViewModel(
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
     )
-        .environmentObject(services)
+        .environment(\.services, services)
         .environment(MainCoordinator())
 }
 
@@ -142,9 +160,16 @@ struct DashboardView: View {
         groupService: services.groupService,
         userService: services.userService,
         challengeService: services.challengeService,
-        transactionService: services.transactionService
+        transactionService: services.transactionService,
+        governanceViewModel: GovernanceViewModel(
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
     )
-        .environmentObject(services)
+        .environment(\.services, services)
         .environment(MainCoordinator())
         .preferredColorScheme(.dark)
 }

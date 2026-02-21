@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ActionMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var services: AppServiceContainer
+    @Environment(\.services) var services
     @Binding var destination: Destination
     
     enum Destination { case menu, expense, challenge, withdrawal }
@@ -113,20 +113,20 @@ private struct MenuButtonLabel: View {
 
 #Preview("Menu") {
     ActionMenuSheet(destination: .constant(.menu))
-        .environmentObject(AppServiceContainer.preview())
+        .environment(\.services, AppServiceContainer.preview())
 }
 
 #Preview("Expense") {
     ActionMenuSheet(destination: .constant(.expense))
-        .environmentObject(AppServiceContainer.preview())
+        .environment(\.services, AppServiceContainer.preview())
 }
 
 #Preview("Challenge") {
     ActionMenuSheet(destination: .constant(.challenge))
-        .environmentObject(AppServiceContainer.preview())
+        .environment(\.services, AppServiceContainer.preview())
 }
 
 #Preview("Withdrawal") {
     ActionMenuSheet(destination: .constant(.withdrawal))
-        .environmentObject(AppServiceContainer.preview())
+        .environment(\.services, AppServiceContainer.preview())
 }

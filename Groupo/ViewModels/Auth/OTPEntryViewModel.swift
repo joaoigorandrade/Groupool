@@ -77,8 +77,8 @@ final class OTPEntryViewModel {
                 self.isLoading = false
                 
                 if self.otpCode == "123456" {
-                    // Success
-                    sessionManager.verifyOTP(code: self.otpCode)
+                    // Success: In a real app we'd get this token from the backend
+                    sessionManager.establishSession(token: "mock_auth_token_123")
                 } else {
                     // Failure
                     self.errorMessage = "Invalid code. Please try again."

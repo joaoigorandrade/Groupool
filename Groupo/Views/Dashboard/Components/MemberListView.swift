@@ -192,7 +192,6 @@ struct MemberRow: View {
             groupService: services.groupService,
             challengeService: services.challengeService
         )
-        .environmentObject(services)
     }
 }
 
@@ -203,7 +202,6 @@ struct MemberRow: View {
             groupService: services.groupService,
             challengeService: services.challengeService
         )
-        .environmentObject(services)
     }
 }
 
@@ -214,7 +212,6 @@ struct MemberRow: View {
             groupService: services.groupService,
             challengeService: services.challengeService
         )
-        .environmentObject(services)
     }
     .preferredColorScheme(.dark)
 }

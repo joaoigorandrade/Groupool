@@ -9,30 +9,24 @@ import SwiftUI
 
 struct TreasuryView: View {
     // MARK: - Dependencies
-    @EnvironmentObject private var services: AppServiceContainer
+    @Environment(\.services) private var services
     @Environment(MainCoordinator.self) private var coordinator
     
     // MARK: - State
     @State private var ledgerViewModel: LedgerViewModel
-    @State private var governanceViewModel: GovernanceViewModel
+    let governanceViewModel: GovernanceViewModel
     
     // MARK: - Initialization
     init(
         transactionService: any TransactionServiceProtocol,
-        challengeService: any ChallengeServiceProtocol,
-        voteService: any VoteServiceProtocol,
-        withdrawalService: any WithdrawalServiceProtocol,
         userService: any UserServiceProtocol,
-        groupService: any GroupServiceProtocol
+        governanceViewModel: GovernanceViewModel
     ) {
-        _ledgerViewModel = State(wrappedValue: LedgerViewModel(transactionService: transactionService))
-        _governanceViewModel = State(wrappedValue: GovernanceViewModel(
-            challengeService: challengeService,
-            voteService: voteService,
-            withdrawalService: withdrawalService,
-            userService: userService,
-            groupService: groupService
+        _ledgerViewModel = State(wrappedValue: LedgerViewModel(
+            transactionService: transactionService,
+            userService: userService
         ))
+        self.governanceViewModel = governanceViewModel
     }
     
     // MARK: - Body
@@ -41,7 +35,6 @@ struct TreasuryView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     BalanceStatsSection(
-                        userService: services.userService,
                         ledgerViewModel: ledgerViewModel
                     )
                     
@@ -80,13 +73,11 @@ struct TreasuryView: View {
 private extension TreasuryView {
     
     struct BalanceStatsSection: View {
-        let userService: any UserServiceProtocol
         let ledgerViewModel: LedgerViewModel
-        @State private var currentUser: User?
         
         var body: some View {
             HStack(spacing: 16) {
-                TreasuryStatCard(title: "Total Balance", value: currentUser?.currentEquity ?? 0)
+                TreasuryStatCard(title: "Total Balance", value: ledgerViewModel.currentUser?.currentEquity ?? 0)
                 TreasuryStatCard(
                     title: "Transactions",
                     value: Decimal(ledgerViewModel.sections.flatMap { $0.transactions }.count),
@@ -94,9 +85,6 @@ private extension TreasuryView {
                 )
             }
             .padding(.horizontal)
-            .onReceive(userService.currentUser) { user in
-                self.currentUser = user
-            }
         }
     }
     
@@ -126,21 +114,13 @@ private extension TreasuryView {
         let ledgerViewModel: LedgerViewModel
         
         var body: some View {
-            if ledgerViewModel.isLoading {
-                SkeletonView()
-                    .padding()
-            } else if !ledgerViewModel.sections.isEmpty {
+            if !ledgerViewModel.sections.isEmpty {
                 LazyVStack(spacing: 16) {
                     ForEach(ledgerViewModel.sections) { section in
                         TransactionMonthSection(section: section)
                     }
                 }
                 .padding(.bottom, 20)
-            } else {
-                Text("No transactions yet.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .padding()
             }
         }
     }
@@ -149,7 +129,7 @@ private extension TreasuryView {
         let section: TransactionSection
         
         var body: some View {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(section.title)
                     .font(.caption2)
                     .fontWeight(.bold)
@@ -168,7 +148,7 @@ private extension TreasuryView {
                     }
                 }
                 .padding(.horizontal)
-                .frame(minHeight: CGFloat(min(section.transactions.count, 4)) * 24 + 60)
+                .frame(minHeight: CGFloat(min(section.transactions.count, 4)) * 24)
             }
         }
     }
@@ -189,23 +169,14 @@ private extension TreasuryView {
             case .challenge(let challenge):
                 NavigationLink(destination: ChallengeVotingView(
                     challenge: challenge,
-                    challengeService: services.challengeService,
-                    voteService: services.voteService,
-                    withdrawalService: services.withdrawalService,
-                    userService: services.userService,
-                    groupService: services.groupService,
-                    transactionService: services.transactionService
+                    viewModel: governanceViewModel
                 )) {
                     proposalCard
                 }
             case .withdrawal(let request):
                 NavigationLink(destination: WithdrawalVotingView(
                     withdrawal: request,
-                    challengeService: services.challengeService,
-                    voteService: services.voteService,
-                    withdrawalService: services.withdrawalService,
-                    userService: services.userService,
-                    groupService: services.groupService
+                    viewModel: governanceViewModel
                 )) {
                     proposalCard
                 }
@@ -236,7 +207,7 @@ private extension TreasuryView {
             if !ledgerViewModel.isLoading {
                 TransactionCalendarView(
                     summaries: ledgerViewModel.dailySummaries,
-                    size: governanceViewModel.activeItems.isEmpty ? .full : .half
+                    isSmall: !governanceViewModel.activeItems.isEmpty
                 )
             } else {
                 SkeletonView()
@@ -268,14 +239,15 @@ private extension TreasuryView {
 #Preview("Populated") {
     let services = AppServiceContainer.preview()
     TreasuryView(
-        transactionService: services.transactionService,
-        challengeService: services.challengeService,
-        voteService: services.voteService,
-        withdrawalService: services.withdrawalService,
-        userService: services.userService,
-        groupService: services.groupService
+        transactionService: services.transactionService, userService: services.userService,
+        governanceViewModel: GovernanceViewModel(
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
     )
-    .environmentObject(services)
     .environment(MainCoordinator())
 }
 
@@ -283,13 +255,15 @@ private extension TreasuryView {
     let services = AppServiceContainer.preview()
     TreasuryView(
         transactionService: services.transactionService,
-        challengeService: services.challengeService,
-        voteService: services.voteService,
-        withdrawalService: services.withdrawalService,
         userService: services.userService,
-        groupService: services.groupService
+        governanceViewModel: GovernanceViewModel(
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
     )
-    .environmentObject(services)
     .environment(MainCoordinator())
     .preferredColorScheme(.dark)
 }

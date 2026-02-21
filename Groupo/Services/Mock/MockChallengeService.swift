@@ -190,7 +190,7 @@ final class MockChallengeService: ChallengeServiceProtocol {
 
             if winnerID == store.currentUser.id {
                 let profit = pot - challenge.buyIn
-                updateUserStats(win: true, profit: profit)
+                store.updateUserStats(win: true, profit: profit)
 
                 let winTransaction = Transaction(
                     id: UUID(),
@@ -203,7 +203,7 @@ final class MockChallengeService: ChallengeServiceProtocol {
                 )
                 store.transactions.insert(winTransaction, at: 0)
             } else if challenge.participants.contains(store.currentUser.id) {
-                updateUserStats(win: false, profit: 0, buyIn: challenge.buyIn)
+                store.updateUserStats(win: false, profit: 0, buyIn: challenge.buyIn)
 
                 let lossTransaction = Transaction(
                     id: UUID(),
@@ -230,91 +230,9 @@ final class MockChallengeService: ChallengeServiceProtocol {
     // MARK: - Private Helpers
 
     private func updateVotingParticipation(for targetID: UUID) {
-        var newMembers = store.currentGroup.members
-
-        for (memberIndex, member) in newMembers.enumerated() {
-            let hasVoted = store.votes.contains {
-                $0.targetID == targetID && $0.voterID == member.id
-            }
-
-            var newHistory = member.votingHistory
-            var newConsecutive = member.consecutiveMissedVotes
-            var newStatus = member.status
-
-            if hasVoted {
-                if !newHistory.contains(targetID) {
-                    newHistory.append(targetID)
-                }
-                newConsecutive = 0
-            } else {
-                newConsecutive += 1
-                if newConsecutive >= 3 {
-                    newStatus = .inactive
-                }
-            }
-
-            newMembers[memberIndex] = User(
-                id: member.id,
-                name: member.name,
-                avatar: member.avatar,
-                reputationScore: member.reputationScore,
-                currentEquity: member.currentEquity,
-                challengesWon: member.challengesWon,
-                challengesLost: member.challengesLost,
-                lastWinTimestamp: member.lastWinTimestamp,
-                votingHistory: newHistory,
-                consecutiveMissedVotes: newConsecutive,
-                status: newStatus
-            )
-        }
-
-        store.currentGroup = Group(
-            id: store.currentGroup.id,
-            name: store.currentGroup.name,
-            totalPool: store.currentGroup.totalPool,
-            members: newMembers
-        )
-
-        if let updatedCurrentUser = newMembers.first(where: {
-            $0.id == store.currentUser.id
-        }) {
-            store.currentUser = updatedCurrentUser
-        }
-
-        store.save()
+        store.updateVotingParticipation(for: targetID)
     }
 
-    private func updateUserStats(win: Bool, profit: Decimal, buyIn: Decimal = 0) {
-        if win {
-            store.currentUser = User(
-                id: store.currentUser.id,
-                name: store.currentUser.name,
-                avatar: store.currentUser.avatar,
-                reputationScore: store.currentUser.reputationScore + 10,
-                currentEquity: store.currentUser.currentEquity + profit,
-                challengesWon: store.currentUser.challengesWon + 1,
-                challengesLost: store.currentUser.challengesLost,
-                lastWinTimestamp: Date(),
-                votingHistory: store.currentUser.votingHistory,
-                consecutiveMissedVotes: store.currentUser.consecutiveMissedVotes,
-                status: store.currentUser.status
-            )
-        } else {
-            store.currentUser = User(
-                id: store.currentUser.id,
-                name: store.currentUser.name,
-                avatar: store.currentUser.avatar,
-                reputationScore: store.currentUser.reputationScore,
-                currentEquity: store.currentUser.currentEquity - buyIn,
-                challengesWon: store.currentUser.challengesWon,
-                challengesLost: store.currentUser.challengesLost + 1,
-                lastWinTimestamp: store.currentUser.lastWinTimestamp,
-                votingHistory: store.currentUser.votingHistory,
-                consecutiveMissedVotes: store.currentUser.consecutiveMissedVotes,
-                status: store.currentUser.status
-            )
-        }
-    }
 
     private func refundChallenge(_ challenge: Challenge) {
         guard challenge.participants.contains(store.currentUser.id) else { return }

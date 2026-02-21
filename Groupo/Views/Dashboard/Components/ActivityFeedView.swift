@@ -127,7 +127,6 @@ struct ActivityFeedView: View {
             onViewAll: {},
             onTransactionSelected: { _ in }
         )
-            .environmentObject(services)
             .environment(MainCoordinator())
             .padding()
     }

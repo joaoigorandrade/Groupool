@@ -1,63 +1,67 @@
 import SwiftUI
 
 struct TransactionCalendarView: View {
-    enum CalendarSize: Int {
-        case half = 30
-        case full = 60
-    }
     
     let summaries: [DailySummary]
-    let size: CalendarSize
+    let isSmall: Bool
+    let size: Int = 30
     
-    private let columns = Array(repeating: GridItem(.fixed(14), spacing: 4), count: 7)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
     private static let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
     
     private var filteredSummaries: [DailySummary] {
-        Array(summaries.suffix(size.rawValue))
+        Array(summaries.suffix(size))
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
             calendarGrid
-            footer
+                .padding(.horizontal, isSmall ? 0 : 24)
+            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .treasuryCardStyle()
     }
 }
 
 private extension TransactionCalendarView {
     var header: some View {
-        Text("Last \(size.rawValue) days activity")
-            .font(.caption)
-            .foregroundColor(.secondary)
+        HStack(alignment: .top) {
+            Text("Last \(size) days activity")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Spacer(minLength: 0)
+            score
+        }
     }
     
     var calendarGrid: some View {
         VStack(spacing: 8) {
             HStack(spacing: 4) {
-                ForEach(Self.weekdays, id: \.self) { day in
+                ForEach(Array(Self.weekdays.enumerated()), id: \.offset) { _, day in
                     Text(day)
                         .font(.system(size: 8, weight: .bold))
                         .foregroundColor(.secondary.opacity(0.5))
-                        .frame(width: 14)
+                        .frame(maxWidth: .infinity)
                 }
             }
             
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(filteredSummaries) { summary in
-                    RoundedRectangle(cornerRadius: 3)
+                    RoundedRectangle(cornerRadius: isSmall ? 3 : 8)
                         .fill(color(for: summary))
-                        .frame(width: 14, height: 14)
+                        .aspectRatio(1, contentMode: .fill)
                 }
             }
         }
     }
     
-    var footer: some View {
+    var score: some View {
         let stats = calculateStats()
         
-        return HStack {
+        return VStack(alignment: .leading,
+                      spacing: 4) {
             HStack(spacing: 4) {
                 Circle()
                     .fill(Color.green.opacity(0.8))
@@ -67,8 +71,6 @@ private extension TransactionCalendarView {
                     .font(.system(size: 9, weight: .medium))
                     .foregroundColor(.secondary)
             }
-            
-            Spacer()
             
             HStack(spacing: 4) {
                 Circle()
@@ -109,4 +111,8 @@ private extension TransactionCalendarView {
         
         return Color.gray.opacity(0.15)
     }
+}
+
+#Preview {
+    TransactionCalendarView(summaries: [], isSmall: true)
 }

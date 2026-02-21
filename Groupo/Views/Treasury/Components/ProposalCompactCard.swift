@@ -16,7 +16,7 @@ struct ProposalCompactCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             headerView
-            Spacer()
+            Spacer(minLength: 0)
             infoView
             ProgressView(value: progress)
                 .tint(progressColor)

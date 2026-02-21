@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TransactionDetailView: View {
     let transaction: Transaction
-    @EnvironmentObject private var services: AppServiceContainer
+    @Environment(\.services) private var services
     
     var body: some View {
         ScrollView {
@@ -129,7 +129,7 @@ private extension TransactionDetailView {
             relatedChallengeID: nil,
             splitDetails: ["João Silva": 66.66, "Maria Oliveira": 66.67, "Carlos Pereira": 66.67]
         ))
-        .environmentObject(services)
+        .environment(\.services, services)
     }
 }
 
@@ -145,7 +145,7 @@ private extension TransactionDetailView {
             relatedChallengeID: nil,
             splitDetails: nil
         ))
-        .environmentObject(services)
+        .environment(\.services, services)
     }
 }
 
@@ -161,6 +161,6 @@ private extension TransactionDetailView {
             relatedChallengeID: nil,
             splitDetails: nil
         ))
-        .environmentObject(services)
+        .environment(\.services, services)
     }
 }

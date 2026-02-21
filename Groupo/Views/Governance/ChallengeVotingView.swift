@@ -3,39 +3,17 @@ import Observation
 
 struct ChallengeVotingView: View {
     let challenge: Challenge
-    @State private var viewModel: GovernanceViewModel
-    @State private var detailViewModel: ChallengeDetailViewModel
+    let viewModel: GovernanceViewModel
+    
+    @Environment(\.services) private var services
+    @State private var detailViewModel: ChallengeDetailViewModel?
     @State private var hasUserVoted = false
     
-    init(
-        challenge: Challenge,
-        challengeService: any ChallengeServiceProtocol,
-        voteService: any VoteServiceProtocol,
-        withdrawalService: any WithdrawalServiceProtocol,
-        userService: any UserServiceProtocol,
-        groupService: any GroupServiceProtocol,
-        transactionService: any TransactionServiceProtocol
-    ) {
+    init(challenge: Challenge, viewModel: GovernanceViewModel) {
         self.challenge = challenge
-        let services = AppServiceContainer(
-            userService: userService,
-            groupService: groupService,
-            challengeService: challengeService,
-            transactionService: transactionService,
-            voteService: voteService,
-            withdrawalService: withdrawalService
-        )
-        _viewModel = State(wrappedValue: GovernanceViewModel(
-            challengeService: challengeService,
-            voteService: voteService,
-            withdrawalService: withdrawalService,
-            userService: userService,
-            groupService: groupService
-        ))
-        _detailViewModel = State(wrappedValue: ChallengeDetailViewModel(challenge: challenge, services: services))
+        self.viewModel = viewModel
     }
     
-    // Derived state for voting progress
     private var totalParticipants: Int {
         challenge.participants.count
     }
@@ -43,12 +21,14 @@ struct ChallengeVotingView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Using decomposed components from ChallengeDetailView
-                ChallengeDetailContent(viewModel: detailViewModel)
+                if let detailViewModel = detailViewModel {
+                    ChallengeDetailContent(viewModel: detailViewModel)
+                } else {
+                    ProgressView()
+                }
                 
                 Divider()
                 
-                // Interactive functionality based on status
                 StatusActionsView(challenge: challenge, viewModel: viewModel, hasUserVoted: $hasUserVoted)
                 
                 if challenge.status != .complete && challenge.status != .failed {
@@ -61,6 +41,9 @@ struct ChallengeVotingView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            if detailViewModel == nil {
+                detailViewModel = ChallengeDetailViewModel(challenge: challenge, services: services)
+            }
             checkUserVoteStatus()
         }
     }
@@ -340,6 +323,14 @@ private struct FooterSection: View {
 
 #Preview("Active") {
     let services = AppServiceContainer.preview()
+    let governanceVM = GovernanceViewModel(
+        challengeService: services.challengeService,
+        voteService: services.voteService,
+        withdrawalService: services.withdrawalService,
+        userService: services.userService,
+        groupService: services.groupService
+    )
+    
     NavigationStack {
         ChallengeVotingView(
             challenge: Challenge(
@@ -352,13 +343,8 @@ private struct FooterSection: View {
                 participants: [],
                 status: .active
             ),
-            challengeService: services.challengeService,
-            voteService: services.voteService,
-            withdrawalService: services.withdrawalService,
-            userService: services.userService,
-            groupService: services.groupService,
-            transactionService: services.transactionService
+            viewModel: governanceVM
         )
-        .environmentObject(services)
+        .environment(\.services, services)
     }
 }

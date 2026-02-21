@@ -2,7 +2,7 @@
 import SwiftUI
 
 struct InviteLandingView: View {
-    @EnvironmentObject private var container: AppServiceContainer
+    @Environment(\.services) private var container
     @State private var viewModel = InviteLandingViewModel()
     
     var onJoin: () -> Void
@@ -135,11 +135,11 @@ private extension InviteLandingView {
 
 #Preview("Standard") {
     InviteLandingView(onJoin: {})
-        .environmentObject(AppServiceContainer.preview(seed: .pendingInvite))
+        .environment(\.services, AppServiceContainer.preview(seed: .pendingInvite))
 }
 
 #Preview("Loading") {
     let container = AppServiceContainer.preview(seed: .pendingInvite)
     return InviteLandingView(onJoin: {})
-        .environmentObject(container)
+        .environment(\.services, container)
 }

@@ -5,6 +5,7 @@ struct ActiveChallengeCard: View {
     let challenge: Challenge?
     let onCreateChallenge: () -> Void
     let services: AppServiceContainer
+    let governanceViewModel: GovernanceViewModel
     
     var body: some View {
         if let challenge = challenge {
@@ -19,12 +20,7 @@ struct ActiveChallengeCard: View {
     private func activeChallengeView(for challenge: Challenge) -> some View {
         NavigationLink(destination: ChallengeVotingView(
             challenge: challenge,
-            challengeService: services.challengeService,
-            voteService: services.voteService,
-            withdrawalService: services.withdrawalService,
-            userService: services.userService,
-            groupService: services.groupService,
-            transactionService: services.transactionService
+            viewModel: governanceViewModel
         )) {
             VStack(alignment: .leading, spacing: 16) {
                 headerView(for: challenge)
@@ -183,7 +179,14 @@ extension View {
     return ActiveChallengeCard(
         challenge: Challenge.preview(),
         onCreateChallenge: {},
-        services: services
+        services: services,
+        governanceViewModel: GovernanceViewModel(
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
     )
     .padding()
     .background(Color("PrimaryBackground"))
@@ -194,7 +197,14 @@ extension View {
     return ActiveChallengeCard(
         challenge: nil,
         onCreateChallenge: {},
-        services: services
+        services: services,
+        governanceViewModel: GovernanceViewModel(
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            userService: services.userService,
+            groupService: services.groupService
+        )
     )
     .padding()
     .background(Color("PrimaryBackground"))

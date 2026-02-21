@@ -2,10 +2,9 @@
 
 import Combine
 import Foundation
+import SwiftUI
 
-final class AppServiceContainer: ObservableObject {
-
-    let objectWillChange = ObservableObjectPublisher()
+final class AppServiceContainer {
 
     // MARK: - Services (protocol types, not concrete)
 
@@ -83,5 +82,18 @@ extension AppServiceContainer {
         fatalError(
             "Live services not implemented yet. See Services/Live/ to implement."
         )
+    }
+}
+
+// MARK: - Environment
+
+private struct AppServiceContainerKey: EnvironmentKey {
+    static let defaultValue: AppServiceContainer = .mock()
+}
+
+extension EnvironmentValues {
+    var services: AppServiceContainer {
+        get { self[AppServiceContainerKey.self] }
+        set { self[AppServiceContainerKey.self] = newValue }
     }
 }

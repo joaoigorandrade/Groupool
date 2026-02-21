@@ -3,7 +3,7 @@ import Observation
 
 struct WithdrawalVotingView: View {
     let withdrawal: WithdrawalRequest
-    @State private var viewModel: GovernanceViewModel
+    let viewModel: GovernanceViewModel
     @Environment(\.dismiss) var dismiss
     
     @State private var selectedVote: VoteOption? = nil
@@ -25,22 +25,9 @@ struct WithdrawalVotingView: View {
         var id: String { self.rawValue }
     }
     
-    init(
-        withdrawal: WithdrawalRequest,
-        challengeService: any ChallengeServiceProtocol,
-        voteService: any VoteServiceProtocol,
-        withdrawalService: any WithdrawalServiceProtocol,
-        userService: any UserServiceProtocol,
-        groupService: any GroupServiceProtocol
-    ) {
+    init(withdrawal: WithdrawalRequest, viewModel: GovernanceViewModel) {
         self.withdrawal = withdrawal
-        _viewModel = State(wrappedValue: GovernanceViewModel(
-            challengeService: challengeService,
-            voteService: voteService,
-            withdrawalService: withdrawalService,
-            userService: userService,
-            groupService: groupService
-        ))
+        self.viewModel = viewModel
     }
     
     var body: some View {
@@ -372,6 +359,14 @@ private struct WithdrawalVoteConfirmationView: View {
 
 #Preview {
     let services = AppServiceContainer.preview()
+    let governanceVM = GovernanceViewModel(
+        challengeService: services.challengeService,
+        voteService: services.voteService,
+        withdrawalService: services.withdrawalService,
+        userService: services.userService,
+        groupService: services.groupService
+    )
+    
     NavigationStack {
         WithdrawalVotingView(
             withdrawal: WithdrawalRequest(
@@ -382,12 +377,8 @@ private struct WithdrawalVoteConfirmationView: View {
                 createdDate: Date(),
                 deadline: Date().addingTimeInterval(86400)
             ),
-            challengeService: services.challengeService,
-            voteService: services.voteService,
-            withdrawalService: services.withdrawalService,
-            userService: services.userService,
-            groupService: services.groupService
+            viewModel: governanceVM
         )
-        .environmentObject(services)
+        .environment(\.services, services)
     }
 }

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CreateExpenseView: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var services: AppServiceContainer
+    @Environment(\.services) private var services
     @EnvironmentObject private var toastManager: ToastManager
     @State private var viewModel: CreateExpenseViewModel
     @State private var showCustomSplitSheet = false
@@ -148,7 +148,7 @@ private extension CreateExpenseView {
         transactionService: services.transactionService,
         groupService: services.groupService
     )
-    .environmentObject(services)
+    .environment(\.services, services)
     .environmentObject(ToastManager())
 }
 
@@ -158,7 +158,7 @@ private extension CreateExpenseView {
         transactionService: services.transactionService,
         groupService: services.groupService
     )
-    .environmentObject(services)
+    .environment(\.services, services)
     .environmentObject(ToastManager())
     .preferredColorScheme(.dark)
 }

@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct GroupoApp: App {
-    @StateObject private var services = AppServiceContainer.mock()
+    @State private var services = AppServiceContainer.mock()
     @StateObject private var toastManager = ToastManager()
     @StateObject private var sessionManager = SessionManager()
 
@@ -22,7 +22,7 @@ struct GroupoApp: App {
                     
                 case .unauthenticated:
                     PhoneEntryView()
-                        .environmentObject(services)
+                        .environment(\.services, services)
                         .environmentObject(toastManager)
                         .environmentObject(sessionManager)
                         .transition(.opacity)
@@ -33,14 +33,14 @@ struct GroupoApp: App {
                             sessionManager.completeOnboarding()
                         }
                     })
-                    .environmentObject(services)
+                    .environment(\.services, services)
                     .environmentObject(toastManager)
                     .environmentObject(sessionManager)
                     .transition(.opacity)
                     
                 case .onboarded:
                     MainTabView()
-                        .environmentObject(services)
+                        .environment(\.services, services)
                         .environmentObject(toastManager)
                         .environmentObject(sessionManager)
                         .transition(.opacity)

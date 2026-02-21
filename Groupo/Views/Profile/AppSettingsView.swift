@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AppSettingsView: View {
-    @EnvironmentObject var services: AppServiceContainer
+    @Environment(\.services) var services
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("selectedAppearance") private var selectedAppearance = "System"
     @AppStorage("selectedLanguage") private var selectedLanguage = "en"
@@ -91,7 +91,7 @@ private extension AppSettingsView {
                 InviteLandingView(onJoin: {
                     print("Joined!")
                 })
-                .environmentObject(AppServiceContainer.preview(seed: .pendingInvite))
+                .environment(\.services, AppServiceContainer.preview(seed: .pendingInvite))
             }
         }
     }
@@ -101,7 +101,7 @@ private extension AppSettingsView {
     let services = AppServiceContainer.preview()
     NavigationStack {
         AppSettingsView()
-            .environmentObject(services)
+            .environment(\.services, services)
     }
 }
 
@@ -109,7 +109,7 @@ private extension AppSettingsView {
     let services = AppServiceContainer.preview()
     NavigationStack {
         AppSettingsView()
-            .environmentObject(services)
+            .environment(\.services, services)
             .preferredColorScheme(.dark)
     }
 }
