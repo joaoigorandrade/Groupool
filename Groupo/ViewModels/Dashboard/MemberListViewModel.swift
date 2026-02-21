@@ -1,12 +1,14 @@
+
 import Combine
 import Foundation
+import Observation
 
-class MemberListViewModel: ObservableObject {
-    @Published var members: [User] = []
-    @Published var filteredMembers: [User] = []
-    @Published var selectedStatus: UserStatusFilter = .all
-    @Published var isLoading: Bool = true
-    @Published var errorMessage: String?
+@Observable
+class MemberListViewModel {
+    var members: [User] = []
+    var selectedStatus: UserStatusFilter = .all
+    var isLoading: Bool = true
+    var errorMessage: String?
 
     private var cancellables = Set<AnyCancellable>()
     private let groupService: any GroupServiceProtocol
@@ -43,8 +45,8 @@ class MemberListViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .map { $0.members }
             .sink { [weak self] returnedMembers in
-                self?.members = returnedMembers
-                self?.filterMembers()
+                guard let self else { return }
+                self.members = returnedMembers
             }
             .store(in: &cancellables)
 
@@ -54,24 +56,18 @@ class MemberListViewModel: ObservableObject {
                 self?.latestChallenges = challenges
             }
             .store(in: &cancellables)
-
-        $selectedStatus
-            .sink { [weak self] _ in
-                self?.filterMembers()
-            }
-            .store(in: &cancellables)
     }
 
-    private func filterMembers() {
+    var filteredMembers: [User] {
         switch selectedStatus {
         case .all:
-            filteredMembers = members.sorted(by: { $0.currentEquity > $1.currentEquity })
+            return members.sorted(by: { $0.currentEquity > $1.currentEquity })
         case .active:
-            filteredMembers = members
+            return members
                 .filter { $0.status == .active }
                 .sorted(by: { $0.currentEquity > $1.currentEquity })
         case .inactive:
-            filteredMembers = members
+            return members
                 .filter { $0.status == .inactive || $0.status == .suspended }
                 .sorted(by: { $0.currentEquity > $1.currentEquity })
         }

@@ -7,10 +7,12 @@ enum MainTab: Hashable {
     case treasury
 }
 
+@Observable
 class MainCoordinator: Coordinator {
-    @Published var selectedTab: MainTab = .dashboard
-    @Published var isPresentingCreateSheet: Bool = false
-    
+    var selectedTab: MainTab = .dashboard
+    var isPresentingCreateSheet: Bool = false
+    var activeSheetDestination: ActionMenuSheet.Destination = .menu
+
     func start() { }
     
     func selectTab(_ tab: MainTab) {
@@ -24,8 +26,6 @@ class MainCoordinator: Coordinator {
     func dismissSheet() {
         isPresentingCreateSheet = false
     }
-    
-    @Published var activeSheetDestination: ActionMenuSheet.Destination = .menu
     
     func presentSheet(_ destination: ActionMenuSheet.Destination) {
         activeSheetDestination = destination

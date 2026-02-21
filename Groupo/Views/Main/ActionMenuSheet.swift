@@ -111,7 +111,22 @@ private struct MenuButtonLabel: View {
     }
 }
 
-#Preview {
+#Preview("Menu") {
     ActionMenuSheet(destination: .constant(.menu))
+        .environmentObject(AppServiceContainer.preview())
+}
+
+#Preview("Expense") {
+    ActionMenuSheet(destination: .constant(.expense))
+        .environmentObject(AppServiceContainer.preview())
+}
+
+#Preview("Challenge") {
+    ActionMenuSheet(destination: .constant(.challenge))
+        .environmentObject(AppServiceContainer.preview())
+}
+
+#Preview("Withdrawal") {
+    ActionMenuSheet(destination: .constant(.withdrawal))
         .environmentObject(AppServiceContainer.preview())
 }

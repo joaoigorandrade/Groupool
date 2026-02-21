@@ -55,36 +55,55 @@ struct InputField: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(title)
-                    .font(.captionText)
-                    .foregroundColor(.appTextSecondary)
-                
-                Spacer()
-                
-                if showCharacterCount, let limit = characterLimit, let text = text {
-                    Text("\(text.wrappedValue.count)/\(limit)")
-                        .font(.caption)
-                        .foregroundColor(text.wrappedValue.count > limit ? .red : .secondary)
-                }
-            }
+        VStack(alignment: .leading, spacing: 6) {
+            headerView
+            inputContainer
+            errorFooter
+        }
+    }
+    
+    // MARK: - Subviews
+    
+    @ViewBuilder
+    private var headerView: some View {
+        HStack {
+            Text(title)
+                .font(.captionText)
+                .foregroundColor(.appTextSecondary)
             
-            textField
-                .padding()
-                .background(Color.appPrimaryBackground)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(errorMessage != nil ? Color.appDangerRed : Color.appTextSecondary.opacity(0.3), lineWidth: 1)
-                )
+            Spacer()
             
-            if let error = errorMessage {
-                Text(error)
-                    .font(.captionText)
-                    .foregroundColor(.appDangerRed)
+            if showCharacterCount, let limit = characterLimit, let text = text {
+                Text("\(text.wrappedValue.count)/\(limit)")
+                    .font(.caption)
+                    .foregroundColor(text.wrappedValue.count > limit ? .appDangerRed : .appTextSecondary)
             }
         }
+    }
+    
+    @ViewBuilder
+    private var inputContainer: some View {
+        textField
+            .padding()
+            .background(Color.appPrimaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(borderColor, lineWidth: 1)
+            )
+    }
+    
+    @ViewBuilder
+    private var errorFooter: some View {
+        if let error = errorMessage {
+            Text(error)
+                .font(.captionText)
+                .foregroundColor(.appDangerRed)
+        }
+    }
+    
+    private var borderColor: Color {
+        errorMessage != nil ? .appDangerRed : .appTextSecondary.opacity(0.3)
     }
     
     @ViewBuilder
@@ -96,10 +115,14 @@ struct InputField: View {
             TextField(placeholder, text: text, axis: axis)
                 .keyboardType(keyboardType)
                 .onChange(of: text.wrappedValue) { _, newValue in
-                    if let limit = characterLimit, newValue.count > limit {
-                        text.wrappedValue = String(newValue.prefix(limit))
-                    }
+                    limitText(newValue)
                 }
+        }
+    }
+    
+    private func limitText(_ newValue: String) {
+        if let limit = characterLimit, newValue.count > limit {
+            text?.wrappedValue = String(newValue.prefix(limit))
         }
     }
 }

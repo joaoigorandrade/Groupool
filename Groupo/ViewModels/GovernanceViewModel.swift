@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import Observation
 
 enum GovernanceItem: Identifiable, Hashable {
     case challenge(Challenge)
@@ -27,11 +28,12 @@ enum GovernanceItem: Identifiable, Hashable {
     }
 }
 
-class GovernanceViewModel: ObservableObject {
-    @Published var activeItems: [GovernanceItem] = []
-    @Published var currentTime: Date = Date()
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
+@Observable
+class GovernanceViewModel {
+    var activeItems: [GovernanceItem] = []
+    var currentTime: Date = Date()
+    var isLoading: Bool = false
+    var errorMessage: String?
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -85,7 +87,9 @@ class GovernanceViewModel: ObservableObject {
 
                 return items.sorted { $0.deadline < $1.deadline }
             }
-            .assign(to: \.activeItems, on: self)
+            .sink { [weak self] items in
+                self?.activeItems = items
+            }
             .store(in: &cancellables)
 
         userService.currentUser

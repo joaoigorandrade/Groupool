@@ -2,17 +2,20 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject private var services: AppServiceContainer
-    @StateObject private var viewModel: DashboardViewModel
+    @Environment(MainCoordinator.self) private var coordinator
+    @State private var viewModel: DashboardViewModel
 
     init(
         groupService: any GroupServiceProtocol,
         userService: any UserServiceProtocol,
-        challengeService: any ChallengeServiceProtocol
+        challengeService: any ChallengeServiceProtocol,
+        transactionService: any TransactionServiceProtocol
     ) {
-        _viewModel = StateObject(wrappedValue: DashboardViewModel(
+        _viewModel = State(wrappedValue: DashboardViewModel(
             groupService: groupService,
             userService: userService,
-            challengeService: challengeService
+            challengeService: challengeService,
+            transactionService: transactionService
         ))
     }
     
@@ -41,25 +44,33 @@ struct DashboardView: View {
             }
             .navigationTitle("Dashboard")
             .toolbarBackground(.visible, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: ProfileView(userService: services.userService)) {
-                        if let user = viewModel.currentUser {
-                            Image(systemName: user.avatar)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 32, height: 32)
-                                .clipShape(Circle())
-                                .foregroundStyle(.primary)
-                        } else {
-                            Image(systemName: "person.circle.fill")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 32, height: 32)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
+            .toolbar { toolbarContent }
+        }
+    }
+    
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            profileLink
+        }
+    }
+    
+    @ViewBuilder
+    private var profileLink: some View {
+        NavigationLink(destination: ProfileView(userService: services.userService)) {
+            if let user = viewModel.currentUser {
+                Image(systemName: user.avatar)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 32, height: 32)
+                    .clipShape(Circle())
+                    .foregroundStyle(.primary)
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 32, height: 32)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -79,11 +90,25 @@ struct DashboardView: View {
     }
 
     private var activeChallengeCard: some View {
-        ActiveChallengeCard()
+        ActiveChallengeCard(
+            challenge: viewModel.activeChallenge,
+            onCreateChallenge: {
+                coordinator.presentSheet(.challenge)
+            },
+            services: services
+        )
     }
     
     private var activitySection: some View {
-        ActivityFeedView()
+        ActivityFeedView(
+            transactions: viewModel.transactions,
+            onViewAll: {
+                coordinator.selectTab(.treasury)
+            },
+            onTransactionSelected: { _ in
+                coordinator.selectTab(.treasury)
+            }
+        )
     }
 }
 
@@ -92,10 +117,11 @@ struct DashboardView: View {
     DashboardView(
         groupService: services.groupService,
         userService: services.userService,
-        challengeService: services.challengeService
+        challengeService: services.challengeService,
+        transactionService: services.transactionService
     )
         .environmentObject(services)
-        .environmentObject(MainCoordinator())
+        .environment(MainCoordinator())
 }
 
 #Preview("Empty") {
@@ -103,10 +129,11 @@ struct DashboardView: View {
     DashboardView(
         groupService: services.groupService,
         userService: services.userService,
-        challengeService: services.challengeService
+        challengeService: services.challengeService,
+        transactionService: services.transactionService
     )
         .environmentObject(services)
-        .environmentObject(MainCoordinator())
+        .environment(MainCoordinator())
 }
 
 #Preview("Dark Mode") {
@@ -114,9 +141,10 @@ struct DashboardView: View {
     DashboardView(
         groupService: services.groupService,
         userService: services.userService,
-        challengeService: services.challengeService
+        challengeService: services.challengeService,
+        transactionService: services.transactionService
     )
         .environmentObject(services)
-        .environmentObject(MainCoordinator())
+        .environment(MainCoordinator())
         .preferredColorScheme(.dark)
 }

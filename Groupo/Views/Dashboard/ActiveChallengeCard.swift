@@ -1,39 +1,18 @@
 
 import SwiftUI
-import Combine
 
 struct ActiveChallengeCard: View {
-    @EnvironmentObject var services: AppServiceContainer
-    @EnvironmentObject var coordinator: MainCoordinator
-    
-    @State private var challenges: [Challenge] = []
-    
-    private var activeChallenge: Challenge? {
-        challenges.first { $0.status == .active || $0.status == .voting }
-    }
+    let challenge: Challenge?
+    let onCreateChallenge: () -> Void
+    let services: AppServiceContainer
     
     var body: some View {
-        view
-            .onReceive(services.challengeService.challenges.receive(on: DispatchQueue.main)) {
-                challenges = $0
-            }
-    }
-    
-    @ViewBuilder
-    var view: some View {
-        if let challenge = activeChallenge {
+        if let challenge = challenge {
             activeChallengeView(for: challenge)
-                .padding(20)
-                .background(Color("SecondaryBackground"))
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(.white.opacity(0.1), lineWidth: 1)
-                }
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                .dashboardCardStyle()
         } else {
             noActiveChallengeView
+                .dashboardCardStyle(backgroundColor: Color.brandTeal.opacity(0.1))
         }
     }
     
@@ -44,70 +23,82 @@ struct ActiveChallengeCard: View {
             voteService: services.voteService,
             withdrawalService: services.withdrawalService,
             userService: services.userService,
-            groupService: services.groupService
+            groupService: services.groupService,
+            transactionService: services.transactionService
         )) {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("ACTIVE CHALLENGE")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.orange)
-                            .tracking(1)
-                        
-                        Text(challenge.title)
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                    }
-                    
-                    Spacer()
-                    
-                    statusBadge(for: challenge)
-                }
-                
-                HStack(spacing: 24) {
-                    metricView(
-                        label: "Pot",
-                        value: (challenge.buyIn * Decimal(challenge.participants.count)).formatted(.currency(code: "BRL"))
-                    )
-                    
-                    metricView(
-                        label: "Buy-in",
-                        value: challenge.buyIn.formatted(.currency(code: "BRL"))
-                    )
-                    
-                    metricView(
-                        label: "Players",
-                        value: "\(challenge.participants.count)"
-                    )
-                    
-                    Spacer()
-                }
-                
-                Divider()
-                    .overlay(Color.white.opacity(0.1))
-                HStack {
-                    Label(timeRemaining(until: challenge.deadline), systemImage: "clock")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    Spacer()
-                    
-                    Text("View Details")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.secondary)
-                }
+                headerView(for: challenge)
+                metricsGrid(for: challenge)
+                footerView(for: challenge)
             }
         }
         .buttonStyle(.plain)
+    }
+    
+    private func headerView(for challenge: Challenge) -> some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("ACTIVE CHALLENGE")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.orange)
+                    .tracking(1)
+                
+                Text(challenge.title)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            
+            statusBadge(for: challenge)
+        }
+    }
+    
+    private func metricsGrid(for challenge: Challenge) -> some View {
+        HStack(spacing: 24) {
+            metricView(
+                label: "Pot",
+                value: (challenge.buyIn * Decimal(challenge.participants.count)).formatted(.currency(code: "BRL"))
+            )
+            
+            metricView(
+                label: "Buy-in",
+                value: challenge.buyIn.formatted(.currency(code: "BRL"))
+            )
+            
+            metricView(
+                label: "Players",
+                value: "\(challenge.participants.count)"
+            )
+            
+            Spacer()
+        }
+    }
+    
+    private func footerView(for challenge: Challenge) -> some View {
+        VStack(spacing: 16) {
+            Divider()
+                .overlay(Color.white.opacity(0.1))
+            
+            HStack {
+                Label(timeRemaining(until: challenge.deadline), systemImage: "clock")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Spacer()
+                
+                HStack(spacing: 4) {
+                    Text("View Details")
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            }
+        }
     }
     
     private func metricView(label: String, value: String) -> some View {
@@ -131,44 +122,36 @@ struct ActiveChallengeCard: View {
     }
     
     private var noActiveChallengeView: some View {
-        Button(action: {
-            coordinator.presentSheet(.challenge)
-        }) {
+        Button(action: onCreateChallenge) {
             HStack(spacing: 12) {
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
                     .foregroundStyle(Color.brandTeal)
                 
-                HStack(spacing: 4) {
-                    Text("No Active Challenge.")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("No Active Challenge")
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(.primary)
                     
-                    Text("Tap to create one.")
-                        .font(.subheadline)
+                    Text("Tap to create one and start competing")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
                 
-                Image(systemName: "arrow.right")
-                    .font(.caption)
-                    .fontWeight(.bold)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
                     .foregroundStyle(.secondary.opacity(0.5))
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.brandTeal.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
     }
     
     private func statusBadge(for challenge: Challenge) -> some View {
         Text(challenge.status == .voting ? "Voting Open" : "In Progress")
-            .font(.caption2)
-            .fontWeight(.bold)
+            .font(.caption2.weight(.bold))
             .foregroundStyle(challenge.status == .voting ? .white : .primary)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -179,13 +162,40 @@ struct ActiveChallengeCard: View {
     }
 }
 
-#Preview {
-    let services = AppServiceContainer.preview()
-    ZStack {
-        Color.black.ignoresSafeArea()
-        ActiveChallengeCard()
-            .environmentObject(services)
-            .environmentObject(MainCoordinator())
-            .padding()
+// MARK: - Styling Extension
+extension View {
+    func dashboardCardStyle(backgroundColor: Color = Color("SecondaryBackground")) -> some View {
+        self
+            .padding(20)
+            .background(backgroundColor)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(.white.opacity(0.1), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
     }
+}
+
+#Preview("Active") {
+    let services = AppServiceContainer.preview()
+    return ActiveChallengeCard(
+        challenge: Challenge.preview(),
+        onCreateChallenge: {},
+        services: services
+    )
+    .padding()
+    .background(Color("PrimaryBackground"))
+}
+
+#Preview("Empty") {
+    let services = AppServiceContainer.preview()
+    return ActiveChallengeCard(
+        challenge: nil,
+        onCreateChallenge: {},
+        services: services
+    )
+    .padding()
+    .background(Color("PrimaryBackground"))
 }

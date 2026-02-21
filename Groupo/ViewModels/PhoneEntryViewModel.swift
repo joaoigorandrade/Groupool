@@ -6,11 +6,16 @@
 //
 
 import SwiftUI
-import Combine
+import Observation
 
-class PhoneEntryViewModel: ObservableObject {
-    @Published var phoneNumber: String = ""
-    @Published var navigateToOTP: Bool = false
+@Observable
+class PhoneEntryViewModel {
+    var phoneNumber: String = "" {
+        didSet {
+            formatPhoneNumber()
+        }
+    }
+    var navigateToOTP: Bool = false
     
     let countryCode = "+55"
     
@@ -18,6 +23,15 @@ class PhoneEntryViewModel: ObservableObject {
         // Remove non-digit characters to count actual digits
         let digits = phoneNumber.filter { $0.isNumber }
         return digits.count >= 10
+    }
+    
+    private func formatPhoneNumber() {
+        let filtered = phoneNumber.filter { $0.isNumber }
+        if filtered.count > 11 {
+            phoneNumber = String(filtered.prefix(11))
+        } else if phoneNumber != filtered {
+             phoneNumber = filtered
+        }
     }
     
     func sendCode(sessionManager: SessionManager) {
@@ -34,3 +48,4 @@ class PhoneEntryViewModel: ObservableObject {
         navigateToOTP = true
     }
 }
+

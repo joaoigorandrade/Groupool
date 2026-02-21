@@ -1,8 +1,10 @@
 import Combine
 import SwiftUI
+import Observation
 
-class ProfileViewModel: ObservableObject {
-    @Published var user: User = User(
+@Observable
+class ProfileViewModel {
+    var user: User = User(
         id: UUID(),
         name: "Loading...",
         avatar: "person.circle.fill",
@@ -15,7 +17,7 @@ class ProfileViewModel: ObservableObject {
         consecutiveMissedVotes: 0,
         status: .active
     )
-    @Published var errorMessage: String?
+    var errorMessage: String? = nil
 
     private let userService: any UserServiceProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -28,7 +30,9 @@ class ProfileViewModel: ObservableObject {
     private func setupSubscribers() {
         userService.currentUser
             .receive(on: DispatchQueue.main)
-            .assign(to: \.user, on: self)
+            .sink { [weak self] user in
+                self?.user = user
+            }
             .store(in: &cancellables)
     }
 

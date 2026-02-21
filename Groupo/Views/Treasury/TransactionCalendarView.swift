@@ -10,7 +10,7 @@ struct TransactionCalendarView: View {
     let size: CalendarSize
     
     private let columns = Array(repeating: GridItem(.fixed(14), spacing: 4), count: 7)
-    private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
+    private static let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
     
     private var filteredSummaries: [DailySummary] {
         Array(summaries.suffix(size.rawValue))
@@ -22,10 +22,7 @@ struct TransactionCalendarView: View {
             calendarGrid
             footer
         }
-        .padding(16)
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        .treasuryCardStyle()
     }
 }
 
@@ -39,7 +36,7 @@ private extension TransactionCalendarView {
     var calendarGrid: some View {
         VStack(spacing: 8) {
             HStack(spacing: 4) {
-                ForEach(weekdays, id: \.self) { day in
+                ForEach(Self.weekdays, id: \.self) { day in
                     Text(day)
                         .font(.system(size: 8, weight: .bold))
                         .foregroundColor(.secondary.opacity(0.5))
@@ -62,26 +59,32 @@ private extension TransactionCalendarView {
         
         return HStack {
             HStack(spacing: 4) {
-                Circle().fill(Color.green.opacity(0.8)).frame(width: 6, height: 6)
-                Text("\(stats.positive) positive days")
-                    .font(.caption2)
+                Circle()
+                    .fill(Color.green.opacity(0.8))
+                    .frame(width: 6, height: 6)
+                
+                Text("\(stats.positive) positive")
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundColor(.secondary)
             }
             
             Spacer()
             
             HStack(spacing: 4) {
-                Circle().fill(Color.red.opacity(0.8)).frame(width: 6, height: 6)
-                Text("\(stats.negative) negative days")
-                    .font(.caption2)
+                Circle()
+                    .fill(Color.red.opacity(0.8))
+                    .frame(width: 6, height: 6)
+                
+                Text("\(stats.negative) negative")
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundColor(.secondary)
             }
         }
     }
     
     func calculateStats() -> (positive: Int, negative: Int) {
-        let positive = filteredSummaries.filter { $0.netAmount > 0 }.count
-        let negative = filteredSummaries.filter { $0.netAmount < 0 }.count
+        let positive = filteredSummaries.count { $0.netAmount > 0 }
+        let negative = filteredSummaries.count { $0.netAmount < 0 }
         return (positive, negative)
     }
     

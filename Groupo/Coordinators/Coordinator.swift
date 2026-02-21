@@ -1,5 +1,5 @@
 import SwiftUI
 
-protocol Coordinator: ObservableObject {
+protocol Coordinator {
     func start()
 }

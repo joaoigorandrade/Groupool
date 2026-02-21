@@ -8,20 +8,27 @@ struct SecondaryButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack {
-                if let icon = icon {
-                    Image(systemName: icon)
-                        .font(.headlineText)
-                }
-                
-                Text(title)
-                    .font(.bodyBold)
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .foregroundColor(.brandTeal)
-            .contentShape(Rectangle())
+            buttonLabel
         }
+    }
+    
+    // MARK: - Subviews
+    
+    @ViewBuilder
+    private var buttonLabel: some View {
+        HStack(spacing: 8) {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.headlineText)
+            }
+            
+            Text(title)
+                .font(.bodyBold)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .foregroundColor(.brandTeal)
+        .contentShape(Rectangle())
     }
 }
 

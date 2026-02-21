@@ -1,11 +1,13 @@
 import Combine
 import Foundation
+import Observation
 
-class LedgerViewModel: ObservableObject {
-    @Published var sections: [TransactionSection] = []
-    @Published var dailySummaries: [DailySummary] = []
-    @Published var isLoading: Bool = true
-    @Published var errorMessage: String?
+@Observable
+class LedgerViewModel {
+    var sections: [TransactionSection] = []
+    var dailySummaries: [DailySummary] = []
+    var isLoading: Bool = true
+    var errorMessage: String?
 
     private var hasLoaded: Bool = false
     private var cancellables = Set<AnyCancellable>()
@@ -91,6 +93,7 @@ class LedgerViewModel: ObservableObject {
         return formatter.string(from: date).capitalized
     }
 }
+
 
 struct TransactionSection: Identifiable, Equatable {
     let id = UUID()

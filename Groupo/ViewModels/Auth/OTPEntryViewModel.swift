@@ -1,22 +1,23 @@
-//
-//  OTPEntryViewModel.swift
-//  Groupo
-//
-//  Created by Antigravity on 2026-02-18.
-//
-
-import Combine
+import Observation
 import Foundation
+import SwiftUI
 
-final class OTPEntryViewModel: ObservableObject {
+@Observable
+final class OTPEntryViewModel {
     
-    // MARK: - Published State
+    // MARK: - State
     
-    @Published var otpCode: String = ""
-    @Published var timeRemaining: Int = 30
-    @Published var canResend: Bool = false
-    @Published var errorMessage: String?
-    @Published var isLoading: Bool = false
+    var otpCode: String = "" {
+        didSet {
+            if otpCode.count > 6 {
+                otpCode = String(otpCode.prefix(6))
+            }
+        }
+    }
+    var timeRemaining: Int = 30
+    var canResend: Bool = false
+    var errorMessage: String?
+    var isLoading: Bool = false
     
     // MARK: - Properties
     
@@ -67,17 +68,21 @@ final class OTPEntryViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        // Mock validation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            self.isLoading = false
+        // Mock validation using modern concurrency
+        Task {
+            // Simulate network delay
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
             
-            if self.otpCode == "123456" {
-                // Success
-                sessionManager.verifyOTP(code: self.otpCode)
-            } else {
-                // Failure
-                self.errorMessage = "Invalid code. Please try again."
+            await MainActor.run {
+                self.isLoading = false
+                
+                if self.otpCode == "123456" {
+                    // Success
+                    sessionManager.verifyOTP(code: self.otpCode)
+                } else {
+                    // Failure
+                    self.errorMessage = "Invalid code. Please try again."
+                }
             }
         }
     }
@@ -111,3 +116,4 @@ final class OTPEntryViewModel: ObservableObject {
         }
     }
 }
+

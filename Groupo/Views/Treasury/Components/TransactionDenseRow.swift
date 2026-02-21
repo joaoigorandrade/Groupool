@@ -51,10 +51,7 @@ struct TransactionDenseRow: View {
                     .clipShape(Capsule())
             }
         }
-        .padding(12)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
+        .treasuryCardStyle(padding: 12, cornerRadius: 12)
     }
 }
 

@@ -10,37 +10,53 @@ struct PrimaryButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: {
-            HapticManager.impact(style: .medium)
-            action()
-        }) {
-            HStack {
-                if isLoading {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .padding(.trailing, 8)
-                }
-                
-                if let icon = icon, !isLoading {
-                    Image(systemName: icon)
-                    .font(.headlineText)
-                }
-                
-                Text(title)
-                    .font(.bodyBold)
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(isDisabled || isLoading ? Color.gray : backgroundColor)
-            .foregroundColor(.white)
-            .cornerRadius(12)
-            .contentShape(Rectangle())
+        Button(action: handleAction) {
+            buttonLabel
         }
         .disabled(isDisabled || isLoading)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-        )
+        .overlay(borderOverlay)
+    }
+    
+    // MARK: - Subviews
+    
+    @ViewBuilder
+    private var buttonLabel: some View {
+        HStack(spacing: 8) {
+            if isLoading {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+            } else if let icon = icon {
+                Image(systemName: icon)
+                    .font(.headlineText)
+            }
+            
+            Text(title)
+                .font(.bodyBold)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(currentBackgroundColor)
+        .foregroundColor(.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(Rectangle())
+    }
+    
+    @ViewBuilder
+    private var borderOverlay: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+            .allowsHitTesting(false)
+    }
+    
+    // MARK: - Helpers
+    
+    private var currentBackgroundColor: Color {
+        isDisabled || isLoading ? .gray : backgroundColor
+    }
+    
+    private func handleAction() {
+        HapticManager.impact(style: .medium)
+        action()
     }
 }
 

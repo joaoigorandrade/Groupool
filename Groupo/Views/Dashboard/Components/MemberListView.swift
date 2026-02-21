@@ -1,13 +1,13 @@
 import SwiftUI
 
 struct MemberListView: View {
-    @StateObject private var viewModel: MemberListViewModel
+    @State private var viewModel: MemberListViewModel
     
     init(
         groupService: any GroupServiceProtocol,
         challengeService: any ChallengeServiceProtocol
     ) {
-        _viewModel = StateObject(wrappedValue: MemberListViewModel(
+        _viewModel = State(wrappedValue: MemberListViewModel(
             groupService: groupService,
             challengeService: challengeService
         ))
@@ -106,7 +106,7 @@ struct FilterButton: View {
 
 struct MemberRow: View {
     let member: User
-    @ObservedObject var viewModel: MemberListViewModel
+    let viewModel: MemberListViewModel
     
     var body: some View {
         HStack(spacing: 16) {

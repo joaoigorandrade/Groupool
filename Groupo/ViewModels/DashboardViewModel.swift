@@ -1,33 +1,44 @@
 
 import Combine
 import Foundation
+import Observation
 
-class DashboardViewModel: ObservableObject {
-    @Published var totalPool: Decimal = 0
-    @Published var members: [User] = []
+@Observable
+class DashboardViewModel {
+    var totalPool: Decimal = 0
+    var members: [User] = []
     
-    @Published var totalStake: Decimal = 0
-    @Published var frozenStake: Decimal = 0
-    @Published var availableStake: Decimal = 0
+    var totalStake: Decimal = 0
+    var frozenStake: Decimal = 0
+    var availableStake: Decimal = 0
     
-    @Published var currentUser: User?
+    var currentUser: User?
+    var challenges: [Challenge] = []
+    var transactions: [Transaction] = []
     
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
+    var activeChallenge: Challenge? {
+        challenges.first { $0.status == .active || $0.status == .voting }
+    }
+    
+    var isLoading: Bool = false
+    var errorMessage: String?
 
     private var cancellables = Set<AnyCancellable>()
     private let groupService: any GroupServiceProtocol
     private let userService: any UserServiceProtocol
     private let challengeService: any ChallengeServiceProtocol
+    private let transactionService: any TransactionServiceProtocol
 
     init(
         groupService: any GroupServiceProtocol,
         userService: any UserServiceProtocol,
-        challengeService: any ChallengeServiceProtocol
+        challengeService: any ChallengeServiceProtocol,
+        transactionService: any TransactionServiceProtocol
     ) {
         self.groupService = groupService
         self.userService = userService
         self.challengeService = challengeService
+        self.transactionService = transactionService
         setupSubscribers()
     }
 
@@ -56,7 +67,16 @@ class DashboardViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] user, challenges in
                 self?.currentUser = user
+                self?.challenges = challenges
                 self?.calculateStake(user: user, challenges: challenges)
+            }
+            .store(in: &cancellables)
+            
+        // Transaction Data
+        transactionService.transactions
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] transactions in
+                self?.transactions = transactions
             }
             .store(in: &cancellables)
     }

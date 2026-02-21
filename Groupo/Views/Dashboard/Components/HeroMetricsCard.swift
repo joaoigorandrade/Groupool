@@ -1,3 +1,4 @@
+
 import SwiftUI
 
 struct HeroMetricsCard<Destination: View>: View {
@@ -10,75 +11,78 @@ struct HeroMetricsCard<Destination: View>: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("TOTAL POOL")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.secondary)
-                        .tracking(1.0)
-                    
-                    Text(totalPool.formatted(.currency(code: "BRL")))
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundStyle(.primary)
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                        .minimumScaleFactor(0.8)
-                        .lineLimit(1)
-                }
-                
-                memberStackView
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.trailing, 8)
+            poolAndMembersSection
             
-            Rectangle()
-                .foregroundStyle(.primaryBackground)
-                .frame(width: 1)
-                .padding(.vertical, 4)
+            divider
             
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("YOUR STAKE")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.secondary)
-                        .tracking(1.0)
-                    
-                    Text(personalStake.formatted(.currency(code: "BRL")))
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundStyle(.primary)
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                        .minimumScaleFactor(0.8)
-                        .lineLimit(1)
-                }
+            personalStakeSection
+        }
+        .dashboardCardStyle(backgroundColor: .clear)
+    }
+    
+    private var poolAndMembersSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("TOTAL POOL")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .tracking(1.0)
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    stakeDetailRow(
-                        label: "Available",
-                        amount: availableStake,
-                        color: Color("AvailableGreen")
-                    )
-                    
-                    stakeDetailRow(
-                        label: "Frozen",
-                        amount: frozenStake,
-                        color: Color("FrozenBlue")
-                    )
-                }
+                Text(totalPool.formatted(.currency(code: "BRL")))
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 16)
+            
+            memberStackView
         }
-        .padding(20)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(.white.opacity(0.15), lineWidth: 1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.trailing, 8)
+    }
+    
+    private var personalStakeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("YOUR STAKE")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .tracking(1.0)
+                
+                Text(personalStake.formatted(.currency(code: "BRL")))
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                stakeDetailRow(
+                    label: "Available",
+                    amount: availableStake,
+                    color: Color("AvailableGreen")
+                )
+                
+                stakeDetailRow(
+                    label: "Frozen",
+                    amount: frozenStake,
+                    color: Color("FrozenBlue")
+                )
+            }
         }
-        .shadow(color: .black.opacity(0.15), radius: 25, x: 0, y: 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 16)
+    }
+    
+    private var divider: some View {
+        Rectangle()
+            .foregroundStyle(.primary.opacity(0.1))
+            .frame(width: 1)
+            .padding(.vertical, 4)
     }
     
     private var memberStackView: some View {
@@ -87,7 +91,7 @@ struct HeroMetricsCard<Destination: View>: View {
                 ZStack {
                     ForEach(Array(members.prefix(3).enumerated()), id: \.element.id) { index, member in
                         memberAvatar(for: member)
-                            .offset(x: CGFloat(index - 1) * 20)
+                            .offset(x: CGFloat(index) * 20)
                             .zIndex(Double(3 - index))
                     }
                     
@@ -100,7 +104,6 @@ struct HeroMetricsCard<Destination: View>: View {
                 .frame(width: CGFloat((min(members.count, 3) + (members.count > 3 ? 1 : 0)) * 20) + 12, height: 32)
                 Spacer()
             }
-            .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -136,8 +139,7 @@ struct HeroMetricsCard<Destination: View>: View {
         let remainingCount = members.count - 3
         
         return Text("+\(remainingCount)")
-            .font(.caption2)
-            .fontWeight(.bold)
+            .font(.caption2.weight(.bold))
             .foregroundStyle(.secondary)
             .frame(width: 32, height: 32)
             .background(Color("SecondaryBackground"))
@@ -160,8 +162,7 @@ struct HeroMetricsCard<Destination: View>: View {
                 .foregroundStyle(.secondary)
             
             Text(amount.formatted(.currency(code: "BRL")))
-                .font(.caption2)
-                .fontWeight(.semibold)
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.primary)
                 .monospacedDigit()
         }

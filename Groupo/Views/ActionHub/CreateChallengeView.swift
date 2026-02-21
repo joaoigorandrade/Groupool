@@ -1,16 +1,16 @@
 import SwiftUI
 
 struct CreateChallengeView: View {
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var toastManager: ToastManager
-    @StateObject private var viewModel: CreateChallengeViewModel
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var toastManager: ToastManager
+    @State private var viewModel: CreateChallengeViewModel
 
     init(
         challengeService: any ChallengeServiceProtocol,
         userService: any UserServiceProtocol,
         groupService: any GroupServiceProtocol
     ) {
-        _viewModel = StateObject(wrappedValue: CreateChallengeViewModel(
+        _viewModel = State(wrappedValue: CreateChallengeViewModel(
             challengeService: challengeService,
             userService: userService,
             groupService: groupService
@@ -19,9 +19,9 @@ struct CreateChallengeView: View {
 
     var body: some View {
         view
-        .interactiveDismissDisabled(viewModel.isLoading)
+            .interactiveDismissDisabled(viewModel.isLoading)
     }
-    
+
     @ViewBuilder
     private var view: some View {
         if let activeChallenge = viewModel.activeChallenge {
@@ -34,16 +34,20 @@ struct CreateChallengeView: View {
                 CreateChallengeStep1View(viewModel: viewModel)
                     .navigationDestination(for: String.self) { _ in
                         CreateChallengeStep2View(viewModel: viewModel) {
-                            viewModel.createChallenge { success, errorMessage in
-                                if success {
-                                    toastManager.show(style: .success, message: "Desafio criado com sucesso!")
-                                    dismiss()
-                                } else if let errorMessage {
-                                    toastManager.show(style: .error, message: errorMessage)
-                                }
-                            }
+                            handleSubmission()
                         }
                     }
+            }
+        }
+    }
+
+    private func handleSubmission() {
+        viewModel.createChallenge { success, errorMessage in
+            if success {
+                toastManager.show(style: .success, message: "Desafio criado com sucesso!")
+                dismiss()
+            } else if let errorMessage {
+                toastManager.show(style: .error, message: errorMessage)
             }
         }
     }
@@ -107,7 +111,7 @@ private struct ActiveChallengeView: View {
 // MARK: - Step 1: Details
 
 private struct CreateChallengeStep1View: View {
-    @ObservedObject var viewModel: CreateChallengeViewModel
+    @Bindable var viewModel: CreateChallengeViewModel
 
     var body: some View {
         ScrollView {
@@ -115,17 +119,7 @@ private struct CreateChallengeStep1View: View {
                 ChallengeDetailsSection(viewModel: viewModel)
                 ChallengeDateSection(viewModel: viewModel)
 
-                NavigationLink(value: "step2") {
-                    Text("Próximo")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(viewModel.isStep1Valid ? Color.brandTeal : Color.gray.opacity(0.3))
-                        .foregroundColor(.white)
-                        .cornerRadius(14)
-                }
-                .disabled(!viewModel.isStep1Valid)
+                nextButton
             }
             .padding()
         }
@@ -133,42 +127,32 @@ private struct CreateChallengeStep1View: View {
         .navigationTitle("Detalhes")
         .navigationBarTitleDisplayMode(.inline)
     }
+
+    private var nextButton: some View {
+        NavigationLink(value: "step2") {
+            Text("Próximo")
+                .font(.headline)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(viewModel.isStep1Valid ? Color.brandTeal : Color.gray.opacity(0.3))
+                .foregroundColor(.white)
+                .cornerRadius(14)
+        }
+        .disabled(!viewModel.isStep1Valid)
+    }
 }
 
 // MARK: - Step 2: Stakes & Confirm
 
 private struct CreateChallengeStep2View: View {
-    @ObservedObject var viewModel: CreateChallengeViewModel
+    @Bindable var viewModel: CreateChallengeViewModel
     let onSubmit: () -> Void
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Cool-off Warning
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "hourglass")
-                        .foregroundStyle(.orange)
-                        .font(.title3)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Cooling-off Period")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        
-                        Text("By creating this, you are entering a cooling-off period of 48h for new challenges.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .padding()
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                )
-
+                coolingOffWarning
                 ChallengeBetsSection(viewModel: viewModel)
 
                 PrimaryButton(
@@ -184,12 +168,38 @@ private struct CreateChallengeStep2View: View {
         .navigationTitle("Apostas")
         .navigationBarTitleDisplayMode(.inline)
     }
+
+    private var coolingOffWarning: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "hourglass")
+                .foregroundStyle(.orange)
+                .font(.title3)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Cooling-off Period")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                
+                Text("By creating this, you are entering a cooling-off period of 48h for new challenges.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+        )
+    }
 }
 
 // MARK: - Form Sections
 
 private struct ChallengeDetailsSection: View {
-    @ObservedObject var viewModel: CreateChallengeViewModel
+    @Bindable var viewModel: CreateChallengeViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -215,24 +225,28 @@ private struct ChallengeDetailsSection: View {
             )
             .lineLimit(3...6)
             
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Modo de Validação")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 4)
-                
-                Picker("Modo de Validação", selection: $viewModel.validationMode) {
-                    Text("Comprovante + Votação").tag(Challenge.ValidationMode.proof)
-                    Text("Apenas Votação").tag(Challenge.ValidationMode.votingOnly)
-                }
-                .pickerStyle(.segmented)
+            validationModePicker
+        }
+    }
+
+    private var validationModePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Modo de Validação")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
+            
+            Picker("Modo de Validação", selection: $viewModel.validationMode) {
+                Text("Comprovante + Votação").tag(Challenge.ValidationMode.proof)
+                Text("Apenas Votação").tag(Challenge.ValidationMode.votingOnly)
             }
+            .pickerStyle(.segmented)
         }
     }
 }
 
 private struct ChallengeBetsSection: View {
-    @ObservedObject var viewModel: CreateChallengeViewModel
+    @Bindable var viewModel: CreateChallengeViewModel
 
     private var buyInBinding: Binding<Double> {
         Binding(
@@ -258,26 +272,33 @@ private struct ChallengeBetsSection: View {
                 .frame(width: 150)
             }
 
-            HStack {
-                Spacer()
-                Text("Disponível: \(viewModel.availableBalance.formatted(.currency(code: "BRL")))")
-                    .font(.caption)
-                    .foregroundStyle(viewModel.buyInAmount > viewModel.availableBalance ? .red : .secondary)
-            }
+            balanceInfo
+            prizePoolInfo
+        }
+    }
 
-            HStack {
-                Text("Prêmio Estimado")
-                Spacer()
-                Text("R$ \(viewModel.projectedPrizePool.formatted(.number.precision(.fractionLength(2))))")
-                    .foregroundColor(.green)
-                    .fontWeight(.bold)
-            }
+    private var balanceInfo: some View {
+        HStack {
+            Spacer()
+            Text("Disponível: \(viewModel.availableBalance.formatted(.currency(code: "BRL")))")
+                .font(.caption)
+                .foregroundStyle(viewModel.buyInAmount > viewModel.availableBalance ? .red : .secondary)
+        }
+    }
+
+    private var prizePoolInfo: some View {
+        HStack {
+            Text("Prêmio Estimado")
+            Spacer()
+            Text("R$ \(viewModel.projectedPrizePool.formatted(.number.precision(.fractionLength(2))))")
+                .foregroundColor(.green)
+                .fontWeight(.bold)
         }
     }
 }
 
 private struct ChallengeDateSection: View {
-    @ObservedObject var viewModel: CreateChallengeViewModel
+    @Bindable var viewModel: CreateChallengeViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {

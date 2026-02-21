@@ -4,27 +4,35 @@ struct SkeletonView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ForEach(0..<5) { _ in
-                HStack {
-                    Circle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 40, height: 40)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(height: 16)
-                            .frame(maxWidth: .infinity)
-                        
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(height: 12)
-                            .frame(width: 100)
-                    }
-                }
-                .padding(.vertical, 8)
+                SkeletonRow()
             }
         }
         .shimmering()
+    }
+}
+
+// MARK: - Subviews
+
+private struct SkeletonRow: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(Color.appTextSecondary.opacity(0.15))
+                .frame(width: 44, height: 44)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                contentPlaceholder(height: 16, width: .infinity)
+                contentPlaceholder(height: 12, width: 120)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+    
+    private func contentPlaceholder(height: CGFloat, width: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 4)
+            .fill(Color.appTextSecondary.opacity(0.15))
+            .frame(height: height)
+            .frame(maxWidth: width)
     }
 }
 

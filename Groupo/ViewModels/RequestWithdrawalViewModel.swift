@@ -1,13 +1,16 @@
 import Combine
 import Foundation
 
-class RequestWithdrawalViewModel: ObservableObject {
-    @Published var amount: Decimal = 0
-    @Published var amountError: String? = nil
-    @Published var cooldownString: String? = nil
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published private(set) var availableBalance: Decimal = 0
+@Observable
+class RequestWithdrawalViewModel {
+    var amount: Decimal = 0 {
+        didSet { validateAmount() }
+    }
+    var amountError: String? = nil
+    var cooldownString: String? = nil
+    var isLoading: Bool = false
+    var errorMessage: String?
+    private(set) var availableBalance: Decimal = 0
 
     private let withdrawalService: any WithdrawalServiceProtocol
     private let userService: any UserServiceProtocol
@@ -23,7 +26,6 @@ class RequestWithdrawalViewModel: ObservableObject {
         self.withdrawalService = withdrawalService
         self.userService = userService
         setupSubscribers()
-        setupValidation()
         startCooldownTimer()
     }
 
@@ -46,13 +48,6 @@ class RequestWithdrawalViewModel: ObservableObject {
     }
 
     // MARK: - Validation
-
-    private func setupValidation() {
-        $amount
-            .dropFirst()
-            .sink { [weak self] _ in self?.validateAmount() }
-            .store(in: &subscribers)
-    }
 
     private func validateAmount() {
         if amount <= 0 {

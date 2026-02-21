@@ -1,20 +1,30 @@
 import Combine
 import Foundation
+import Observation
 
-class CreateChallengeViewModel: ObservableObject {
-    @Published var title: String = ""
-    @Published var description: String = ""
-    @Published var buyInAmount: Decimal = 0.0
-    @Published var deadline: Date = Date()
-    @Published var validationMode: Challenge.ValidationMode = .proof
+@Observable
+class CreateChallengeViewModel {
+    var title: String = "" {
+        didSet { validateTitle() }
+    }
+    var description: String = "" {
+        didSet { validateDescription() }
+    }
+    var buyInAmount: Decimal = 0.0 {
+        didSet { validateAmount() }
+    }
+    var deadline: Date = Date() {
+        didSet { validateDate() }
+    }
+    var validationMode: Challenge.ValidationMode = .proof
 
-    @Published var titleError: String? = nil
-    @Published var descriptionError: String? = nil
-    @Published var amountError: String? = nil
-    @Published var dateError: String? = nil
+    var titleError: String? = nil
+    var descriptionError: String? = nil
+    var amountError: String? = nil
+    var dateError: String? = nil
 
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
+    var isLoading: Bool = false
+    var errorMessage: String?
 
     private let challengeService: any ChallengeServiceProtocol
     private let userService: any UserServiceProtocol
@@ -35,7 +45,6 @@ class CreateChallengeViewModel: ObservableObject {
         self.groupService = groupService
         self.deadline = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
         setupSubscribers()
-        setupValidation()
     }
 
     // MARK: - Subscribers
@@ -64,28 +73,6 @@ class CreateChallengeViewModel: ObservableObject {
     }
 
     // MARK: - Validation
-
-    private func setupValidation() {
-        $title
-            .dropFirst()
-            .sink { [weak self] _ in self?.validateTitle() }
-            .store(in: &subscribers)
-
-        $description
-            .dropFirst()
-            .sink { [weak self] _ in self?.validateDescription() }
-            .store(in: &subscribers)
-
-        $buyInAmount
-            .dropFirst()
-            .sink { [weak self] _ in self?.validateAmount() }
-            .store(in: &subscribers)
-
-        $deadline
-            .dropFirst()
-            .sink { [weak self] _ in self?.validateDate() }
-            .store(in: &subscribers)
-    }
 
     private func validateTitle() {
         if title.isEmpty {

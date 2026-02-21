@@ -1,27 +1,25 @@
-
 import SwiftUI
 
 struct CardContainer<Content: View>: View {
-    let content: Content
+    private let content: Content
     
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
     
     var body: some View {
-        VStack {
-            content
-        }
-        .padding()
-        .background(Color("PrimaryBackground"))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        content
+            .padding()
+            .background(Color.appPrimaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
     }
 }
 
 #Preview {
     ZStack {
-        Color.gray.opacity(0.1).ignoresSafeArea()
+        Color.appSecondaryBackground
+            .ignoresSafeArea()
         
         CardContainer {
             VStack(alignment: .leading, spacing: 8) {

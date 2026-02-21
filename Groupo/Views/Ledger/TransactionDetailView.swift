@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TransactionDetailView: View {
     let transaction: Transaction
-    @EnvironmentObject var services: AppServiceContainer
+    @EnvironmentObject private var services: AppServiceContainer
     
     var body: some View {
         ScrollView {
@@ -13,9 +13,7 @@ struct TransactionDetailView: View {
                 
                 infoSection
                 
-                if let splitDetails = transaction.splitDetails {
-                    splitSection(details: splitDetails)
-                }
+                splitSection
                 
                 Spacer()
             }
@@ -30,22 +28,11 @@ struct TransactionDetailView: View {
 private extension TransactionDetailView {
     var headerSection: some View {
         VStack(alignment: .center, spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(transaction.type.iconColor().opacity(0.1))
-                    .frame(width: 80, height: 80)
-                
-                Image(systemName: transaction.type.iconName())
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 32, height: 32)
-                    .foregroundColor(transaction.type.iconColor())
-            }
-            .frame(maxWidth: .infinity)
+            transactionIcon
             
             Text(transaction.description)
                 .font(.title2)
-                .bold()
+                .fontWeight(.bold)
                 .multilineTextAlignment(.center)
             
             Text(transaction.formattedAmount())
@@ -53,6 +40,21 @@ private extension TransactionDetailView {
                 .foregroundColor(transaction.type.amountColor())
         }
         .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
+    }
+    
+    var transactionIcon: some View {
+        ZStack {
+            Circle()
+                .fill(transaction.type.iconColor().opacity(0.1))
+                .frame(width: 80, height: 80)
+            
+            Image(systemName: transaction.type.iconName())
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 32, height: 32)
+                .foregroundColor(transaction.type.iconColor())
+        }
     }
     
     var infoSection: some View {
@@ -76,31 +78,41 @@ private extension TransactionDetailView {
         }
     }
     
-    func splitSection(details: [String: Decimal]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Divisão")
-                .font(.headline)
-            
-            VStack(spacing: 0) {
-                ForEach(details.sorted(by: { $0.key < $1.key }), id: \.key) { name, amount in
-                    HStack {
-                        Image(systemName: "person.circle.fill")
-                            .foregroundColor(.gray)
-                        Text(name)
-                        Spacer()
-                        Text(amount.formatted(.currency(code: "BRL")))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                    
-                    if name != details.sorted(by: { $0.key < $1.key }).last?.key {
-                        Divider()
-                            .padding(.leading, 50)
+    @ViewBuilder
+    var splitSection: some View {
+        if let details = transaction.splitDetails {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Divisão")
+                    .font(.headline)
+                
+                VStack(spacing: 0) {
+                    let sortedDetails = details.sorted(by: { $0.key < $1.key })
+                    ForEach(sortedDetails, id: \.key) { name, amount in
+                        splitRow(name: name, amount: amount, isLast: name == sortedDetails.last?.key)
                     }
                 }
+                .background(Color.gray.opacity(0.05))
+                .cornerRadius(12)
             }
-            .background(Color.gray.opacity(0.05))
-            .cornerRadius(12)
+        }
+    }
+    
+    func splitRow(name: String, amount: Decimal, isLast: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "person.circle.fill")
+                    .foregroundColor(.gray)
+                Text(name)
+                Spacer()
+                Text(amount.formatted(.currency(code: "BRL")))
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            
+            if !isLast {
+                Divider()
+                    .padding(.leading, 50)
+            }
         }
     }
 }

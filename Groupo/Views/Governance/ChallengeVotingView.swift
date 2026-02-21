@@ -1,8 +1,11 @@
 import SwiftUI
+import Observation
 
 struct ChallengeVotingView: View {
     let challenge: Challenge
-    @StateObject private var viewModel: GovernanceViewModel
+    @State private var viewModel: GovernanceViewModel
+    @State private var detailViewModel: ChallengeDetailViewModel
+    @State private var hasUserVoted = false
     
     init(
         challenge: Challenge,
@@ -10,19 +13,27 @@ struct ChallengeVotingView: View {
         voteService: any VoteServiceProtocol,
         withdrawalService: any WithdrawalServiceProtocol,
         userService: any UserServiceProtocol,
-        groupService: any GroupServiceProtocol
+        groupService: any GroupServiceProtocol,
+        transactionService: any TransactionServiceProtocol
     ) {
         self.challenge = challenge
-        _viewModel = StateObject(wrappedValue: GovernanceViewModel(
+        let services = AppServiceContainer(
+            userService: userService,
+            groupService: groupService,
+            challengeService: challengeService,
+            transactionService: transactionService,
+            voteService: voteService,
+            withdrawalService: withdrawalService
+        )
+        _viewModel = State(wrappedValue: GovernanceViewModel(
             challengeService: challengeService,
             voteService: voteService,
             withdrawalService: withdrawalService,
             userService: userService,
             groupService: groupService
         ))
+        _detailViewModel = State(wrappedValue: ChallengeDetailViewModel(challenge: challenge, services: services))
     }
-    
-    @State private var hasUserVoted = false
     
     // Derived state for voting progress
     private var totalParticipants: Int {
@@ -32,16 +43,16 @@ struct ChallengeVotingView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Shared Detail View
-                ChallengeDetailContent(challenge: challenge)
+                // Using decomposed components from ChallengeDetailView
+                ChallengeDetailContent(viewModel: detailViewModel)
                 
                 Divider()
                 
                 // Interactive functionality based on status
-                statusActions
+                StatusActionsView(challenge: challenge, viewModel: viewModel, hasUserVoted: $hasUserVoted)
                 
                 if challenge.status != .complete && challenge.status != .failed {
-                     footerSection
+                     FooterSection()
                 }
                
                 Spacer()
@@ -53,53 +64,56 @@ struct ChallengeVotingView: View {
             checkUserVoteStatus()
         }
     }
+    
+    private func checkUserVoteStatus() {
+        hasUserVoted = viewModel.hasVoted(on: .challenge(challenge))
+    }
 }
 
 // MARK: - Subviews
-private extension ChallengeVotingView {
+
+private struct StatusActionsView: View {
+    let challenge: Challenge
+    let viewModel: GovernanceViewModel
+    @Binding var hasUserVoted: Bool
     
     @ViewBuilder
-    var statusActions: some View {
+    var body: some View {
         switch challenge.status {
         case .active:
-            activePhaseActions
+            ActivePhaseActionsView(challenge: challenge, viewModel: viewModel)
         case .voting:
-            votingPhaseActions
+            VotingPhaseActionsView(challenge: challenge, viewModel: viewModel, hasUserVoted: $hasUserVoted)
         case .complete:
             EmptyView()
         case .failed:
-            failedPhaseActions
+            FailedPhaseActionsView(challenge: challenge)
         }
-    }
-    
-    var footerSection: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "info.circle")
-                .foregroundColor(.secondary)
-            Text("If the majority does not vote 'Winner', the buy-in will be refunded.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .padding(.top, 8)
     }
 }
 
-// MARK: - Active Phase Actions
-private extension ChallengeVotingView {
-    @ViewBuilder
-    var activePhaseActions: some View {
+private struct ActivePhaseActionsView: View {
+    let challenge: Challenge
+    let viewModel: GovernanceViewModel
+    
+    var body: some View {
         VStack(spacing: 16) {
             if !viewModel.isEligibleToVote(on: .challenge(challenge)) {
-                joinChallengeView
+                JoinChallengeView(challenge: challenge, viewModel: viewModel)
             }
             
             if challenge.validationMode == .votingOnly {
-                startVotingView
+                StartVotingView(challenge: challenge, viewModel: viewModel)
             }
         }
     }
+}
+
+private struct JoinChallengeView: View {
+    let challenge: Challenge
+    let viewModel: GovernanceViewModel
     
-    var joinChallengeView: some View {
+    var body: some View {
         VStack(spacing: 12) {
             Text("Join this challenge to participate")
                 .font(.subheadline)
@@ -119,8 +133,13 @@ private extension ChallengeVotingView {
                 .foregroundColor(.secondary)
         }
     }
+}
+
+private struct StartVotingView: View {
+    let challenge: Challenge
+    let viewModel: GovernanceViewModel
     
-    var startVotingView: some View {
+    var body: some View {
         VStack(spacing: 12) {
             Text("Desafio aceita apenas votação. Inicie a votação quando estiver pronto.")
                 .font(.subheadline)
@@ -139,19 +158,20 @@ private extension ChallengeVotingView {
     }
 }
 
-// MARK: - Voting Phase Actions
-private extension ChallengeVotingView {
-    @ViewBuilder
-    var votingPhaseActions: some View {
+private struct VotingPhaseActionsView: View {
+    let challenge: Challenge
+    let viewModel: GovernanceViewModel
+    @Binding var hasUserVoted: Bool
+    
+    var body: some View {
         VStack(spacing: 24) {
-            // Voting Progress
             VStack(spacing: 8) {
                 Text("Voting Progress")
                     .font(.headline)
                     .foregroundColor(.secondary)
                 
                 HStack {
-                     Text("\(totalParticipants) participants")
+                     Text("\(challenge.participants.count) participants")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
@@ -161,10 +181,10 @@ private extension ChallengeVotingView {
             
             if viewModel.isEligibleToVote(on: .challenge(challenge)) {
                 if hasUserVoted {
-                    voteConfirmationView
+                    VoteConfirmationView(hasUserVoted: $hasUserVoted, isLoading: viewModel.isLoading)
                         .transition(.scale.combined(with: .opacity))
                 } else {
-                    votingControlsView
+                    VotingButtonsView(challenge: challenge, viewModel: viewModel, hasUserVoted: $hasUserVoted)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             } else {
@@ -175,13 +195,13 @@ private extension ChallengeVotingView {
             }
         }
     }
+}
+
+private struct VoteConfirmationView: View {
+    @Binding var hasUserVoted: Bool
+    let isLoading: Bool
     
-    @ViewBuilder
-    var votingControlsView: some View {
-        votingButtons
-    }
-    
-    var voteConfirmationView: some View {
+    var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
                 .resizable()
@@ -203,13 +223,19 @@ private extension ChallengeVotingView {
             }
             .font(.headline)
             .padding(.top)
-            .disabled(viewModel.isLoading)
+            .disabled(isLoading)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
     }
+}
+
+private struct VotingButtonsView: View {
+    let challenge: Challenge
+    let viewModel: GovernanceViewModel
+    @Binding var hasUserVoted: Bool
     
-    var votingButtons: some View {
+    var body: some View {
         VStack(spacing: 12) {
             Text("Cast Your Vote")
                 .font(.headline)
@@ -219,7 +245,7 @@ private extension ChallengeVotingView {
                 backgroundColor: .green,
                 isLoading: viewModel.isLoading
             ) {
-                vote(.approval)
+                castVote(.approval)
             }
             
             PrimaryButton(
@@ -227,10 +253,10 @@ private extension ChallengeVotingView {
                 backgroundColor: .red,
                 isLoading: viewModel.isLoading
             ) {
-                vote(.contest)
+                castVote(.contest)
             }
             
-            Button(action: { vote(.abstain) }) {
+            Button(action: { castVote(.abstain) }) {
                 Text("Abstain")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
@@ -241,7 +267,11 @@ private extension ChallengeVotingView {
             }
             .disabled(viewModel.isLoading)
             
-            Button(action: simulateResolution) {
+            Button(action: {
+                Task {
+                    await viewModel.resolveChallenge(challenge: challenge)
+                }
+            }) {
                 Text("Simulate Resolution (Demo)")
                 .font(.caption)
                 .foregroundColor(.red)
@@ -250,12 +280,22 @@ private extension ChallengeVotingView {
             .disabled(viewModel.isLoading)
         }
     }
+    
+    private func castVote(_ type: Vote.VoteType) {
+        Task {
+            await viewModel.castVote(challenge: challenge, type: type)
+            HapticManager.notification(type: .success)
+            withAnimation(.spring()) {
+                hasUserVoted = true
+            }
+        }
+    }
 }
 
-// MARK: - Failed Phase Actions
-private extension ChallengeVotingView {
-    @ViewBuilder
-    var failedPhaseActions: some View {
+private struct FailedPhaseActionsView: View {
+    let challenge: Challenge
+    
+    var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .resizable()
@@ -285,26 +325,16 @@ private extension ChallengeVotingView {
     }
 }
 
-// MARK: - Helper Methods
-private extension ChallengeVotingView {
-    func vote(_ type: Vote.VoteType) {
-        Task {
-            await viewModel.castVote(challenge: challenge, type: type)
-            HapticManager.notification(type: .success)
-            withAnimation(.spring()) {
-                hasUserVoted = true
-            }
+private struct FooterSection: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "info.circle")
+                .foregroundColor(.secondary)
+            Text("If the majority does not vote 'Winner', the buy-in will be refunded.")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
-    }
-    
-    func checkUserVoteStatus() {
-        hasUserVoted = viewModel.hasVoted(on: .challenge(challenge))
-    }
-    
-    func simulateResolution() {
-        Task {
-            await viewModel.resolveChallenge(challenge: challenge)
-        }
+        .padding(.top, 8)
     }
 }
 
@@ -326,55 +356,8 @@ private extension ChallengeVotingView {
             voteService: services.voteService,
             withdrawalService: services.withdrawalService,
             userService: services.userService,
-            groupService: services.groupService
-        )
-        .environmentObject(services)
-    }
-}
-
-#Preview("Voting") {
-    let services = AppServiceContainer.preview()
-    NavigationStack {
-        ChallengeVotingView(
-            challenge: Challenge(
-                id: UUID(),
-                title: "Voting Challenge",
-                description: "Voting in progress.",
-                buyIn: 50,
-                createdDate: Date(),
-                deadline: Date().addingTimeInterval(86400),
-                participants: [],
-                status: .voting
-            ),
-            challengeService: services.challengeService,
-            voteService: services.voteService,
-            withdrawalService: services.withdrawalService,
-            userService: services.userService,
-            groupService: services.groupService
-        )
-        .environmentObject(services)
-    }
-}
-
-#Preview("Completed") {
-    let services = AppServiceContainer.preview()
-    NavigationStack {
-        ChallengeVotingView(
-            challenge: Challenge(
-                id: UUID(),
-                title: "Completed Challenge",
-                description: "Challenge finished.",
-                buyIn: 50,
-                createdDate: Date().addingTimeInterval(-86400),
-                deadline: Date().addingTimeInterval(-3600),
-                participants: [],
-                status: .complete
-            ),
-            challengeService: services.challengeService,
-            voteService: services.voteService,
-            withdrawalService: services.withdrawalService,
-            userService: services.userService,
-            groupService: services.groupService
+            groupService: services.groupService,
+            transactionService: services.transactionService
         )
         .environmentObject(services)
     }

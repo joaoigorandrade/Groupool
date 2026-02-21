@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MemberDetailView: View {
     let member: User
-    @ObservedObject var viewModel: MemberListViewModel
+    let viewModel: MemberListViewModel
     
     var body: some View {
         ScrollView {
@@ -99,31 +99,43 @@ struct StatCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(color)
-                    .frame(width: 32, height: 32)
-                    .background(color.opacity(0.1))
-                    .clipShape(Circle())
-                
-                Spacer()
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(value)
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.primary)
-                
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            header
+            content
         }
-        .padding()
+        .padding(16)
         .background(Color("SecondaryBackground"))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(.white.opacity(0.1), lineWidth: 1)
+        }
+    }
+    
+    private var header: some View {
+        HStack {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(color)
+                .frame(width: 32, height: 32)
+                .background(color.opacity(0.1))
+                .clipShape(Circle())
+            
+            Spacer()
+        }
+    }
+    
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value)
+                .font(.system(.headline, design: .rounded))
+                .fontWeight(.bold)
+                .foregroundStyle(.primary)
+            
+            Text(title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

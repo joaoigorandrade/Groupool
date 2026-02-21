@@ -1,7 +1,9 @@
-import Combine
+import Observation
 import Foundation
+import Combine
 
-class CreateExpenseViewModel: ObservableObject {
+@Observable
+class CreateExpenseViewModel {
     enum SplitOption: String, CaseIterable, Identifiable {
         case equal = "Equal Split"
         case custom = "Custom Split"
@@ -9,23 +11,27 @@ class CreateExpenseViewModel: ObservableObject {
         var id: String { self.rawValue }
     }
 
-    @Published var description: String = ""
-    @Published var amount: Double = 0.0
-    @Published var selectedSplit: SplitOption = .equal
-    @Published var errorMessage: String? = nil
+    var description: String = "" {
+        didSet { validateDescription() }
+    }
+    var amount: Double = 0.0 {
+        didSet { validateAmount() }
+    }
+    var selectedSplit: SplitOption = .equal
+    var errorMessage: String? = nil
 
-    @Published var descriptionError: String? = nil
-    @Published var amountError: String? = nil
+    var descriptionError: String? = nil
+    var amountError: String? = nil
 
-    @Published var splitAmounts: [UUID: Double] = [:]
+    var splitAmounts: [UUID: Double] = [:]
 
-    @Published var isLoading: Bool = false
+    var isLoading: Bool = false
 
     private let transactionService: any TransactionServiceProtocol
     private let groupService: any GroupServiceProtocol
     private var subscribers = Set<AnyCancellable>()
 
-    private var currentGroup: Group?
+    var currentGroup: Group?
 
     init(
         transactionService: any TransactionServiceProtocol,
@@ -34,7 +40,6 @@ class CreateExpenseViewModel: ObservableObject {
         self.transactionService = transactionService
         self.groupService = groupService
         setupSubscribers()
-        setupValidation()
     }
 
     // MARK: - Subscribers
@@ -49,18 +54,6 @@ class CreateExpenseViewModel: ObservableObject {
     }
 
     // MARK: - Validation
-
-    private func setupValidation() {
-        $description
-            .dropFirst()
-            .sink { [weak self] _ in self?.validateDescription() }
-            .store(in: &subscribers)
-
-        $amount
-            .dropFirst()
-            .sink { [weak self] _ in self?.validateAmount() }
-            .store(in: &subscribers)
-    }
 
     private func validateDescription() {
         if description.isEmpty {
