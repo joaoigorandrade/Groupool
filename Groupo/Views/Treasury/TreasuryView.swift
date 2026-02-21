@@ -14,6 +14,7 @@ struct TreasuryView: View {
     
     // MARK: - State
     @State private var ledgerViewModel: LedgerViewModel
+    @State private var selectedSection: TransactionSection?
     let governanceViewModel: GovernanceViewModel
     
     // MARK: - Initialization
@@ -47,7 +48,10 @@ struct TreasuryView: View {
                             services: services
                         )
                         
-                        TransactionHistorySection(ledgerViewModel: ledgerViewModel)
+                        TransactionHistorySection(
+                            ledgerViewModel: ledgerViewModel,
+                            selectedSection: $selectedSection
+                        )
                     }
                     
                     Spacer()
@@ -58,6 +62,9 @@ struct TreasuryView: View {
             }
             .navigationTitle("Treasury")
             .toolbarBackground(.visible, for: .navigationBar)
+            .sheet(item: $selectedSection) { section in
+                MonthTransactionHistorySheet(section: section)
+            }
         }
     }
     
@@ -95,9 +102,9 @@ private extension TreasuryView {
         
         var body: some View {
             HStack(spacing: 16) {
-                if let firstItem = governanceViewModel.activeItems.first {
-                    ProposalNavigationLink(
-                        item: firstItem,
+                if !governanceViewModel.activeItems.isEmpty {
+                    ProposalsCarousel(
+                        items: governanceViewModel.activeItems,
                         governanceViewModel: governanceViewModel,
                         services: services
                     )
@@ -110,15 +117,122 @@ private extension TreasuryView {
         }
     }
     
+    struct ProposalsCarousel: View {
+        let items: [GovernanceItem]
+        let governanceViewModel: GovernanceViewModel
+        let services: AppServiceContainer
+        
+        @State private var selection: UUID?
+        @State private var timerTask: Task<Void, Never>?
+        
+        var body: some View {
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 0) {
+                    ForEach(items) { item in
+                        ProposalNavigationLink(
+                            item: item,
+                            governanceViewModel: governanceViewModel,
+                            services: services
+                        )
+                        .containerRelativeFrame(.horizontal)
+                        .id(item.id)
+                        .visualEffect { content, geometryProxy in
+                            content
+                                .scaleEffect(scale(for: geometryProxy))
+                                .opacity(opacity(for: geometryProxy))
+                        }
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollPosition(id: $selection)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollClipDisabled()
+            .onAppear {
+                selection = items.first?.id
+                startAutoSwitch()
+            }
+            .onDisappear {
+                stopAutoSwitch()
+            }
+            .onChange(of: items) { _, newItems in
+                if selection == nil || !newItems.contains(where: { $0.id == selection }) {
+                    selection = newItems.first?.id
+                }
+                startAutoSwitch()
+            }
+        }
+        
+        private func startAutoSwitch() {
+            stopAutoSwitch()
+            guard items.count > 1 else { return }
+            
+            timerTask = Task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 5_000_000_000)
+                    
+                    await MainActor.run {
+                        withAnimation(.spring(response: 0.8, dampingFraction: 0.8)) {
+                            switchToNext()
+                        }
+                    }
+                }
+            }
+        }
+        
+        private func stopAutoSwitch() {
+            timerTask?.cancel()
+            timerTask = nil
+        }
+        
+        private func switchToNext() {
+            guard let currentID = selection,
+                  let currentIndex = items.firstIndex(where: { $0.id == currentID }) else {
+                selection = items.first?.id
+                return
+            }
+            
+            let nextIndex = (currentIndex + 1) % items.count
+            selection = items[nextIndex].id
+        }
+        
+        private func scale(for proxy: GeometryProxy) -> CGFloat {
+            let containerWidth = proxy.size.width
+            guard containerWidth > 0 else { return 1.0 }
+            let minX = proxy.frame(in: .scrollView(axis: .horizontal)).minX
+            let progress = abs(minX) / containerWidth
+            return 1.0 - (min(progress, 1.0) * 0.05)
+        }
+        
+        private func opacity(for proxy: GeometryProxy) -> Double {
+            let containerWidth = proxy.size.width
+            guard containerWidth > 0 else { return 1.0 }
+            let minX = proxy.frame(in: .scrollView(axis: .horizontal)).minX
+            let progress = abs(minX) / containerWidth
+            return 1.0 - (min(progress, 1.0) * 0.3)
+        }
+    }
+
+
+    
     struct TransactionHistorySection: View {
         let ledgerViewModel: LedgerViewModel
+        @Binding var selectedSection: TransactionSection?
         
         var body: some View {
             if !ledgerViewModel.sections.isEmpty {
-                LazyVStack(spacing: 16) {
-                    ForEach(ledgerViewModel.sections) { section in
-                        TransactionMonthSection(section: section)
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        ForEach(ledgerViewModel.sections) { section in
+                            Button {
+                                selectedSection = section
+                            } label: {
+                                TransactionMonthSection(section: section)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
+                    .padding(.horizontal, 16)
                 }
                 .padding(.bottom, 20)
             }
@@ -129,27 +243,57 @@ private extension TreasuryView {
         let section: TransactionSection
         
         var body: some View {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(section.title)
                     .font(.caption2)
                     .fontWeight(.bold)
                     .foregroundColor(.secondary)
                     .textCase(.uppercase)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 8)
                 
                 ZStack {
                     ForEach(Array(section.transactions.prefix(4).enumerated()), id: \.element.id) { index, transaction in
-                        NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                            TransactionDenseRow(transaction: transaction)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .offset(x: CGFloat(index) * 4, y: CGFloat(index) * 16)
-                        .zIndex(Double(section.transactions.count - index))
+                        TransactionDenseRow(transaction: transaction)
+                            .offset(x: CGFloat(index) * 4, y: CGFloat(index) * 12)
+                            .zIndex(Double(section.transactions.count - index))
                     }
                 }
-                .padding(.horizontal)
-                .frame(minHeight: CGFloat(min(section.transactions.count, 4)) * 24)
+                .padding(.trailing, 16)
+                .frame(minHeight: CGFloat(min(section.transactions.count, 4)) * 24 + 40, alignment: .top)
             }
+        }
+    }
+    
+    struct MonthTransactionHistorySheet: View {
+        let section: TransactionSection
+        @Environment(\.dismiss) private var dismiss
+        
+        var body: some View {
+            NavigationStack {
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(section.transactions) { transaction in
+                            NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                TransactionDenseRow(transaction: transaction)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding()
+                }
+                .navigationTitle(section.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") {
+                            dismiss()
+                        }
+                    }
+                }
+                .background(Color.appPrimaryBackground)
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
     }
     
