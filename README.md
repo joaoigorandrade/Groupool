@@ -1,214 +1,264 @@
 # Groupool
+# Groupo
 Here is the App Architecture and Screen Specification, organized by user journey.
 
-I. High-Level Navigation Structure
+## I. High-Level Navigation Structure
 
-The app uses a Bottom Navigation Bar with 4 key tabs within a specific Group context:
+The app uses a Bottom Navigation Bar with 2 core tabs and a Central Action Button:
 
-Dashboard (Home): Balances, Members, and Status.
+**Home** (Dashboard + Profile): Group finances, member status, personal stake, and user profile — all in one place, scrollable.
 
-Ledger (History): The immutable record of money movement.
+**Activity** (Ledger + Governance): The complete record of what happened (Ledger) and what needs to happen now (Governance), unified under a single tab with a segmented control.
 
-Governance (Votes): Active polls, challenges, and withdrawal requests.
+**Central Action Button (FAB):** The "Do" button — Create Expense, Create Challenge, Request Withdrawal.
 
-Profile (Settings): PIX keys, Reputation Score, App Settings.
+```
+[ Home ]  [ + ]  [ Activity ]
+```
 
-Central Action Button (FAB): The "Do" button (Create Expense, Challenge, Withdrawal).
+---
 
-II. Detailed Screen Specifications
+## II. Detailed Screen Specifications
 
-1. Onboarding & Group Entry (The Bridge)
+### 1. Onboarding & Authentication
 
-Context: User clicks a deep link from the WhatsApp Bot.
+**Context:** User arrives via a WhatsApp deep link invite. They must identify themselves before seeing anything.
 
-Screen 1.1: The Invite Landing
+**Screen 1.1: Phone Entry**
+
+- Country code prefix (hardcoded to +55 BR)
+- Phone number input field
+- "Send Code" button — disabled until 10+ digits entered
+- Disclaimer: "We'll send a verification code via SMS"
+
+**Screen 1.2: OTP Verification**
+
+- Masked phone display: "+55 11 9xxxx-9999"
+- 6-digit code input (auto-reads from SMS when possible)
+- "Verify" button
+- Resend countdown timer starting at 30 seconds
+- Inline error for wrong codes
+
+**Logic:** Once OTP is verified, session is persisted. Returning users skip directly to the Home tab. First-time users proceed to the Invite Landing.
+
+---
+
+**Screen 1.3: Invite Landing**
 
 Header: "You are joining [Group Name]"
 
 Body:
-
-Inviter: [Name]
-
-Buy-in Required: R$ [Amount]
-
-The Contract (The 3 Rules):
-
-Money stays until approved exit.
-
-Inactive votes count as abstentions.
-
-Deadlines are absolute.
+- Inviter: [Name]
+- Buy-in Required: R$ [Amount]
+- The Contract (The 3 Rules):
+  1. Money stays until approved exit.
+  2. Inactive votes count as abstentions.
+  3. Deadlines are absolute.
 
 Action: "Connect PIX & Deposit"
 
-Logic: System generates a unique PIX Copy/Paste code. User cannot enter without the deposit confirmation webhook firing.
+**Logic:** System generates a unique PIX Copy/Paste code. User cannot enter without the deposit confirmation. On mock, a 1.5s simulated delay represents the webhook confirmation.
 
-2. The Dashboard (Group Home)
+---
 
-Context: The main living room. Must show financial reality instantly.
+### 2. Home Tab (Dashboard + Profile)
 
-Screen 2.1: Main Dashboard
+**Context:** The main living room and personal headquarters in one scrollable view. Group reality at the top, personal identity at the bottom.
 
-Top Card (The Pool):
+**Screen 2.1: Home**
 
-Total Pool Value: R$ 5,000
+**Section A — The Group Pool (Top Card)**
+- Total Pool Value: R$ 5,000
+- Member Health: 5 Active / 2 Inactive (grayed out avatar dots)
+- Tapping the member row navigates to the full Member List
 
-Member Health: 5 Active / 2 Inactive (Grayed out dots)
+**Section B — Personal Stake Card**
+- Total Equity: R$ 500
+- Available: R$ 300 (Green)
+- Frozen: R$ 200 (Blue — locked in active challenges)
 
-Personal Card (Your Stake):
+**Logic:** "Frozen" balance is visually distinct. It prevents spending on expenses or withdrawals.
 
-Total Equity: R$ 500
+**Section C — Active Challenge Card**
+- Shows the current active or voting challenge with status badge and time remaining
+- Tapping navigates to the full Challenge Voting View
+- If no active challenge: shows "No Active Challenge — Tap to create one" with a shortcut to the FAB
 
-Available: R$ 300 (Green)
+**Section D — Recent Activity (Mini Feed)**
+- Last 3 transactions with icon, description, relative timestamp
+- Tapping any row navigates to the Activity tab
 
-Frozen: R$ 200 (Blue - locked in active challenges)
+**Section E — Profile Summary**
+- Avatar, name, status badge (Good Standing / Restricted / Inactive)
+- Stats inline: Challenges Won · Lost · Reliability %
+- Links: PIX Keys → App Settings → Log Out
 
-Activity Feed (Mini): Last 3 events (Expense paid, Challenge started).
+**Logic:** The profile section lives at the bottom of the Home scroll. There is no separate Profile tab. Settings and PIX Keys open as pushed navigation destinations from here.
 
-Logic: "Frozen" balance is visually distinct. It prevents the user from spending that money on expenses or withdrawing it.
+---
 
-3. The Action Hub (Central FAB)
+**Screen 2.2: Member List** (pushed from Home)
 
-Context: User taps the "+" button.
+- Filter bar: All / Active / Inactive
+- Sorted by equity descending
+- Each row: avatar, name, reputation score, wins, current equity, frozen indicator
+- Tapping a row opens Member Detail View
 
-Screen 3.1: The Menu Overlay
+**Screen 2.3: Member Detail View** (pushed from Member List)
 
-Option A: Split Expense (Pays immediate bills).
+- Full stats grid: Reputation, Current Equity, Frozen Balance, Reliability, Won, Lost, Votes Cast
 
-Option B: Create Challenge (Gamified coordination).
+---
 
-Option C: Request Withdrawal (Exit ramp).
+### 3. Central FAB — Action Hub
 
-Screen 3.2: Create Expense
+**Context:** User taps the "+" button. A sheet appears with three options.
 
-Input: Description ("Friday Beers"), Amount.
+**Screen 3.1: Action Menu**
+- Split Expense
+- Create Challenge
+- Request Withdrawal
 
-Split Selector: Equal Split (Default) or Custom.
+**Screen 3.2: Create Expense**
+- Inputs: Description, Amount
+- Split Selector: Equal Split (Default) or Custom
+- Validation: "This will deduct R$ X from your Available Balance"
+- Backend Logic: Checks `User_Available_Balance >= Split_Share`. If false, button is disabled.
 
-Validation Message: "This will deduct R$ X from your Available Balance."
+**Screen 3.3: Create Challenge**
+- Inputs: Title, Description, Buy-in, Deadline (mandatory), Validation Mode
+  - "Proof + Voting" (Default)
+  - "Voting Only"
+- Warning Banner: "By creating this, you are entering a cooling-off period of 48h for new challenges."
+- Antifragile Check: Button disabled if another challenge is already active.
 
-Backend Logic: Checks User_Available_Balance >= Split_Share. If false, button is disabled.
+**Screen 3.4: Request Withdrawal**
+- Large amount input field
+- Available balance shown below
+- Security Cooldown Banner: shown with countdown if user recently won a challenge
+- "Request Withdrawal" button disabled during cooldown or for invalid amounts
 
-Screen 3.3: Create Challenge (The Core Loop)
+---
 
-Inputs:
+### 4. Activity Tab (Ledger + Governance)
 
-Title & Description.
+**Context:** Everything that has happened and everything that needs a decision. Unified under one tab with a segmented control at the top.
 
-Prize Pool: (Calculated automatically based on buy-in).
+```
+[ Ledger ]  [ Governance ]
+```
 
-Buy-in per person: R$ 50.
+**Screen 4.1: Ledger Segment**
 
-Deadline: (Date/Time picker - mandatory).
+- Transactions grouped by date section: Hoje / Ontem / [Month Year]
+- Each row: type icon (colored), description, timestamp, formatted amount (+ or -)
+- Tapping a row opens Transaction Detail View
+- Pull to refresh
+- Empty state: "No Transactions — Your financial activity will appear here"
 
-Validation Mode:
+**Screen 4.2: Transaction Detail View** (pushed from Ledger)
 
-"Proof + Voting" (Default).
-
-"Voting Only."
-
-Antifragile Check: "By creating this, you are entering a cooling-off period of 48h for new challenges."
-
-4. Governance Center (The "Courtroom")
-
-Context: Where conflict is resolved by time and code.
-
-Screen 4.1: Active Votes
-
-List View:
-
-Challenge: Pushups (Ends in 04:32:10)
-
-Withdrawal: User_X (Ends in 12:00:00)
-
-Visual Urgency: Progress bars showing time remaining.
-
-Screen 4.2: Challenge Voting Interface
-
-Content:
-*
-*
-
-Action: "Vote Winner" or "Abstain".
-
-Logic:
-
-Self-voting disabled if participants < 3.
-
-Tie-Breaker UI: "If a tie persists at [Time], funds are refunded."
-
-Screen 4.3: Withdrawal Integrity Check
-
-Header: "User X wants to withdraw R$ 100."
-
-Prompt: "Is there a valid reason to block this?"
-
-[ ] No (Approve) - Default Selection
-
-[ ] Yes (Contest) -> Must select from specific list:
-
-"Pending Debt"
-
-"Fraud Suspicion"
-
-(Note: No "I don't like them" option).
-
-Logic: If no votes are cast by deadline -> Auto-Approve.
-
-5. Profile & Reputation
-
-Context: Long-term game incentives.
-
-Screen 5.1: User Profile
-
-Stats:
-
-Challenges Won/Lost.
-
-Reliability Score: (Based on voting participation).
-
-Status:
-
-"Good Standing" (Green).
-
-"Restricted" (Yellow - e.g., on cooldown).
-
-III. Functional Logic & "Antifragile" Backend
-
-This is how the app handles the specific edge cases you defined.
-
-Scenario	System Response (Backend Logic)	UI Feedback
-Inactivity	User fails to vote in 3 consecutive challenges.	Profile status changes to "Inactive." Future voting weight reduced or removed from quorum calculation.
-Pump & Dump	User wins huge pot and immediately hits "Withdraw."	Error Toast: "Security Cooldown active. You can withdraw in 24 hours."
-Spamming	User tries to create 2nd challenge while one is active.	Button Disabled. Tooltip: "Only one active challenge per group allowed."
-Hostage	Group ignores a withdrawal request.	Timer hits 00:00:00. System auto-executes PIX transfer to user. Bot posts: "Withdrawal auto-approved due to timeout."
-Insufficient Funds	User tries to join a R$ 50 challenge but has R$ 30 available (and R$ 100 frozen).	Error: "Insufficient Available Balance. R$ 100 is currently locked in other challenges."
-IV. WhatsApp Bot Integration Flow
+- Large icon + description + formatted amount at top
+- Detail rows: Date, Type, Transaction ID
+- Split breakdown if expense was split across members
+
+---
+
+**Screen 4.3: Governance Segment**
+
+- List of active items sorted by deadline ascending (most urgent first)
+- Two item types displayed in the same list:
+  - **Challenge** (flag icon, orange): title, time remaining, buy-in badge, progress bar
+  - **Withdrawal Request** (arrow icon, blue): "Withdrawal Request", time remaining, progress bar
+- Red dot indicator on rows where the current user is eligible to vote and has not yet voted
+- Empty state: "No Active Votes — There are no active challenges or withdrawal requests"
+
+**Screen 4.4: Challenge Voting View** (pushed from Governance or Home active challenge card)
+
+- Full challenge detail: title, description, buy-in, prize pool, deadline
+- Proof image if submitted
+- Status-driven action area:
+  - **Active:** Join Challenge button (if not a participant) or Proof upload (if validation mode is proof) or Start Voting button (if voting-only mode)
+  - **Voting:** Vote Winner ✓ / Contest ✗ / Abstain buttons. After voting: confirmation state with "Change Vote" option
+  - **Complete:** Winner banner with payout amount
+  - **Failed:** Failure reason + "Funds refunded" confirmation
+- Footer: "If the majority does not vote 'Winner', the buy-in will be refunded."
+
+**Screen 4.5: Withdrawal Voting View** (pushed from Governance)
+
+- User avatar + name + "wants to withdraw" + amount (large)
+- Auto-approval countdown timer: "Auto-Approval in 12:00:00 — Default: Approved"
+- Decision selector:
+  - **Approve** (default) — "Standard withdrawal"
+  - **Contest** — "Flag suspicious activity" → reveals reason picker: Pending Debt / Suspicious Activity / Other
+- Confirm button color reflects decision (green for approve, orange for contest)
+- After voting: confirmation screen with "Return to Activity" button
+
+---
+
+## III. Navigation Map
+
+```
+App Launch
+├── [No session] → Phone Entry → OTP → Invite Landing → Home
+└── [Session found] → Home
+
+Home (Tab 1)
+├── Member List → Member Detail
+├── Challenge Voting View
+└── Profile Section
+    ├── PIX Keys
+    ├── App Settings (→ Reset Mock Data, Invite Landing Preview)
+    └── Log Out (confirmation alert)
+
+FAB (Center)
+├── Create Expense (→ Custom Split Sheet)
+├── Create Challenge (Step 1 → Step 2)
+└── Request Withdrawal
+
+Activity (Tab 2)
+├── [Ledger Segment]
+│   └── Transaction Detail
+└── [Governance Segment]
+    ├── Challenge Voting View
+    └── Withdrawal Voting View
+```
+
+---
+
+## IV. Functional Logic & Antifragile Rules
+
+| Scenario | System Response | UI Feedback |
+|---|---|---|
+| Inactivity | User fails to vote in 3 consecutive challenges | Status → "Inactive". Removed from quorum calculation |
+| Pump & Dump | User wins and immediately requests withdrawal | Cooldown banner with live countdown in withdrawal screen |
+| Spamming | User tries to create 2nd challenge while one is active | "Create Challenge" FAB option shows active challenge state instead of form |
+| Hostage | Group ignores withdrawal request until deadline | Timer hits 00:00:00. Auto-approved. Transaction appears in Ledger |
+| Insufficient Funds | User tries to join challenge with insufficient available balance | Error toast: "Insufficient Available Balance. R$ X is locked in other challenges" |
+| Tie Vote | Challenge vote ends in a tie | Status → Failed. Failure reason shown in challenge view. Refund transaction in Ledger |
+| No Votes Cast | Nobody votes before deadline | Status → Failed. "No votes cast. Funds refunded." |
+
+---
+
+## V. WhatsApp Bot Integration Flow
 
 The bot is the "Town Crier," not the "Judge."
 
-Event: Challenge Created in App
+| Event | Bot Message |
+|---|---|
+| Challenge Created | "🔥 New Challenge: '10k Run' by @User. Buy-in: R$ 50. [DeepLink]" |
+| Proof Uploaded | "📸 Proof In: @User submitted proof for '10k Run'. [DeepLink]" |
+| Voting Warning | "⏳ 1 Hour Left: 3 members haven't voted. Silence = Abstention. [DeepLink]" |
+| Money Movement | "💸 Payout: @User won R$ 150. Congratulations!" |
+| Auto-Approval | "✅ Withdrawal auto-approved for @User after timeout." |
 
-Bot: "🔥 New Challenge: '10k Run' created by @User. Buy-in: R$ 50. Link to Join: [DeepLink]"
+---
 
-Event: Proof Uploaded
+## VI. Growth Control Parameters
 
-Bot: "📸 Proof In: @User submitted proof for '10k Run'. Check it here: [DeepLink]"
-
-Event: Voting Deadline Warning
-
-Bot: "⏳ 1 Hour Left: 3 members haven't voted. Silence = Abstention. Vote now: [DeepLink]"
-
-Event: Money Movement
-
-Bot: "💸 Payout: @User won R$ 150. Congratulations!"
-
-V. Growth Control Mechanics (The "Scale" Strategy)
-
-To handle the "Phase 1 to Phase 3" transition, the app needs a System Configuration backend panel (for the super-admin):
-
-Parameter 1: Max_Active_Challenges (Starts at 1, scales to 3 for mature groups).
-
-Parameter 2: Vote_Window_Duration (Fixed at 24h initially, dynamic for larger groups).
-
-Parameter 3: Cooldown_Timer (Hardcoded 48h initially).
+| Parameter | Phase 1 (Default) | Phase 3 (Mature) |
+|---|---|---|
+| Max Active Challenges | 1 | 3 |
+| Vote Window Duration | 24h fixed | Dynamic per group size |
+| Withdrawal Cooldown | 48h hardcoded | Configurable |
+| Quorum Threshold | 50% participation | Configurable |

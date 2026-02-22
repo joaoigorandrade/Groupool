@@ -21,25 +21,31 @@ struct GroupoApp: App {
                     Color.black.ignoresSafeArea()
                     
                 case .unauthenticated:
-                    PhoneEntryView()
+                    AuthScreen(
+                        authUseCase: AuthUseCase(userService: services.userService),
+                        verifyOTPUseCase: VerifyOTPUseCase(userService: services.userService)
+                    )
                         .environment(\.services, services)
                         .environmentObject(toastManager)
                         .environmentObject(sessionManager)
                         .transition(.opacity)
                     
                 case .authenticated:
-                    InviteLandingView(onJoin: {
-                        withAnimation {
-                            sessionManager.completeOnboarding()
+                    OnboardingScreen(
+                        onboardingUseCase: OnboardingUseCase(groupService: services.groupService),
+                        onJoin: {
+                            withAnimation {
+                                sessionManager.completeOnboarding()
+                            }
                         }
-                    })
+                    )
                     .environment(\.services, services)
                     .environmentObject(toastManager)
                     .environmentObject(sessionManager)
                     .transition(.opacity)
                     
                 case .onboarded:
-                    MainTabView()
+                    MainScreen(services: services)
                         .environment(\.services, services)
                         .environmentObject(toastManager)
                         .environmentObject(sessionManager)

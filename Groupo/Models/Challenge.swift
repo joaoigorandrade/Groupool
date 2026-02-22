@@ -9,22 +9,22 @@ struct Challenge: Identifiable, Codable, Hashable {
     let deadline: Date
     var participants: [UUID]
     var status: ChallengeStatus
-    var proofImage: String? // URL or base64 string
+    var proofImage: String?
     var proofSubmissionUserID: UUID?
     var votingFailureReason: String?
 
-    var validationMode: ValidationMode? // Optional for backward compatibility, default to .proof
+    var validationMode: ValidationMode?
     
     enum ChallengeStatus: String, Codable {
         case active
         case voting
         case complete
-        case failed // If voting fails
+        case failed
     }
     
     enum ValidationMode: String, Codable {
-        case proof // Default: requires proof upload
-        case votingOnly // No proof, creator starts voting manually
+        case proof
+        case votingOnly
     }
 }
 
@@ -46,3 +46,4 @@ extension Challenge {
         )
     }
 }
+
