@@ -30,14 +30,7 @@ class MemberListViewModel {
     ) {
         self.groupService = groupService
         self.challengeService = challengeService
-        // Simulate initial load
-        Task {
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-            await MainActor.run {
-                addSubscribers()
-                isLoading = false
-            }
-        }
+        addSubscribers()
     }
 
     private func addSubscribers() {
@@ -47,6 +40,7 @@ class MemberListViewModel {
             .sink { [weak self] returnedMembers in
                 guard let self else { return }
                 self.members = returnedMembers
+                self.isLoading = false
             }
             .store(in: &cancellables)
 
@@ -74,18 +68,10 @@ class MemberListViewModel {
     }
 
     func isFrozen(member: User) -> Bool {
-        let activeChallenges = latestChallenges.filter {
-            ($0.status == .active || $0.status == .voting) &&
-            $0.participants.contains(member.id)
-        }
-        return !activeChallenges.isEmpty
+        ChallengeStakeCalculator.hasFrozenStake(for: member.id, in: latestChallenges)
     }
 
     func getFrozenAmount(for member: User) -> Decimal {
-        let activeChallenges = latestChallenges.filter {
-            ($0.status == .active || $0.status == .voting) &&
-            $0.participants.contains(member.id)
-        }
-        return activeChallenges.reduce(0) { $0 + $1.buyIn }
+        ChallengeStakeCalculator.frozenAmount(for: member.id, in: latestChallenges)
     }
 }

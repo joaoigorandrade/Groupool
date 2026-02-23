@@ -13,6 +13,8 @@ protocol ChallengeServiceProtocol {
 
     // MARK: - Actions
 
+    func refresh() async
+
     func addChallenge(
         title: String,
         description: String,

@@ -11,6 +11,8 @@ protocol TransactionServiceProtocol {
 
     // MARK: - Actions
 
+    func refresh() async
+
     func addExpense(
         amount: Decimal,
         description: String,

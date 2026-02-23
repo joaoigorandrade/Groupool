@@ -23,6 +23,12 @@ final class MockUserService: UserServiceProtocol {
 
     // MARK: - Actions
 
+    func refresh() async {
+        // Re-assign to trigger downstream publishers.
+        // Real implementations will fetch from the network here.
+        store.currentUser = store.currentUser
+    }
+
     func updateUser(_ user: User) async throws {
         store.currentUser = user
         store.save()

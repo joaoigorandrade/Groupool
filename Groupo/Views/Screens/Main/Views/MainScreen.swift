@@ -55,8 +55,7 @@ struct MainScreen: View {
             groupUseCase: DashboardGroupUseCase(groupService: services.groupService),
             challengeUseCase: DashboardChallengeUseCase(challengeService: services.challengeService),
             transactionUseCase: DashboardTransactionUseCase(transactionService: services.transactionService),
-            userUseCase: DashboardUserUseCase(userService: services.userService),
-            treasuryViewModel: treasuryViewModel
+            userUseCase: DashboardUserUseCase(userService: services.userService)
         )
         .tag(MainTab.dashboard)
         .tabItem {

@@ -11,6 +11,7 @@ protocol UserServiceProtocol {
 
     // MARK: - Actions
 
+    func refresh() async
     func updateUser(_ user: User) async throws
     func deposit(amount: Decimal) async throws
 }

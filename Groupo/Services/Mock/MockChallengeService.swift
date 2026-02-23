@@ -27,6 +27,12 @@ final class MockChallengeService: ChallengeServiceProtocol {
 
     // MARK: - Actions
 
+    func refresh() async {
+        // Re-assign to trigger downstream publishers.
+        // Real implementations will fetch from the network here.
+        store.challenges = store.challenges
+    }
+
     func addChallenge(
         title: String,
         description: String,

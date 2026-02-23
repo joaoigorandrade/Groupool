@@ -4,14 +4,12 @@ struct DashboardScreen: View {
     @Environment(\.services) private var services
     @Environment(MainCoordinator.self) private var coordinator
     @State private var viewModel: DashboardViewModel
-    let treasuryViewModel: TreasuryViewModel
 
     init(
         groupUseCase: DashboardGroupUseCaseProtocol,
         challengeUseCase: DashboardChallengeUseCaseProtocol,
         transactionUseCase: DashboardTransactionUseCaseProtocol,
-        userUseCase: DashboardUserUseCaseProtocol,
-        treasuryViewModel: TreasuryViewModel
+        userUseCase: DashboardUserUseCaseProtocol
     ) {
         _viewModel = State(wrappedValue: DashboardViewModel(
             groupUseCase: groupUseCase,
@@ -19,15 +17,14 @@ struct DashboardScreen: View {
             transactionUseCase: transactionUseCase,
             userUseCase: userUseCase
         ))
-        self.treasuryViewModel = treasuryViewModel
     }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color("PrimaryBackground")
                     .ignoresSafeArea()
-                
+
                 ScrollView {
                     VStack(spacing: 24) {
                         heroMetricsCard
@@ -48,16 +45,29 @@ struct DashboardScreen: View {
             .navigationTitle("Dashboard")
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar { toolbarContent }
+            .alert(
+                "Something went wrong",
+                isPresented: Binding(
+                    get: { viewModel.errorMessage != nil },
+                    set: { if !$0 { viewModel.errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+            } message: {
+                Text(viewModel.errorMessage ?? "")
+            }
         }
     }
-    
+
+    // MARK: - Toolbar
+
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             profileLink
         }
     }
-    
+
     @ViewBuilder
     private var profileLink: some View {
         NavigationLink(destination: ProfileScreen(
@@ -79,7 +89,9 @@ struct DashboardScreen: View {
             }
         }
     }
-    
+
+    // MARK: - Sections
+
     private var heroMetricsCard: some View {
         HeroMetricsCard(
             totalPool: viewModel.totalPool,
@@ -95,16 +107,18 @@ struct DashboardScreen: View {
     }
 
     private var activeChallengeCard: some View {
-        ActiveChallengeCard(
+        let treasuryVM = makeTreasuryViewModel()
+        return ActiveChallengeCard(
             challenge: viewModel.activeChallenge,
             onCreateChallenge: {
                 coordinator.presentSheet(.challenge)
             },
-            services: services,
-            treasuryViewModel: treasuryViewModel
+            challengeDestination: { challenge in
+                ChallengeVotingView(challenge: challenge, viewModel: treasuryVM)
+            }
         )
     }
-    
+
     private var activitySection: some View {
         ActivityFeedView(
             transactions: viewModel.transactions,
@@ -116,25 +130,31 @@ struct DashboardScreen: View {
             }
         )
     }
+
+    // MARK: - Helpers
+
+    /// Builds a TreasuryViewModel from the current environment services.
+    /// Scoped here so DashboardScreen no longer receives it as an external dependency.
+    private func makeTreasuryViewModel() -> TreasuryViewModel {
+        TreasuryViewModel(
+            transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
+            challengeUseCase: TreasuryChallengeUseCase(challengeService: services.challengeService),
+            voteUseCase: TreasuryVoteUseCase(voteService: services.voteService),
+            withdrawalUseCase: TreasuryWithdrawalUseCase(withdrawalService: services.withdrawalService),
+            groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
+            userUseCase: TreasuryUserUseCase(userService: services.userService)
+        )
+    }
 }
 
 #Preview {
     let services = AppServiceContainer.preview()
-    let treasuryVM = TreasuryViewModel(
-        transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
-        challengeUseCase: TreasuryChallengeUseCase(challengeService: services.challengeService),
-        voteUseCase: TreasuryVoteUseCase(voteService: services.voteService),
-        withdrawalUseCase: TreasuryWithdrawalUseCase(withdrawalService: services.withdrawalService),
-        groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
-        userUseCase: TreasuryUserUseCase(userService: services.userService)
-    )
-    
+
     DashboardScreen(
         groupUseCase: DashboardGroupUseCase(groupService: services.groupService),
         challengeUseCase: DashboardChallengeUseCase(challengeService: services.challengeService),
         transactionUseCase: DashboardTransactionUseCase(transactionService: services.transactionService),
-        userUseCase: DashboardUserUseCase(userService: services.userService),
-        treasuryViewModel: treasuryVM
+        userUseCase: DashboardUserUseCase(userService: services.userService)
     )
     .environment(\.services, services)
     .environment(MainCoordinator())

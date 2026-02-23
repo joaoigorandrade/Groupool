@@ -20,4 +20,12 @@ final class MockGroupService: GroupServiceProtocol {
     init(store: MockStore) {
         self.store = store
     }
+
+    // MARK: - Actions
+
+    func refresh() async {
+        // Re-assign to trigger downstream publishers.
+        // Real implementations will fetch from the network here.
+        store.currentGroup = store.currentGroup
+    }
 }

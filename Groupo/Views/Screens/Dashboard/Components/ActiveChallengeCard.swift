@@ -1,12 +1,17 @@
 
 import SwiftUI
 
-struct ActiveChallengeCard: View {
+private let relativeDateFormatter: RelativeDateTimeFormatter = {
+    let f = RelativeDateTimeFormatter()
+    f.unitsStyle = .full
+    return f
+}()
+
+struct ActiveChallengeCard<Destination: View>: View {
     let challenge: Challenge?
     let onCreateChallenge: () -> Void
-    let services: AppServiceContainer
-    let treasuryViewModel: TreasuryViewModel
-    
+    let challengeDestination: (Challenge) -> Destination
+
     var body: some View {
         if let challenge = challenge {
             activeChallengeView(for: challenge)
@@ -16,12 +21,9 @@ struct ActiveChallengeCard: View {
                 .dashboardCardStyle(backgroundColor: Color.brandTeal.opacity(0.1))
         }
     }
-    
+
     private func activeChallengeView(for challenge: Challenge) -> some View {
-        NavigationLink(destination: ChallengeVotingView(
-            challenge: challenge,
-            viewModel: treasuryViewModel
-        )) {
+        NavigationLink(destination: challengeDestination(challenge)) {
             VStack(alignment: .leading, spacing: 16) {
                 headerView(for: challenge)
                 metricsGrid(for: challenge)
@@ -30,7 +32,7 @@ struct ActiveChallengeCard: View {
         }
         .buttonStyle(.plain)
     }
-    
+
     private func headerView(for challenge: Challenge) -> some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
@@ -39,53 +41,53 @@ struct ActiveChallengeCard: View {
                     .fontWeight(.bold)
                     .foregroundStyle(.orange)
                     .tracking(1)
-                
+
                 Text(challenge.title)
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
             }
-            
+
             Spacer()
-            
+
             statusBadge(for: challenge)
         }
     }
-    
+
     private func metricsGrid(for challenge: Challenge) -> some View {
         HStack(spacing: 24) {
             metricView(
                 label: "Pot",
                 value: (challenge.buyIn * Decimal(challenge.participants.count)).formatted(.currency(code: "BRL"))
             )
-            
+
             metricView(
                 label: "Buy-in",
                 value: challenge.buyIn.formatted(.currency(code: "BRL"))
             )
-            
+
             metricView(
                 label: "Players",
                 value: "\(challenge.participants.count)"
             )
-            
+
             Spacer()
         }
     }
-    
+
     private func footerView(for challenge: Challenge) -> some View {
         VStack(spacing: 16) {
             Divider()
                 .overlay(Color.white.opacity(0.1))
-            
+
             HStack {
                 Label(timeRemaining(until: challenge.deadline), systemImage: "clock")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                
+
                 Spacer()
-                
+
                 HStack(spacing: 4) {
                     Text("View Details")
                     Image(systemName: "chevron.right")
@@ -96,46 +98,44 @@ struct ActiveChallengeCard: View {
             }
         }
     }
-    
+
     private func metricView(label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .fontWeight(.medium)
-            
+
             Text(value)
                 .font(.callout)
                 .fontWeight(.bold)
                 .foregroundStyle(.primary)
         }
     }
-    
+
     private func timeRemaining(until deadline: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        return "Ends " + formatter.localizedString(for: deadline, relativeTo: Date())
+        "Ends " + relativeDateFormatter.localizedString(for: deadline, relativeTo: Date())
     }
-    
+
     private var noActiveChallengeView: some View {
         Button(action: onCreateChallenge) {
             HStack(spacing: 12) {
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
                     .foregroundStyle(Color.brandTeal)
-                
+
                 VStack(alignment: .leading, spacing: 2) {
                     Text("No Active Challenge")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.primary)
-                    
+
                     Text("Tap to create one and start competing")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                
+
                 Spacer()
-                
+
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.secondary.opacity(0.5))
@@ -144,7 +144,7 @@ struct ActiveChallengeCard: View {
         }
         .buttonStyle(.plain)
     }
-    
+
     private func statusBadge(for challenge: Challenge) -> some View {
         Text(challenge.status == .voting ? "Voting Open" : "In Progress")
             .font(.caption2.weight(.bold))
@@ -159,6 +159,7 @@ struct ActiveChallengeCard: View {
 }
 
 // MARK: - Styling Extension
+
 extension View {
     func dashboardCardStyle(backgroundColor: Color = Color("SecondaryBackground")) -> some View {
         self
@@ -184,33 +185,23 @@ extension View {
         groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
         userUseCase: TreasuryUserUseCase(userService: services.userService)
     )
-    
+
     return ActiveChallengeCard(
         challenge: Challenge.preview(),
         onCreateChallenge: {},
-        services: services,
-        treasuryViewModel: treasuryVM
+        challengeDestination: { challenge in
+            ChallengeVotingView(challenge: challenge, viewModel: treasuryVM)
+        }
     )
     .padding()
     .background(Color("PrimaryBackground"))
 }
 
 #Preview("Empty") {
-    let services = AppServiceContainer.preview()
-    let treasuryVM = TreasuryViewModel(
-        transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
-        challengeUseCase: TreasuryChallengeUseCase(challengeService: services.challengeService),
-        voteUseCase: TreasuryVoteUseCase(voteService: services.voteService),
-        withdrawalUseCase: TreasuryWithdrawalUseCase(withdrawalService: services.withdrawalService),
-        groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
-        userUseCase: TreasuryUserUseCase(userService: services.userService)
-    )
-    
-    return ActiveChallengeCard(
+    ActiveChallengeCard<EmptyView>(
         challenge: nil,
         onCreateChallenge: {},
-        services: services,
-        treasuryViewModel: treasuryVM
+        challengeDestination: { _ in EmptyView() }
     )
     .padding()
     .background(Color("PrimaryBackground"))

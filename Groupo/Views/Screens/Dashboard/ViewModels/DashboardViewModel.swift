@@ -13,22 +13,21 @@ final class DashboardViewModel {
     var currentUser: User?
     var challenges: [Challenge] = []
     var transactions: [Transaction] = []
-    
-    var activeChallenge: Challenge? {
-        challenges.first { $0.status == .active || $0.status == .voting }
-    }
-    
+
+    /// Cached to avoid re-filtering on every render cycle.
+    private(set) var activeChallenge: Challenge?
+
     var isLoading: Bool = false
     var errorMessage: String?
-    
+
     // MARK: - Dependencies
     private let groupUseCase: DashboardGroupUseCaseProtocol
     private let challengeUseCase: DashboardChallengeUseCaseProtocol
     private let transactionUseCase: DashboardTransactionUseCaseProtocol
     private let userUseCase: DashboardUserUseCaseProtocol
-    
+
     private var cancellables = Set<AnyCancellable>()
-    
+
     init(
         groupUseCase: DashboardGroupUseCaseProtocol,
         challengeUseCase: DashboardChallengeUseCaseProtocol,
@@ -41,14 +40,24 @@ final class DashboardViewModel {
         self.userUseCase = userUseCase
         setupSubscribers()
     }
-    
+
+    // MARK: - Refresh
+
     @MainActor
     func refresh() async {
         isLoading = true
-        try? await Task.sleep(nanoseconds: 500_000_000)
+        errorMessage = nil
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.groupUseCase.refresh() }
+            group.addTask { await self.challengeUseCase.refresh() }
+            group.addTask { await self.userUseCase.refresh() }
+            group.addTask { await self.transactionUseCase.refresh() }
+        }
         isLoading = false
     }
-    
+
+    // MARK: - Subscribers
+
     private func setupSubscribers() {
         groupUseCase.currentGroup
             .receive(on: DispatchQueue.main)
@@ -57,16 +66,18 @@ final class DashboardViewModel {
                 self?.members = group.members
             }
             .store(in: &cancellables)
-            
+
         Publishers.CombineLatest(userUseCase.currentUser, challengeUseCase.challenges)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] user, challenges in
-                self?.currentUser = user
-                self?.challenges = challenges
-                self?.calculateStake(user: user, challenges: challenges)
+                guard let self else { return }
+                self.currentUser = user
+                self.challenges = challenges
+                self.activeChallenge = challenges.first { $0.status == .active || $0.status == .voting }
+                self.calculateStake(user: user, challenges: challenges)
             }
             .store(in: &cancellables)
-            
+
         transactionUseCase.transactions
             .receive(on: DispatchQueue.main)
             .sink { [weak self] transactions in
@@ -74,19 +85,15 @@ final class DashboardViewModel {
             }
             .store(in: &cancellables)
     }
-    
+
+    // MARK: - Stake Calculation
+
     private func calculateStake(user: User, challenges: [Challenge]) {
         let total = user.currentEquity
-        let activeChallenges = challenges.filter { challenge in
-            let isActive = challenge.status == .active || challenge.status == .voting
-            let isParticipant = challenge.participants.contains(user.id)
-            return isActive && isParticipant
-        }
-        let frozen = activeChallenges.reduce(Decimal(0)) { $0 + $1.buyIn }
-        let available = total - frozen
-        
+        let frozen = ChallengeStakeCalculator.frozenAmount(for: user.id, in: challenges)
+
         self.totalStake = total
         self.frozenStake = frozen
-        self.availableStake = available
+        self.availableStake = total - frozen
     }
 }

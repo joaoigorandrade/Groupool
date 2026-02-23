@@ -8,4 +8,8 @@ protocol GroupServiceProtocol {
     // MARK: - State
 
     var currentGroup: AnyPublisher<Group, Never> { get }
+
+    // MARK: - Actions
+
+    func refresh() async
 }

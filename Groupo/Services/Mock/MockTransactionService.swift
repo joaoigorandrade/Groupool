@@ -23,6 +23,12 @@ final class MockTransactionService: TransactionServiceProtocol {
 
     // MARK: - Actions
 
+    func refresh() async {
+        // Re-assign to trigger downstream publishers.
+        // Real implementations will fetch from the network here.
+        store.transactions = store.transactions
+    }
+
     func addExpense(
         amount: Decimal,
         description: String,
