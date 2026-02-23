@@ -12,13 +12,29 @@ struct ActiveChallengeCard<Destination: View>: View {
     let onCreateChallenge: () -> Void
     let challengeDestination: (Challenge) -> Destination
 
+    @State private var badgePulse = false
+
     var body: some View {
+        view
+        .animation(.spring(duration: 0.45, bounce: 0.2), value: challenge == nil)
+    }
+    
+    @ViewBuilder
+    private var view: some View {
         if let challenge = challenge {
             activeChallengeView(for: challenge)
                 .dashboardCardStyle()
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .scale(scale: 0.95).combined(with: .opacity)
+                ))
         } else {
             noActiveChallengeView
                 .dashboardCardStyle(backgroundColor: Color.brandTeal.opacity(0.1))
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .scale(scale: 0.95).combined(with: .opacity)
+                ))
         }
     }
 
@@ -155,6 +171,12 @@ struct ActiveChallengeCard<Destination: View>: View {
                 challenge.status == .voting ? Color.blue : Color.green.opacity(0.2)
             )
             .clipShape(Capsule())
+            .scaleEffect(badgePulse ? 1.05 : 1.0)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                    badgePulse = true
+                }
+            }
     }
 }
 

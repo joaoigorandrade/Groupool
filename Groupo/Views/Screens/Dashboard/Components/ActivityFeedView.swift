@@ -5,13 +5,20 @@ struct ActivityFeedView: View {
     let transactions: [Transaction]
     let onViewAll: () -> Void
     let onTransactionSelected: (Transaction) -> Void
-    
+
+    @State private var rowsVisible = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             headerView
             contentView
         }
         .dashboardCardStyle()
+        .onAppear {
+            withAnimation(.spring(duration: 0.5, bounce: 0.2)) {
+                rowsVisible = true
+            }
+        }
     }
     
     private var headerView: some View {
@@ -52,13 +59,16 @@ struct ActivityFeedView: View {
                                 .overlay(Color.white.opacity(0.1))
                                 .padding(.leading, 44)
                         }
-                        
+
                         activityRow(for: transaction)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 onTransactionSelected(transaction)
                             }
                     }
+                    .offset(x: rowsVisible ? 0 : -20)
+                    .opacity(rowsVisible ? 1 : 0)
+                    .animation(.spring(duration: 0.4, bounce: 0.2).delay(Double(index) * 0.08), value: rowsVisible)
                 }
             }
         }

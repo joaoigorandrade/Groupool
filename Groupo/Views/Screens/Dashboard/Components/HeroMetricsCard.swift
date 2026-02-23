@@ -8,7 +8,9 @@ struct HeroMetricsCard<Destination: View>: View {
     let frozenStake: Decimal
     let members: [User]
     let membersDestination: Destination
-    
+
+    @State private var avatarsVisible = false
+
     var body: some View {
         HStack(spacing: 0) {
             poolAndMembersSection
@@ -18,6 +20,11 @@ struct HeroMetricsCard<Destination: View>: View {
             personalStakeSection
         }
         .dashboardCardStyle(backgroundColor: .clear)
+        .onAppear {
+            withAnimation(.spring(duration: 0.6, bounce: 0.4).delay(0.3)) {
+                avatarsVisible = true
+            }
+        }
     }
     
     private var poolAndMembersSection: some View {
@@ -93,12 +100,18 @@ struct HeroMetricsCard<Destination: View>: View {
                         memberAvatar(for: member)
                             .offset(x: CGFloat(index) * 20)
                             .zIndex(Double(3 - index))
+                            .scaleEffect(avatarsVisible ? 1 : 0.4)
+                            .opacity(avatarsVisible ? 1 : 0)
+                            .animation(.spring(duration: 0.4, bounce: 0.5).delay(Double(index) * 0.07), value: avatarsVisible)
                     }
-                    
+
                     if members.count > 3 {
                         overflowIndicator
                             .offset(x: CGFloat(3 * 20))
                             .zIndex(0)
+                            .scaleEffect(avatarsVisible ? 1 : 0.4)
+                            .opacity(avatarsVisible ? 1 : 0)
+                            .animation(.spring(duration: 0.4, bounce: 0.5).delay(0.21), value: avatarsVisible)
                     }
                 }
                 .frame(width: CGFloat((min(members.count, 3) + (members.count > 3 ? 1 : 0)) * 20) + 12, height: 32)
@@ -156,15 +169,17 @@ struct HeroMetricsCard<Destination: View>: View {
             Circle()
                 .fill(color)
                 .frame(width: 6, height: 6)
-            
+
             Text(label + ":")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-            
+
             Text(amount.formatted(.currency(code: "BRL")))
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.primary)
                 .monospacedDigit()
+                .contentTransition(.numericText())
+                .animation(.spring(duration: 0.4), value: amount)
         }
     }
 }

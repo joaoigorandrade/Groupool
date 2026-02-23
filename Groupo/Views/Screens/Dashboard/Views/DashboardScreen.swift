@@ -4,6 +4,7 @@ struct DashboardScreen: View {
     @Environment(\.services) private var services
     @Environment(MainCoordinator.self) private var coordinator
     @State private var viewModel: DashboardViewModel
+    @State private var isVisible = false
 
     init(
         groupUseCase: DashboardGroupUseCaseProtocol,
@@ -28,8 +29,19 @@ struct DashboardScreen: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         heroMetricsCard
+                            .offset(y: isVisible ? 0 : 30)
+                            .opacity(isVisible ? 1 : 0)
+                            .animation(.spring(duration: 0.5, bounce: 0.3).delay(0.05), value: isVisible)
+
                         activeChallengeCard
+                            .offset(y: isVisible ? 0 : 30)
+                            .opacity(isVisible ? 1 : 0)
+                            .animation(.spring(duration: 0.5, bounce: 0.3).delay(0.15), value: isVisible)
+
                         activitySection
+                            .offset(y: isVisible ? 0 : 30)
+                            .opacity(isVisible ? 1 : 0)
+                            .animation(.spring(duration: 0.5, bounce: 0.3).delay(0.25), value: isVisible)
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 8)
@@ -41,6 +53,9 @@ struct DashboardScreen: View {
                     await viewModel.refresh()
                 }
                 .scrollBounceBehavior(.basedOnSize)
+                .onAppear {
+                    isVisible = true
+                }
             }
             .navigationTitle("Dashboard")
             .toolbarBackground(.visible, for: .navigationBar)
