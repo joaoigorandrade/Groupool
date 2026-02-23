@@ -29,7 +29,6 @@ final class MockUserService: UserServiceProtocol {
     }
 
     func deposit(amount: Decimal) async throws {
-        // 1. Update user equity
         let newEquity = store.currentUser.currentEquity + amount
         
         let updatedUser = User(

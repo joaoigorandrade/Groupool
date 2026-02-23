@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PhoneEntryView: View {
-    @Bindable var viewModel: AuthViewModel
+    @ObservedObject var viewModel: AuthViewModel
     @EnvironmentObject var sessionManager: SessionManager
     
     var body: some View {
@@ -54,11 +54,14 @@ struct PhoneEntryView: View {
     }
     
     private var phoneNumberField: some View {
-        TextField("11 99999-9999", text: $viewModel.phoneNumber)
+        TextField("(11) 99999-9999", text: $viewModel.phoneNumber)
             .keyboardType(.phonePad)
             .padding()
             .background(Color(.systemGray6))
             .cornerRadius(12)
+            .onChange(of: viewModel.phoneNumber) { newValue in
+                viewModel.applyPhoneMask(newValue)
+            }
     }
     
     private var submitButton: some View {

@@ -27,17 +27,9 @@ final class MockStore {
     private let keyWithdrawals = "mock_withdrawals"
 
     // MARK: - Init
-
-    /// Creates a mock store.
-    /// - Parameters:
-    ///   - seed: Initial data to populate the store with.
-    ///   - persistenceEnabled: When `true` (default), state is persisted to
-    ///     `UserDefaults` and restored on next launch. Set to `false` for
-    ///     SwiftUI previews to guarantee deterministic, side-effect-free state.
+    
     init(seed: MockSeed = .default, persistenceEnabled: Bool = true) {
         self.persistenceEnabled = persistenceEnabled
-
-        // Temporary values so all stored properties are set before `self` use.
         self.currentUser = seed.user
         self.currentGroup = seed.group
         self.challenges = seed.challenges

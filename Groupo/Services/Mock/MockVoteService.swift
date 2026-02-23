@@ -25,8 +25,6 @@ final class MockVoteService: VoteServiceProtocol {
 
     func castVote(targetID: UUID, type: Vote.VoteType) async throws {
         let voterID = store.currentUser.id
-
-        // Remove existing vote for same (targetID, voterID) pair
         if let existingIndex = store.votes.firstIndex(where: {
             $0.targetID == targetID && $0.voterID == voterID
         }) {

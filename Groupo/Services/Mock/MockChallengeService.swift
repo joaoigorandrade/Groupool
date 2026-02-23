@@ -144,7 +144,6 @@ final class MockChallengeService: ChallengeServiceProtocol {
         let challengeVotes = store.votes.filter { $0.targetID == challengeID }
         let totalMembers = store.currentGroup.members.count
 
-        // Edge Case: No votes cast
         if challengeVotes.isEmpty {
             challenge.status = .failed
             challenge.votingFailureReason = "No votes cast. Funds refunded."
@@ -154,7 +153,6 @@ final class MockChallengeService: ChallengeServiceProtocol {
             return
         }
 
-        // 50% participation threshold
         let participationCount = challengeVotes.count
         let participationThreshold = Int(ceil(Double(totalMembers) * 0.5))
 
@@ -171,7 +169,6 @@ final class MockChallengeService: ChallengeServiceProtocol {
         let approvalVotes = challengeVotes.filter { $0.type == .approval }.count
         let contestVotes = challengeVotes.filter { $0.type == .contest }.count
 
-        // Edge Case: Tie
         if approvalVotes == contestVotes {
             challenge.status = .failed
             challenge.votingFailureReason =

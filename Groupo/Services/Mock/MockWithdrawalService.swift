@@ -24,7 +24,6 @@ final class MockWithdrawalService: WithdrawalServiceProtocol {
     // MARK: - Actions
 
     func requestWithdrawal(amount: Decimal) async throws {
-        // Cooldown check: 24h since last win
         if let lastWin = store.currentUser.lastWinTimestamp {
             let cooldownEnd = lastWin.addingTimeInterval(60 * 60 * 24)
             let now = Date()
@@ -117,7 +116,6 @@ final class MockWithdrawalService: WithdrawalServiceProtocol {
             store.transactions.insert(transaction, at: 0)
             store.save()
         } else {
-            // Reject
             var updatedRequest = request
             updatedRequest.status = .rejected
             store.withdrawalRequests[index] = updatedRequest

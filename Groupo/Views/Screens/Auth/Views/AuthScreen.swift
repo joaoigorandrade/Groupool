@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct AuthScreen: View {
-    @State private var viewModel: AuthViewModel
+    @StateObject private var viewModel: AuthViewModel
     @EnvironmentObject var sessionManager: SessionManager
-    
+
     init(authUseCase: AuthUseCaseProtocol, verifyOTPUseCase: VerifyOTPUseCaseProtocol) {
-        _viewModel = State(initialValue: AuthViewModel(authUseCase: authUseCase, verifyOTPUseCase: verifyOTPUseCase))
+        _viewModel = StateObject(wrappedValue: AuthViewModel(authUseCase: authUseCase, verifyOTPUseCase: verifyOTPUseCase))
     }
     
     var body: some View {
