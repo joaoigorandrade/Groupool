@@ -2,7 +2,8 @@ import SwiftUI
 
 struct PIXKeysView: View {
     @Bindable var viewModel: ProfileViewModel
-    
+    @Namespace private var namespace
+
     var body: some View {
         List {
             Section {
@@ -12,7 +13,7 @@ struct PIXKeysView: View {
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundStyle(.secondary)
-                        
+
                         Text(key.value)
                             .font(.body)
                     }
@@ -26,49 +27,44 @@ struct PIXKeysView: View {
         .navigationTitle("PIX Keys")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(action: { viewModel.showingAddKeySheet = true }) {
+                NavigationLink(destination: AddPIXKeyView(viewModel: viewModel)
+                    .navigationTransition(.zoom(sourceID: "add-pix-key", in: namespace))
+                ) {
                     Image(systemName: "plus")
                 }
+                .matchedTransitionSource(id: "add-pix-key", in: namespace)
             }
-        }
-        .sheet(isPresented: $viewModel.showingAddKeySheet) {
-            AddPIXKeySheet(viewModel: viewModel)
         }
     }
 }
 
-struct AddPIXKeySheet: View {
+struct AddPIXKeyView: View {
     @Bindable var viewModel: ProfileViewModel
     @State private var selectedType: PIXKey.PIXKeyType = .email
     @State private var value: String = ""
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Picker("Type", selection: $selectedType) {
-                    ForEach(PIXKey.PIXKeyType.allCases, id: \.self) { type in
-                        Text(type.rawValue.capitalized).tag(type)
-                    }
+        Form {
+            Picker("Type", selection: $selectedType) {
+                ForEach(PIXKey.PIXKeyType.allCases, id: \.self) { type in
+                    Text(type.rawValue.capitalized).tag(type)
                 }
-                
-                TextField("Value", text: $value)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
             }
-            .navigationTitle("Add PIX Key")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+
+            TextField("Value", text: $value)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+        }
+        .navigationTitle("Add PIX Key")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Add") {
+                    viewModel.addPIXKey(type: selectedType, value: value)
+                    dismiss()
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        viewModel.addPIXKey(type: selectedType, value: value)
-                        dismiss()
-                    }
-                    .disabled(value.isEmpty)
-                }
+                .disabled(value.isEmpty)
             }
         }
     }

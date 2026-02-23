@@ -3,6 +3,7 @@ import SwiftUI
 struct ProposalsCarousel: View {
     let viewModel: TreasuryViewModel
     let services: AppServiceContainer
+    var namespace: Namespace.ID
 
     @State private var selection: UUID?
     @State private var timerTask: Task<Void, Never>?
@@ -50,14 +51,20 @@ struct ProposalsCarousel: View {
 
         switch item {
         case .challenge(let challenge):
-            NavigationLink(destination: ChallengeVotingView(challenge: challenge, viewModel: viewModel)) {
+            NavigationLink(destination: ChallengeVotingView(challenge: challenge, viewModel: viewModel)
+                .navigationTransition(.zoom(sourceID: challenge.id, in: namespace))
+            ) {
                 card
             }
+            .matchedTransitionSource(id: challenge.id, in: namespace)
             .buttonStyle(PlainButtonStyle())
         case .withdrawal(let request):
-            NavigationLink(destination: WithdrawalVotingView(withdrawal: request, viewModel: viewModel)) {
+            NavigationLink(destination: WithdrawalVotingView(withdrawal: request, viewModel: viewModel)
+                .navigationTransition(.zoom(sourceID: request.id, in: namespace))
+            ) {
                 card
             }
+            .matchedTransitionSource(id: request.id, in: namespace)
             .buttonStyle(PlainButtonStyle())
         }
     }

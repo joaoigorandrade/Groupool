@@ -6,6 +6,7 @@ struct AppSettingsView: View {
     @AppStorage("selectedAppearance") private var selectedAppearance = "System"
     @AppStorage("selectedLanguage") private var selectedLanguage = "en"
     @State private var showingResetAlert = false
+    @Namespace private var namespace
     
     private let appearances = ["System", "Light", "Dark"]
     private let languages = [("English", "en"), ("Português (Brasil)", "pt-BR")]
@@ -69,12 +70,16 @@ private extension AppSettingsView {
             NavigationLink("Terms of Service") {
                 Text("Terms of Service Placeholder")
                     .navigationTitle("Terms of Service")
+                    .navigationTransition(.zoom(sourceID: "terms", in: namespace))
             }
-            
+            .matchedTransitionSource(id: "terms", in: namespace)
+
             NavigationLink("Privacy Policy") {
                 Text("Privacy Policy Placeholder")
                     .navigationTitle("Privacy Policy")
+                    .navigationTransition(.zoom(sourceID: "privacy", in: namespace))
             }
+            .matchedTransitionSource(id: "privacy", in: namespace)
         }
     }
     
@@ -94,7 +99,9 @@ private extension AppSettingsView {
                     onJoin: { print("Joined!") }
                 )
                 .environment(\.services, previewServices)
+                .navigationTransition(.zoom(sourceID: "onboarding-preview", in: namespace))
             }
+            .matchedTransitionSource(id: "onboarding-preview", in: namespace)
         }
     }
 }

@@ -3,25 +3,15 @@ import SwiftUI
 struct CustomSplitView: View {
     @Bindable var viewModel: CreateExpenseViewModel
     let members: [User]
-    @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                summaryHeader
-                
-                memberList
-            }
-            .navigationTitle("Custom Split")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
+        VStack(spacing: 0) {
+            summaryHeader
+
+            memberList
         }
+        .navigationTitle("Custom Split")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

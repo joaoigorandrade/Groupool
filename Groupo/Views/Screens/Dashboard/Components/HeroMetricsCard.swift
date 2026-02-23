@@ -8,6 +8,7 @@ struct HeroMetricsCard<Destination: View>: View {
     let frozenStake: Decimal
     let members: [User]
     let membersDestination: Destination
+    var namespace: Namespace.ID
 
     @State private var avatarsVisible = false
 
@@ -93,7 +94,9 @@ struct HeroMetricsCard<Destination: View>: View {
     }
     
     private var memberStackView: some View {
-        NavigationLink(destination: membersDestination) {
+        NavigationLink(destination: membersDestination
+            .navigationTransition(.zoom(sourceID: "members", in: namespace))
+        ) {
             HStack(spacing: 8) {
                 ZStack {
                     ForEach(Array(members.prefix(3).enumerated()), id: \.element.id) { index, member in
@@ -119,6 +122,7 @@ struct HeroMetricsCard<Destination: View>: View {
             }
             .contentShape(Rectangle())
         }
+        .matchedTransitionSource(id: "members", in: namespace)
         .buttonStyle(.plain)
     }
     

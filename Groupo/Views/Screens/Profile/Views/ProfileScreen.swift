@@ -4,6 +4,7 @@ struct ProfileScreen: View {
     @EnvironmentObject private var sessionManager: SessionManager
     @State private var viewModel: ProfileViewModel
     @State private var showLogoutConfirmation = false
+    @Namespace private var namespace
     
     init(profileUseCase: ProfileUseCaseProtocol, pixUseCase: PIXUseCaseProtocol = PIXUseCase(userService: AppServiceContainer.preview().userService)) {
         _viewModel = State(wrappedValue: ProfileViewModel(profileUseCase: profileUseCase, pixUseCase: pixUseCase))
@@ -81,13 +82,19 @@ struct ProfileScreen: View {
     @ViewBuilder
     private var settingsSection: some View {
         Section("Settings") {
-            NavigationLink(destination: PIXKeysView(viewModel: viewModel)) {
+            NavigationLink(destination: PIXKeysView(viewModel: viewModel)
+                .navigationTransition(.zoom(sourceID: "pix-keys", in: namespace))
+            ) {
                 Label("PIX Keys", systemImage: "qrcode")
             }
-            
-            NavigationLink(destination: AppSettingsView()) {
+            .matchedTransitionSource(id: "pix-keys", in: namespace)
+
+            NavigationLink(destination: AppSettingsView()
+                .navigationTransition(.zoom(sourceID: "app-settings", in: namespace))
+            ) {
                 Label("App Settings", systemImage: "gear")
             }
+            .matchedTransitionSource(id: "app-settings", in: namespace)
         }
     }
     

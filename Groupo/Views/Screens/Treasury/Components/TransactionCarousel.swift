@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TransactionCarousel: View {
     let sections: [TransactionSection]
-    @Binding var selectedSection: TransactionSection?
+    var namespace: Namespace.ID
 
     @State private var scrollID: String?
     @State private var timerTask: Task<Void, Never>?
@@ -11,16 +11,21 @@ struct TransactionCarousel: View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(alignment: .top, spacing: -20) {
                 ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
-                    TransactionColumnCard(section: section)
-                        .containerRelativeFrame(.horizontal, count: 5, span: 2, spacing: 0)
-                        .id(section.id)
-                        .visualEffect { content, proxy in
-                            content
-                                .scaleEffect(columnScale(for: proxy), anchor: .leading)
-                                .opacity(columnOpacity(for: proxy))
-                        }
-                        .zIndex(Double(sections.count - index))
-                        .onTapGesture { selectedSection = section }
+                    NavigationLink(destination: MonthTransactionHistorySheet(section: section)
+                        .navigationTransition(.zoom(sourceID: section.id, in: namespace))
+                    ) {
+                        TransactionColumnCard(section: section)
+                    }
+                    .matchedTransitionSource(id: section.id, in: namespace)
+                    .buttonStyle(.plain)
+                    .containerRelativeFrame(.horizontal, count: 5, span: 2, spacing: 0)
+                    .id(section.id)
+                    .visualEffect { content, proxy in
+                        content
+                            .scaleEffect(columnScale(for: proxy), anchor: .leading)
+                            .opacity(columnOpacity(for: proxy))
+                    }
+                    .zIndex(Double(sections.count - index))
                 }
             }
             .scrollTargetLayout()
@@ -227,11 +232,19 @@ struct NetFlowBadge: View {
 }
 
 #Preview {
-    TransactionCarousel(
-        sections: [
-            TransactionSection(title: "Jan 2024", transactions: [Transaction.preview()]),
-            TransactionSection(title: "Dec 2023", transactions: [Transaction.preview(type: .expense)])
-        ],
-        selectedSection: .constant(nil)
-    )
+    struct PreviewWrapper: View {
+        @Namespace var namespace
+        var body: some View {
+            NavigationStack {
+                TransactionCarousel(
+                    sections: [
+                        TransactionSection(title: "Jan 2024", transactions: [Transaction.preview()]),
+                        TransactionSection(title: "Dec 2023", transactions: [Transaction.preview(type: .expense)])
+                    ],
+                    namespace: namespace
+                )
+            }
+        }
+    }
+    return PreviewWrapper()
 }

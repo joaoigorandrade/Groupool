@@ -5,7 +5,7 @@ struct TreasuryScreen: View {
     @Environment(MainCoordinator.self) private var coordinator
 
     @State private var viewModel: TreasuryViewModel
-    @State private var selectedSection: TransactionSection?
+    @Namespace private var namespace
 
     init(viewModel: TreasuryViewModel) {
         _viewModel = State(wrappedValue: viewModel)
@@ -40,11 +40,12 @@ struct TreasuryScreen: View {
                     } else {
                         ProposalsSection(
                             viewModel: viewModel,
-                            services: services
+                            services: services,
+                            namespace: namespace
                         )
                         TransactionHistorySection(
                             viewModel: viewModel,
-                            selectedSection: $selectedSection
+                            namespace: namespace
                         )
                     }
 
@@ -54,9 +55,6 @@ struct TreasuryScreen: View {
             .refreshable { await viewModel.refresh() }
             .navigationTitle("Treasury")
             .toolbarBackground(.visible, for: .navigationBar)
-            .sheet(item: $selectedSection) { section in
-                MonthTransactionHistorySheet(section: section)
-            }
         }
     }
 }

@@ -2,31 +2,25 @@ import SwiftUI
 
 struct MonthTransactionHistorySheet: View {
     let section: TransactionSection
-    @Environment(\.dismiss) private var dismiss
+    @Namespace private var namespace
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(section.transactions) { transaction in
-                        NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                            TransactionDenseRow(transaction: transaction)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(section.transactions) { transaction in
+                    NavigationLink(destination: TransactionDetailView(transaction: transaction)
+                        .navigationTransition(.zoom(sourceID: transaction.id, in: namespace))
+                    ) {
+                        TransactionDenseRow(transaction: transaction)
                     }
-                }
-                .padding()
-            }
-            .navigationTitle(section.title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+                    .matchedTransitionSource(id: transaction.id, in: namespace)
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
-            .background(Color.appPrimaryBackground)
+            .padding()
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .navigationTitle(section.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .background(Color.appPrimaryBackground)
     }
 }

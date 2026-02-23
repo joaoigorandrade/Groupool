@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TransactionHistorySection: View {
     let viewModel: TreasuryViewModel
-    @Binding var selectedSection: TransactionSection?
+    var namespace: Namespace.ID
 
     var body: some View {
         if !viewModel.sections.isEmpty {
@@ -16,7 +16,7 @@ struct TransactionHistorySection: View {
 
                 TransactionCarousel(
                     sections: viewModel.sections,
-                    selectedSection: $selectedSection
+                    namespace: namespace
                 )
             }
         }

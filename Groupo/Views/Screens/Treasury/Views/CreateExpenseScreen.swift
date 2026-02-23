@@ -5,7 +5,7 @@ struct CreateExpenseScreen: View {
     @Environment(\.services) private var services
     @EnvironmentObject private var toastManager: ToastManager
     @State private var viewModel: CreateExpenseViewModel
-    @State private var showCustomSplitSheet = false
+    @Namespace private var namespace
     
     init(
         createExpenseUseCase: CreateExpenseUseCaseProtocol,
@@ -18,16 +18,15 @@ struct CreateExpenseScreen: View {
     }
     
     var body: some View {
-        VStack(spacing: 24) {
-            headerSection
-            
-            formSection
-            
-            createButton
-        }
-        .padding()
-        .sheet(isPresented: $showCustomSplitSheet) {
-            CustomSplitView(viewModel: viewModel, members: viewModel.currentGroupMembers)
+        NavigationStack {
+            VStack(spacing: 24) {
+                headerSection
+
+                formSection
+
+                createButton
+            }
+            .padding()
         }
     }
 }
@@ -104,9 +103,9 @@ private extension CreateExpenseScreen {
     }
     
     var customSplitButton: some View {
-        Button {
-            showCustomSplitSheet = true
-        } label: {
+        NavigationLink(destination: CustomSplitView(viewModel: viewModel, members: viewModel.currentGroupMembers)
+            .navigationTransition(.zoom(sourceID: "custom-split", in: namespace))
+        ) {
             HStack {
                 Text("Configure Split")
                 Spacer()
@@ -125,6 +124,8 @@ private extension CreateExpenseScreen {
             .background(Color(uiColor: .secondarySystemBackground))
             .cornerRadius(10)
         }
+        .matchedTransitionSource(id: "custom-split", in: namespace)
+        .foregroundColor(.primary)
     }
     
     var createButton: some View {

@@ -2,7 +2,8 @@ import SwiftUI
 
 struct MemberListView: View {
     @State private var viewModel: MemberListViewModel
-    
+    @Namespace private var namespace
+
     init(
         groupService: any GroupServiceProtocol,
         challengeService: any ChallengeServiceProtocol
@@ -35,12 +36,15 @@ struct MemberListView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(viewModel.filteredMembers) { member in
-                            NavigationLink(destination: MemberDetailView(member: member, viewModel: viewModel)) {
+                            NavigationLink(destination: MemberDetailView(member: member, viewModel: viewModel)
+                                .navigationTransition(.zoom(sourceID: member.id, in: namespace))
+                            ) {
                                 MemberRow(member: member, viewModel: viewModel)
                             }
+                            .matchedTransitionSource(id: member.id, in: namespace)
                             .buttonStyle(.plain)
                             Divider()
-                                .padding(.leading, 76) 
+                                .padding(.leading, 76)
                         }
                     }
                 }

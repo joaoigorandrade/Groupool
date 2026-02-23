@@ -5,6 +5,7 @@ struct DashboardScreen: View {
     @Environment(MainCoordinator.self) private var coordinator
     @State private var viewModel: DashboardViewModel
     @State private var isVisible = false
+    @Namespace private var namespace
 
     init(
         groupUseCase: DashboardGroupUseCaseProtocol,
@@ -87,7 +88,9 @@ struct DashboardScreen: View {
     private var profileLink: some View {
         NavigationLink(destination: ProfileScreen(
             profileUseCase: ProfileUseCase(userService: services.userService)
-        )) {
+        )
+        .navigationTransition(.zoom(sourceID: "profile", in: namespace))
+        ) {
             if let user = viewModel.currentUser {
                 Image(systemName: user.avatar)
                     .resizable()
@@ -103,6 +106,7 @@ struct DashboardScreen: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .matchedTransitionSource(id: "profile", in: namespace)
     }
 
     // MARK: - Sections
@@ -117,7 +121,8 @@ struct DashboardScreen: View {
             membersDestination: MemberListView(
                 groupService: services.groupService,
                 challengeService: services.challengeService
-            )
+            ),
+            namespace: namespace
         )
     }
 
@@ -130,7 +135,8 @@ struct DashboardScreen: View {
             },
             challengeDestination: { challenge in
                 ChallengeVotingView(challenge: challenge, viewModel: treasuryVM)
-            }
+            },
+            namespace: namespace
         )
     }
 

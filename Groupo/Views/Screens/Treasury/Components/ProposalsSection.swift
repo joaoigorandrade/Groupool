@@ -3,13 +3,15 @@ import SwiftUI
 struct ProposalsSection: View {
     let viewModel: TreasuryViewModel
     let services: AppServiceContainer
+    var namespace: Namespace.ID
 
     var body: some View {
         HStack(spacing: 16) {
             if !viewModel.activeItems.isEmpty {
                 ProposalsCarousel(
                     viewModel: viewModel,
-                    services: services
+                    services: services,
+                    namespace: namespace
                 )
                 .frame(maxWidth: .infinity)
             }

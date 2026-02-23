@@ -11,6 +11,7 @@ struct ActiveChallengeCard<Destination: View>: View {
     let challenge: Challenge?
     let onCreateChallenge: () -> Void
     let challengeDestination: (Challenge) -> Destination
+    var namespace: Namespace.ID
 
     @State private var badgePulse = false
 
@@ -39,13 +40,16 @@ struct ActiveChallengeCard<Destination: View>: View {
     }
 
     private func activeChallengeView(for challenge: Challenge) -> some View {
-        NavigationLink(destination: challengeDestination(challenge)) {
+        NavigationLink(destination: challengeDestination(challenge)
+            .navigationTransition(.zoom(sourceID: challenge.id, in: namespace))
+        ) {
             VStack(alignment: .leading, spacing: 16) {
                 headerView(for: challenge)
                 metricsGrid(for: challenge)
                 footerView(for: challenge)
             }
         }
+        .matchedTransitionSource(id: challenge.id, in: namespace)
         .buttonStyle(.plain)
     }
 
@@ -198,33 +202,46 @@ extension View {
 }
 
 #Preview("Active") {
-    let services = AppServiceContainer.preview()
-    let treasuryVM = TreasuryViewModel(
-        transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
-        challengeUseCase: TreasuryChallengeUseCase(challengeService: services.challengeService),
-        voteUseCase: TreasuryVoteUseCase(voteService: services.voteService),
-        withdrawalUseCase: TreasuryWithdrawalUseCase(withdrawalService: services.withdrawalService),
-        groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
-        userUseCase: TreasuryUserUseCase(userService: services.userService)
-    )
-
-    return ActiveChallengeCard(
-        challenge: Challenge.preview(),
-        onCreateChallenge: {},
-        challengeDestination: { challenge in
-            ChallengeVotingView(challenge: challenge, viewModel: treasuryVM)
+    struct PreviewWrapper: View {
+        @Namespace var namespace
+        var body: some View {
+            let services = AppServiceContainer.preview()
+            let treasuryVM = TreasuryViewModel(
+                transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
+                challengeUseCase: TreasuryChallengeUseCase(challengeService: services.challengeService),
+                voteUseCase: TreasuryVoteUseCase(voteService: services.voteService),
+                withdrawalUseCase: TreasuryWithdrawalUseCase(withdrawalService: services.withdrawalService),
+                groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
+                userUseCase: TreasuryUserUseCase(userService: services.userService)
+            )
+            return ActiveChallengeCard(
+                challenge: Challenge.preview(),
+                onCreateChallenge: {},
+                challengeDestination: { challenge in
+                    ChallengeVotingView(challenge: challenge, viewModel: treasuryVM)
+                },
+                namespace: namespace
+            )
+            .padding()
+            .background(Color("PrimaryBackground"))
         }
-    )
-    .padding()
-    .background(Color("PrimaryBackground"))
+    }
+    return PreviewWrapper()
 }
 
 #Preview("Empty") {
-    ActiveChallengeCard<EmptyView>(
-        challenge: nil,
-        onCreateChallenge: {},
-        challengeDestination: { _ in EmptyView() }
-    )
-    .padding()
-    .background(Color("PrimaryBackground"))
+    struct PreviewWrapper: View {
+        @Namespace var namespace
+        var body: some View {
+            ActiveChallengeCard<EmptyView>(
+                challenge: nil,
+                onCreateChallenge: {},
+                challengeDestination: { _ in EmptyView() },
+                namespace: namespace
+            )
+            .padding()
+            .background(Color("PrimaryBackground"))
+        }
+    }
+    return PreviewWrapper()
 }
