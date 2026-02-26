@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TreasuryScreen: View {
     @Environment(\.services) private var services
-    @Environment(MainCoordinator.self) private var coordinator
+    @Environment(Router.self) private var router
 
     @State private var viewModel: TreasuryViewModel
     @Namespace private var namespace
@@ -30,17 +30,17 @@ struct TreasuryScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        @Bindable var router = router
+        NavigationStack(path: $router.treasuryPath) {
             ScrollView {
                 VStack(spacing: 12) {
                     BalanceStatsSection(viewModel: viewModel)
 
                     if viewModel.activeItems.isEmpty && viewModel.sections.isEmpty && !viewModel.isLoading {
-                        EmptyStateView(coordinator: coordinator)
+                        EmptyStateView()
                     } else {
                         ProposalsSection(
                             viewModel: viewModel,
-                            services: services,
                             namespace: namespace
                         )
                         TransactionHistorySection(
@@ -55,6 +55,28 @@ struct TreasuryScreen: View {
             .refreshable { await viewModel.refresh() }
             .navigationTitle("Treasury")
             .toolbarBackground(.visible, for: .navigationBar)
+            .navigationDestination(for: TreasuryRoute.self) { route in
+                destinationView(for: route)
+            }
+        }
+    }
+
+    // MARK: - Route Destination Resolution
+
+    @ViewBuilder
+    private func destinationView(for route: TreasuryRoute) -> some View {
+        switch route {
+        case .challengeVoting(let challenge):
+            ChallengeVotingView(challenge: challenge, viewModel: viewModel)
+                .navigationTransition(.zoom(sourceID: challenge.id, in: namespace))
+
+        case .withdrawalVoting(let withdrawal):
+            WithdrawalVotingView(withdrawal: withdrawal, viewModel: viewModel)
+                .navigationTransition(.zoom(sourceID: withdrawal.id, in: namespace))
+
+        case .monthHistory(let section):
+            MonthTransactionHistorySheet(section: section)
+                .navigationTransition(.zoom(sourceID: section.id, in: namespace))
         }
     }
 }
@@ -69,6 +91,6 @@ struct TreasuryScreen: View {
         groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
         userUseCase: TreasuryUserUseCase(userService: services.userService)
     )
-    .environment(MainCoordinator())
+    .environment(Router())
     .environment(\.services, services)
 }

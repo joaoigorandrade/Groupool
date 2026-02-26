@@ -7,10 +7,10 @@ private let relativeDateFormatter: RelativeDateTimeFormatter = {
     return f
 }()
 
-struct ActiveChallengeCard<Destination: View>: View {
+struct ActiveChallengeCard: View {
+    @Environment(Router.self) private var router
+
     let challenge: Challenge?
-    let onCreateChallenge: () -> Void
-    let challengeDestination: (Challenge) -> Destination
     var namespace: Namespace.ID
 
     @State private var badgePulse = false
@@ -19,7 +19,7 @@ struct ActiveChallengeCard<Destination: View>: View {
         view
         .animation(.spring(duration: 0.45, bounce: 0.2), value: challenge == nil)
     }
-    
+
     @ViewBuilder
     private var view: some View {
         if let challenge = challenge {
@@ -40,9 +40,9 @@ struct ActiveChallengeCard<Destination: View>: View {
     }
 
     private func activeChallengeView(for challenge: Challenge) -> some View {
-        NavigationLink(destination: challengeDestination(challenge)
-            .navigationTransition(.zoom(sourceID: challenge.id, in: namespace))
-        ) {
+        Button {
+            router.push(DashboardRoute.challengeVoting(challenge))
+        } label: {
             VStack(alignment: .leading, spacing: 16) {
                 headerView(for: challenge)
                 metricsGrid(for: challenge)
@@ -138,7 +138,9 @@ struct ActiveChallengeCard<Destination: View>: View {
     }
 
     private var noActiveChallengeView: some View {
-        Button(action: onCreateChallenge) {
+        Button {
+            router.presentSheet(.challenge)
+        } label: {
             HStack(spacing: 12) {
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
@@ -205,23 +207,11 @@ extension View {
     struct PreviewWrapper: View {
         @Namespace var namespace
         var body: some View {
-            let services = AppServiceContainer.preview()
-            let treasuryVM = TreasuryViewModel(
-                transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
-                challengeUseCase: TreasuryChallengeUseCase(challengeService: services.challengeService),
-                voteUseCase: TreasuryVoteUseCase(voteService: services.voteService),
-                withdrawalUseCase: TreasuryWithdrawalUseCase(withdrawalService: services.withdrawalService),
-                groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
-                userUseCase: TreasuryUserUseCase(userService: services.userService)
-            )
-            return ActiveChallengeCard(
+            ActiveChallengeCard(
                 challenge: Challenge.preview(),
-                onCreateChallenge: {},
-                challengeDestination: { challenge in
-                    ChallengeVotingView(challenge: challenge, viewModel: treasuryVM)
-                },
                 namespace: namespace
             )
+            .environment(Router())
             .padding()
             .background(Color("PrimaryBackground"))
         }
@@ -233,12 +223,11 @@ extension View {
     struct PreviewWrapper: View {
         @Namespace var namespace
         var body: some View {
-            ActiveChallengeCard<EmptyView>(
+            ActiveChallengeCard(
                 challenge: nil,
-                onCreateChallenge: {},
-                challengeDestination: { _ in EmptyView() },
                 namespace: namespace
             )
+            .environment(Router())
             .padding()
             .background(Color("PrimaryBackground"))
         }

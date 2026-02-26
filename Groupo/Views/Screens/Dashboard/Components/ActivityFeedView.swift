@@ -137,7 +137,7 @@ struct ActivityFeedView: View {
             onViewAll: {},
             onTransactionSelected: { _ in }
         )
-            .environment(MainCoordinator())
+            .environment(Router())
             .padding()
     }
 }

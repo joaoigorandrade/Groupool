@@ -1,13 +1,14 @@
 
 import SwiftUI
 
-struct HeroMetricsCard<Destination: View>: View {
+struct HeroMetricsCard: View {
+    @Environment(Router.self) private var router
+
     let totalPool: Decimal
     let personalStake: Decimal
     let availableStake: Decimal
     let frozenStake: Decimal
     let members: [User]
-    let membersDestination: Destination
     var namespace: Namespace.ID
 
     @State private var avatarsVisible = false
@@ -15,9 +16,9 @@ struct HeroMetricsCard<Destination: View>: View {
     var body: some View {
         HStack(spacing: 0) {
             poolAndMembersSection
-            
+
             divider
-            
+
             personalStakeSection
         }
         .dashboardCardStyle(backgroundColor: .clear)
@@ -27,7 +28,7 @@ struct HeroMetricsCard<Destination: View>: View {
             }
         }
     }
-    
+
     private var poolAndMembersSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
@@ -35,7 +36,7 @@ struct HeroMetricsCard<Destination: View>: View {
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.secondary)
                     .tracking(1.0)
-                
+
                 Text(totalPool.formatted(.currency(code: "BRL")))
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(.primary)
@@ -44,13 +45,13 @@ struct HeroMetricsCard<Destination: View>: View {
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
             }
-            
+
             memberStackView
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.trailing, 8)
     }
-    
+
     private var personalStakeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
@@ -58,7 +59,7 @@ struct HeroMetricsCard<Destination: View>: View {
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.secondary)
                     .tracking(1.0)
-                
+
                 Text(personalStake.formatted(.currency(code: "BRL")))
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(.primary)
@@ -67,14 +68,14 @@ struct HeroMetricsCard<Destination: View>: View {
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
             }
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 stakeDetailRow(
                     label: "Available",
                     amount: availableStake,
                     color: Color("AvailableGreen")
                 )
-                
+
                 stakeDetailRow(
                     label: "Frozen",
                     amount: frozenStake,
@@ -85,18 +86,18 @@ struct HeroMetricsCard<Destination: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.leading, 16)
     }
-    
+
     private var divider: some View {
         Rectangle()
             .foregroundStyle(.primary.opacity(0.1))
             .frame(width: 1)
             .padding(.vertical, 4)
     }
-    
+
     private var memberStackView: some View {
-        NavigationLink(destination: membersDestination
-            .navigationTransition(.zoom(sourceID: "members", in: namespace))
-        ) {
+        Button {
+            router.push(.memberList)
+        } label: {
             HStack(spacing: 8) {
                 ZStack {
                     ForEach(Array(members.prefix(3).enumerated()), id: \.element.id) { index, member in
@@ -125,7 +126,7 @@ struct HeroMetricsCard<Destination: View>: View {
         .matchedTransitionSource(id: "members", in: namespace)
         .buttonStyle(.plain)
     }
-    
+
     private func memberAvatar(for member: User) -> some View {
         ZStack {
             Image(systemName: member.avatar)
@@ -151,10 +152,10 @@ struct HeroMetricsCard<Destination: View>: View {
                 }
         }
     }
-    
+
     private var overflowIndicator: some View {
         let remainingCount = members.count - 3
-        
+
         return Text("+\(remainingCount)")
             .font(.caption2.weight(.bold))
             .foregroundStyle(.secondary)
@@ -167,7 +168,7 @@ struct HeroMetricsCard<Destination: View>: View {
                     .stroke(.white.opacity(0.3), lineWidth: 1)
             }
     }
-    
+
     private func stakeDetailRow(label: String, amount: Decimal, color: Color) -> some View {
         HStack(spacing: 6) {
             Circle()
@@ -187,21 +188,3 @@ struct HeroMetricsCard<Destination: View>: View {
         }
     }
 }
-
-//#Preview {
-//    HeroMetricsCard(
-//        totalPool: 12500,
-//        personalStake: 500,
-//        availableStake: 300,
-//        frozenStake: 200,
-//        members: [
-//            User(id: "1", name: "Alice", phone: "+1234567890", avatar: "person.fill", joinedDate: Date(), role: .admin, status: .active, currentEquity: 1000, totalContributed: 1000, challengesParticipated: 5, challengesWon: 2, reputationScore: 100),
-//            User(id: "2", name: "Bob", phone: "+1234567891", avatar: "person.fill", joinedDate: Date(), role: .member, status: .active, currentEquity: 800, totalContributed: 800, challengesParticipated: 4, challengesWon: 1, reputationScore: 90),
-//            User(id: "3", name: "Charlie", phone: "+1234567892", avatar: "person.fill", joinedDate: Date(), role: .member, status: .inactive, currentEquity: 0, totalContributed: 500, challengesParticipated: 2, challengesWon: 0, reputationScore: 50),
-//            User(id: "4", name: "David", phone: "+1234567893", avatar: "person.fill", joinedDate: Date(), role: .member, status: .active, currentEquity: 500, totalContributed: 500, challengesParticipated: 1, challengesWon: 0, reputationScore: 60)
-//        ],
-//        membersDestination: EmptyView()
-//    )
-//    .padding()
-//    .background(Color("PrimaryBackground"))
-//}

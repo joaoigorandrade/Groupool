@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct ProposalsCarousel: View {
+    @Environment(Router.self) private var router
+
     let viewModel: TreasuryViewModel
-    let services: AppServiceContainer
     var namespace: Namespace.ID
 
     @State private var selection: UUID?
@@ -49,24 +50,18 @@ struct ProposalsCarousel: View {
             showVoteRequired: viewModel.isEligibleToVote(on: item) && !viewModel.hasVoted(on: item)
         )
 
-        switch item {
-        case .challenge(let challenge):
-            NavigationLink(destination: ChallengeVotingView(challenge: challenge, viewModel: viewModel)
-                .navigationTransition(.zoom(sourceID: challenge.id, in: namespace))
-            ) {
-                card
+        Button {
+            switch item {
+            case .challenge(let challenge):
+                router.push(TreasuryRoute.challengeVoting(challenge))
+            case .withdrawal(let request):
+                router.push(TreasuryRoute.withdrawalVoting(request))
             }
-            .matchedTransitionSource(id: challenge.id, in: namespace)
-            .buttonStyle(PlainButtonStyle())
-        case .withdrawal(let request):
-            NavigationLink(destination: WithdrawalVotingView(withdrawal: request, viewModel: viewModel)
-                .navigationTransition(.zoom(sourceID: request.id, in: namespace))
-            ) {
-                card
-            }
-            .matchedTransitionSource(id: request.id, in: namespace)
-            .buttonStyle(PlainButtonStyle())
+        } label: {
+            card
         }
+        .matchedTransitionSource(id: item.id, in: namespace)
+        .buttonStyle(PlainButtonStyle())
     }
 
     private func startAutoSwitch() {

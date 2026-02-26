@@ -2,7 +2,7 @@ import SwiftUI
 
 struct DashboardScreen: View {
     @Environment(\.services) private var services
-    @Environment(MainCoordinator.self) private var coordinator
+    @Environment(Router.self) private var router
     @State private var viewModel: DashboardViewModel
     @State private var isVisible = false
     @Namespace private var namespace
@@ -22,7 +22,8 @@ struct DashboardScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        @Bindable var router = router
+        NavigationStack(path: $router.dashboardPath) {
             ZStack {
                 Color("PrimaryBackground")
                     .ignoresSafeArea()
@@ -72,6 +73,36 @@ struct DashboardScreen: View {
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
+            .navigationDestination(for: DashboardRoute.self) { route in
+                destinationView(for: route)
+            }
+        }
+    }
+
+    // MARK: - Route Destination Resolution
+
+    @ViewBuilder
+    private func destinationView(for route: DashboardRoute) -> some View {
+        switch route {
+        case .profile:
+            ProfileScreen(
+                profileUseCase: ProfileUseCase(userService: services.userService)
+            )
+            .navigationTransition(.zoom(sourceID: "profile", in: namespace))
+
+        case .memberList:
+            MemberListView(
+                groupService: services.groupService,
+                challengeService: services.challengeService
+            )
+            .navigationTransition(.zoom(sourceID: "members", in: namespace))
+
+        case .challengeVoting(let challenge):
+            ChallengeVotingView(
+                challenge: challenge,
+                viewModel: makeTreasuryViewModel()
+            )
+            .navigationTransition(.zoom(sourceID: challenge.id, in: namespace))
         }
     }
 
@@ -86,11 +117,9 @@ struct DashboardScreen: View {
 
     @ViewBuilder
     private var profileLink: some View {
-        NavigationLink(destination: ProfileScreen(
-            profileUseCase: ProfileUseCase(userService: services.userService)
-        )
-        .navigationTransition(.zoom(sourceID: "profile", in: namespace))
-        ) {
+        Button {
+            router.push(.profile)
+        } label: {
             if let user = viewModel.currentUser {
                 Image(systemName: user.avatar)
                     .resizable()
@@ -118,24 +147,13 @@ struct DashboardScreen: View {
             availableStake: viewModel.availableStake,
             frozenStake: viewModel.frozenStake,
             members: viewModel.members,
-            membersDestination: MemberListView(
-                groupService: services.groupService,
-                challengeService: services.challengeService
-            ),
             namespace: namespace
         )
     }
 
     private var activeChallengeCard: some View {
-        let treasuryVM = makeTreasuryViewModel()
-        return ActiveChallengeCard(
+        ActiveChallengeCard(
             challenge: viewModel.activeChallenge,
-            onCreateChallenge: {
-                coordinator.presentSheet(.challenge)
-            },
-            challengeDestination: { challenge in
-                ChallengeVotingView(challenge: challenge, viewModel: treasuryVM)
-            },
             namespace: namespace
         )
     }
@@ -144,18 +162,16 @@ struct DashboardScreen: View {
         ActivityFeedView(
             transactions: viewModel.transactions,
             onViewAll: {
-                coordinator.selectTab(.treasury)
+                router.selectTab(.treasury)
             },
             onTransactionSelected: { _ in
-                coordinator.selectTab(.treasury)
+                router.selectTab(.treasury)
             }
         )
     }
 
     // MARK: - Helpers
 
-    /// Builds a TreasuryViewModel from the current environment services.
-    /// Scoped here so DashboardScreen no longer receives it as an external dependency.
     private func makeTreasuryViewModel() -> TreasuryViewModel {
         TreasuryViewModel(
             transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
@@ -178,5 +194,5 @@ struct DashboardScreen: View {
         userUseCase: DashboardUserUseCase(userService: services.userService)
     )
     .environment(\.services, services)
-    .environment(MainCoordinator())
+    .environment(Router())
 }

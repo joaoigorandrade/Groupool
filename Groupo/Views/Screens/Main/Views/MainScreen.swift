@@ -2,9 +2,9 @@ import SwiftUI
 
 struct MainScreen: View {
     @Environment(\.services) var services
-    @State private var coordinator = MainCoordinator()
+    @State private var router = Router()
     @State private var treasuryViewModel: TreasuryViewModel
-    
+
     init(services: AppServiceContainer) {
         _treasuryViewModel = State(wrappedValue: TreasuryViewModel(
             transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
@@ -15,18 +15,18 @@ struct MainScreen: View {
             userUseCase: TreasuryUserUseCase(userService: services.userService)
         ))
     }
-    
+
     var body: some View {
         view
-            .adaptiveSheet(isPresented: $coordinator.isPresentingCreateSheet) {
-                ActionMenuSheet(destination: $coordinator.activeSheetDestination)
+            .adaptiveSheet(isPresented: $router.isPresentingSheet) {
+                ActionMenuSheet(destination: $router.activeSheetDestination)
                     .environment(\.services, services)
             }
-            .onChange(of: coordinator.isPresentingCreateSheet) { _, isPresented in
-                if !isPresented { coordinator.activeSheetDestination = .menu }
+            .onChange(of: router.isPresentingSheet) { _, isPresented in
+                if !isPresented { router.activeSheetDestination = .menu }
             }
     }
-    
+
     @ViewBuilder
     private var view: some View {
         TabView(selection: tabBinding) {
@@ -34,22 +34,22 @@ struct MainScreen: View {
             createTab
             treasuryTab
         }
-        .environment(coordinator)
+        .environment(router)
     }
-    
+
     private var tabBinding: Binding<MainTab> {
         Binding(
-            get: { coordinator.selectedTab },
+            get: { router.selectedTab },
             set: { newValue in
                 if newValue == .create {
-                    coordinator.presentCreateSheet()
+                    router.presentSheet()
                 } else {
-                    coordinator.selectedTab = newValue
+                    router.selectedTab = newValue
                 }
             }
         )
     }
-    
+
     private var dashboardTab: some View {
         DashboardScreen(
             groupUseCase: DashboardGroupUseCase(groupService: services.groupService),
@@ -62,7 +62,7 @@ struct MainScreen: View {
             Label("Dashboard", systemImage: "square.grid.2x2")
         }
     }
-    
+
     private var createTab: some View {
         Color.clear
             .tag(MainTab.create)
@@ -70,7 +70,7 @@ struct MainScreen: View {
                 Label("New", systemImage: "plus.circle.fill")
             }
     }
-    
+
     private var treasuryTab: some View {
         TreasuryScreen(viewModel: treasuryViewModel)
         .tag(MainTab.treasury)

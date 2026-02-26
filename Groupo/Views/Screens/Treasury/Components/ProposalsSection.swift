@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ProposalsSection: View {
     let viewModel: TreasuryViewModel
-    let services: AppServiceContainer
     var namespace: Namespace.ID
 
     var body: some View {
@@ -10,7 +9,6 @@ struct ProposalsSection: View {
             if !viewModel.activeItems.isEmpty {
                 ProposalsCarousel(
                     viewModel: viewModel,
-                    services: services,
                     namespace: namespace
                 )
                 .frame(maxWidth: .infinity)
@@ -29,7 +27,7 @@ struct ActivityCalendarLink: View {
         view
         .frame(maxWidth: .infinity)
     }
-    
+
     @ViewBuilder
     private var view: some View {
         if !viewModel.isLoading {

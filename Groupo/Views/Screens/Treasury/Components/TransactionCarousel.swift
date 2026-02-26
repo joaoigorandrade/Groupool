@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct TransactionCarousel: View {
+    @Environment(Router.self) private var router
+
     let sections: [TransactionSection]
     var namespace: Namespace.ID
 
@@ -11,9 +13,9 @@ struct TransactionCarousel: View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(alignment: .top, spacing: -20) {
                 ForEach(Array(sections.enumerated()), id: \.element.id) { index, section in
-                    NavigationLink(destination: MonthTransactionHistorySheet(section: section)
-                        .navigationTransition(.zoom(sourceID: section.id, in: namespace))
-                    ) {
+                    Button {
+                        router.push(TreasuryRoute.monthHistory(section))
+                    } label: {
                         TransactionColumnCard(section: section)
                     }
                     .matchedTransitionSource(id: section.id, in: namespace)
@@ -59,7 +61,7 @@ struct TransactionCarousel: View {
                         scrollID = sections.first?.id
                         return
                     }
-                    
+
                     let nextIndex = (currentIndex + 1) % sections.count
                     withAnimation(.spring(response: 0.8, dampingFraction: 0.8)) {
                         scrollID = sections[nextIndex].id
@@ -244,6 +246,7 @@ struct NetFlowBadge: View {
                     namespace: namespace
                 )
             }
+            .environment(Router())
         }
     }
     return PreviewWrapper()

@@ -37,7 +37,7 @@ struct DailySummary: Identifiable, Equatable {
     }
 }
 
-struct TransactionSection: Identifiable {
+struct TransactionSection: Identifiable, Hashable {
     var id: String { title }
     let title: String
     let transactions: [Transaction]

@@ -262,3 +262,100 @@ The bot is the "Town Crier," not the "Judge."
 | Vote Window Duration | 24h fixed | Dynamic per group size |
 | Withdrawal Cooldown | 48h hardcoded | Configurable |
 | Quorum Threshold | 50% participation | Configurable |
+
+
+Here is the complete, step-by-step user onboarding flow for Groupool, incorporating the deferred deep linking, optimized OTP strategy, and the financial commitment step.
+
+This flow maps out exactly what the user sees and what the system does behind the scenes to ensure a frictionless, secure entry.
+
+Phase 0: The Origin (Outside the App)
+
+Everything starts in the WhatsApp group where the trust and context already exist.
+
+Creation: The "Host" (User A) interacts with the Groupool WhatsApp Bot to create a new pool. They define the group name, buy-in amount, and rules.
+
+The Link: The backend creates the group entity and generates a unique Deferred Deep Link (e.g., groupool.app/join/xyz-789).
+
+The Share: The Bot sends a formatted message into the WhatsApp group containing the invite link.
+
+Phase 1: The Gateway (Routing & Installation)
+
+A group member (User B) taps the link in the WhatsApp chat.
+
+Scenario A (App Installed): The mobile OS intercepts the deep link and immediately opens Groupool. The app captures the unique payload (xyz-789).
+
+Scenario B (App Not Installed): The link routes User B to the App Store or Google Play. They download and open the app. Upon this first launch, the Deferred Deep Linking SDK (like AppsFlyer or Branch) securely retrieves the pending payload (xyz-789) that the user clicked prior to installation.
+
+Phase 2: Identity & Authentication (Screens 1.1 & 1.2)
+
+The app now knows where the user is trying to go, but needs to know who they are.
+
+Screen 1.1 (Phone Entry): * UI: The screen acknowledges the intent context: "Welcome! Enter your number to join." The country code is hardcoded to +55 (BR).
+
+Action: User enters their 10+ digit number and taps "Send Code".
+
+System Logic: The backend registers the phone number request and generates a 6-digit OTP. It prioritizes sending this via the WhatsApp Business API (cheaper, faster, and keeps them in their current context). If the WhatsApp delivery fails or times out, it falls back to a standard SMS.
+
+Screen 1.2 (OTP Verification):
+
+UI: Displays the masked number ("+55 11 9xxxx-9999").
+
+Action: User inputs the 6-digit code. (On Android/KMP and iOS, use native SMS autofill APIs to read the code automatically if it arrived via SMS).
+
+System Logic: The backend validates the code. If successful, it issues a persistent JWT session token. The user is now permanently authenticated on this device.
+
+Phase 3: Authorization & The Buy-in (Screen 1.3)
+
+The user is authenticated, but they are not yet a member of the pool. They must put "skin in the game."
+
+Screen 1.3 (Invite Landing):
+
+UI: The screen dynamically populates based on the deep link payload captured in Phase 1.
+
+Header: "You are joining [Group Name]"
+
+Body: Inviter: [Name] | Buy-in Required: R$ [Amount]
+
+The Contract: Displays the 3 absolute rules (Money stays until exit, Inactive votes = abstention, Deadlines are absolute).
+
+Action: User taps "Connect PIX & Deposit".
+
+System Logic: The backend generates a dynamic, single-use PIX Copia e Cola payload specific to this user and this group's buy-in amount.
+
+Payment Execution: The user copies the code, switches to their banking app, and pays.
+
+The Webhook: Groupool listens for the payment gateway webhook confirming the PIX settlement. (For your mock environment, tapping a "Simulate Payment" button triggers a 1.5-second loading spinner to represent this webhook).
+
+Group Addition: Once the webhook fires, the backend officially binds the user's ID to the Group ID and credits their initial equity.
+
+Phase 4: The Destination (Screen 2.1)
+
+The onboarding is complete, and the user drops directly into the core experience.
+
+Screen 2.1 (Home Dashboard):
+
+The user lands on the Home tab.
+
+They immediately see the Total Pool Value incremented by their deposit.
+
+Their avatar appears in the Member Health row.
+
+Their Personal Stake Card lights up in green, showing their available balance (e.g., R$ 50).
+
+Edge Case: The "Organic" Download (Orphan Flow)
+
+What happens if someone downloads the app directly from the store without clicking a WhatsApp invite link?
+
+They open the app. There is no deferred deep link payload to capture.
+
+They go through Phase 2 (Phone Entry & OTP) normally to authenticate.
+
+Because there is no group invite context, the app skips Phase 3 (The Buy-in) entirely.
+
+They land on an Empty State Home Screen.
+
+UI: "You aren't in any pools yet."
+
+Action 1: "Create a Pool via WhatsApp" -> Deep links the user out to the Groupool WhatsApp Bot to start Phase 0.
+
+Action 2: "Have an invite code?" -> Opens a manual input field where they can paste the xyz-789 code if they somehow lost the link but have the text.
