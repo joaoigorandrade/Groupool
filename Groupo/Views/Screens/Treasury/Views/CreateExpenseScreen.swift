@@ -8,11 +8,11 @@ struct CreateExpenseScreen: View {
     @Namespace private var namespace
     
     init(
-        createExpenseUseCase: CreateExpenseUseCaseProtocol,
+        transactionService: any TransactionServiceProtocol,
         groupService: any GroupServiceProtocol
     ) {
         _viewModel = State(wrappedValue: CreateExpenseViewModel(
-            createExpenseUseCase: createExpenseUseCase,
+            transactionService: transactionService,
             groupService: groupService
         ))
     }
@@ -146,7 +146,7 @@ private extension CreateExpenseScreen {
 #Preview("Default") {
     let services = AppServiceContainer.preview()
     CreateExpenseScreen(
-        createExpenseUseCase: CreateExpenseUseCase(transactionService: services.transactionService),
+        transactionService: services.transactionService,
         groupService: services.groupService
     )
     .environment(\.services, services)
@@ -156,7 +156,7 @@ private extension CreateExpenseScreen {
 #Preview {
     let services = AppServiceContainer.preview()
     CreateExpenseScreen(
-        createExpenseUseCase: CreateExpenseUseCase(transactionService: services.transactionService),
+        transactionService: services.transactionService,
         groupService: services.groupService
     )
     .environment(\.services, services)

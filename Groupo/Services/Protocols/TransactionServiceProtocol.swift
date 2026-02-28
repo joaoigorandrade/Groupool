@@ -1,13 +1,12 @@
 // TransactionServiceProtocol.swift
 
-import Combine
 import Foundation
 
-protocol TransactionServiceProtocol {
+protocol TransactionServiceProtocol: AnyObject {
 
     // MARK: - State
 
-    var transactions: AnyPublisher<[Transaction], Never> { get }
+    var transactions: [Transaction] { get }
 
     // MARK: - Actions
 

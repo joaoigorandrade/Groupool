@@ -65,19 +65,18 @@ struct ActionMenuSheet: View {
             menuContent
         case .expense:
             CreateExpenseScreen(
-                createExpenseUseCase: CreateExpenseUseCase(transactionService: services.transactionService),
+                transactionService: services.transactionService,
                 groupService: services.groupService
             )
         case .challenge:
             CreateChallengeScreen(
                 challengeService: services.challengeService,
                 userService: services.userService,
-                groupService: services.groupService,
-                createChallengeUseCase: CreateChallengeUseCase(challengeService: services.challengeService)
+                groupService: services.groupService
             )
         case .withdrawal:
             RequestWithdrawalScreen(
-                requestWithdrawalUseCase: RequestWithdrawalUseCase(withdrawalService: services.withdrawalService),
+                withdrawalService: services.withdrawalService,
                 userService: services.userService
             )
         }

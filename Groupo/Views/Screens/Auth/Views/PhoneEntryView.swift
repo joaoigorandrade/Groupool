@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PhoneEntryView: View {
-    @ObservedObject var viewModel: AuthViewModel
+    @State var viewModel: AuthViewModel
     @EnvironmentObject var sessionManager: SessionManager
     
     var body: some View {

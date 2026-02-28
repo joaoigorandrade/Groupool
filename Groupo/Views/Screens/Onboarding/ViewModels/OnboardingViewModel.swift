@@ -8,18 +8,18 @@ final class OnboardingViewModel {
     var buyInAmount: Decimal = 0
     var rules: [String] = []
     var isLoading: Bool = false
-    
-    private let onboardingUseCase: OnboardingUseCaseProtocol
-    
-    init(onboardingUseCase: OnboardingUseCaseProtocol) {
-        self.onboardingUseCase = onboardingUseCase
+
+    private let onboardingService: any OnboardingServiceProtocol
+
+    init(onboardingService: any OnboardingServiceProtocol) {
+        self.onboardingService = onboardingService
     }
-    
+
     @MainActor
     func load() async {
         isLoading = true
         do {
-            let details = try await onboardingUseCase.fetchInviteDetails()
+            let details = try await onboardingService.fetchInviteDetails()
             self.groupName = details.groupName
             self.inviterName = details.inviterName
             self.buyInAmount = details.buyInAmount
@@ -29,12 +29,12 @@ final class OnboardingViewModel {
         }
         isLoading = false
     }
-    
+
     @MainActor
     func connectAndDeposit(onJoin: @escaping () -> Void) async {
         isLoading = true
         do {
-            try await onboardingUseCase.connectAndDeposit()
+            try await onboardingService.connectAndDeposit()
             onJoin()
         } catch {
             print("Failed to deposit: \(error)")

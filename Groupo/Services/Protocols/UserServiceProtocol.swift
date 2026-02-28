@@ -1,13 +1,12 @@
 // UserServiceProtocol.swift
 
-import Combine
 import Foundation
 
-protocol UserServiceProtocol {
+protocol UserServiceProtocol: AnyObject {
 
     // MARK: - State
 
-    var currentUser: AnyPublisher<User, Never> { get }
+    var currentUser: User { get }
 
     // MARK: - Actions
 

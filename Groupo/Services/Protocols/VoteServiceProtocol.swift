@@ -1,13 +1,12 @@
 // VoteServiceProtocol.swift
 
-import Combine
 import Foundation
 
-protocol VoteServiceProtocol {
+protocol VoteServiceProtocol: AnyObject {
 
     // MARK: - State
 
-    var votes: AnyPublisher<[Vote], Never> { get }
+    var votes: [Vote] { get }
 
     // MARK: - Actions
 

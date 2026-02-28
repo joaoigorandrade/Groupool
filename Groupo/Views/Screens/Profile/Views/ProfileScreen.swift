@@ -5,11 +5,11 @@ struct ProfileScreen: View {
     @State private var viewModel: ProfileViewModel
     @State private var showLogoutConfirmation = false
     @Namespace private var namespace
-    
-    init(profileUseCase: ProfileUseCaseProtocol, pixUseCase: PIXUseCaseProtocol = PIXUseCase(userService: AppServiceContainer.preview().userService)) {
-        _viewModel = State(wrappedValue: ProfileViewModel(profileUseCase: profileUseCase, pixUseCase: pixUseCase))
+
+    init(userService: any UserServiceProtocol, pixService: any PIXServiceProtocol) {
+        _viewModel = State(wrappedValue: ProfileViewModel(userService: userService, pixService: pixService))
     }
-    
+
     var body: some View {
         List {
             profileHeaderSection
@@ -27,7 +27,7 @@ struct ProfileScreen: View {
             Text("Are you sure you want to log out?")
         }
     }
-    
+
     @ViewBuilder
     private var profileHeaderSection: some View {
         Section {
@@ -38,19 +38,19 @@ struct ProfileScreen: View {
                     .frame(width: 80, height: 80)
                     .clipShape(Circle())
                     .foregroundStyle(.gray.opacity(0.3))
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text(viewModel.user.name)
                         .font(.title2)
                         .fontWeight(.bold)
-                    
+
                     statusBadge
                 }
             }
             .padding(.vertical, 8)
         }
     }
-    
+
     @ViewBuilder
     private var statusBadge: some View {
         Text(viewModel.statusText)
@@ -62,7 +62,7 @@ struct ProfileScreen: View {
             .foregroundStyle(viewModel.statusColor)
             .clipShape(Capsule())
     }
-    
+
     @ViewBuilder
     private var statsSection: some View {
         Section("Stats") {
@@ -78,7 +78,7 @@ struct ProfileScreen: View {
             .padding(.vertical, 8)
         }
     }
-    
+
     @ViewBuilder
     private var settingsSection: some View {
         Section("Settings") {
@@ -97,7 +97,7 @@ struct ProfileScreen: View {
             .matchedTransitionSource(id: "app-settings", in: namespace)
         }
     }
-    
+
     @ViewBuilder
     private var logoutSection: some View {
         Section {
@@ -108,19 +108,19 @@ struct ProfileScreen: View {
             }
         }
     }
-    
+
     struct StatItem: View {
         let value: String
         let label: String
         let color: Color
-        
+
         var body: some View {
             VStack {
                 Text(value)
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundStyle(color)
-                
+
                 Text(label)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -133,8 +133,8 @@ struct ProfileScreen: View {
     let services = AppServiceContainer.preview()
     return NavigationStack {
         ProfileScreen(
-            profileUseCase: ProfileUseCase(userService: services.userService),
-            pixUseCase: PIXUseCase(userService: services.userService)
+            userService: services.userService,
+            pixService: services.pixService
         )
         .environmentObject(SessionManager(userDefaults: .standard))
     }

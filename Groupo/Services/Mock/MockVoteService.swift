@@ -1,15 +1,12 @@
 // MockVoteService.swift
 
-import Combine
 import Foundation
 
 final class MockVoteService: VoteServiceProtocol {
 
     // MARK: - State
 
-    var votes: AnyPublisher<[Vote], Never> {
-        store.$votes.eraseToAnyPublisher()
-    }
+    var votes: [Vote] { store.votes }
 
     // MARK: - Private
 

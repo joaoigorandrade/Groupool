@@ -1,4 +1,3 @@
-import Combine
 import Foundation
 import Observation
 
@@ -29,8 +28,6 @@ class CreateChallengeViewModel {
     private let challengeService: any ChallengeServiceProtocol
     private let userService: any UserServiceProtocol
     private let groupService: any GroupServiceProtocol
-    private let createChallengeUseCase: CreateChallengeUseCaseProtocol
-    private var subscribers = Set<AnyCancellable>()
 
     private var currentUser: User?
     private var currentGroup: Group?
@@ -39,40 +36,21 @@ class CreateChallengeViewModel {
     init(
         challengeService: any ChallengeServiceProtocol,
         userService: any UserServiceProtocol,
-        groupService: any GroupServiceProtocol,
-        createChallengeUseCase: CreateChallengeUseCaseProtocol
+        groupService: any GroupServiceProtocol
     ) {
         self.challengeService = challengeService
         self.userService = userService
         self.groupService = groupService
-        self.createChallengeUseCase = createChallengeUseCase
         self.deadline = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
-        setupSubscribers()
+        syncState()
     }
 
-    // MARK: - Subscribers
+    // MARK: - State Sync
 
-    private func setupSubscribers() {
-        userService.currentUser
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] user in
-                self?.currentUser = user
-            }
-            .store(in: &subscribers)
-
-        groupService.currentGroup
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] group in
-                self?.currentGroup = group
-            }
-            .store(in: &subscribers)
-
-        challengeService.challenges
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] challenges in
-                self?.latestChallenges = challenges
-            }
-            .store(in: &subscribers)
+    private func syncState() {
+        currentUser = userService.currentUser
+        currentGroup = groupService.currentGroup
+        latestChallenges = challengeService.challenges
     }
 
     // MARK: - Validation
@@ -164,6 +142,8 @@ class CreateChallengeViewModel {
 
     @MainActor
     func createChallenge(completion: @escaping (Bool, String?) -> Void) {
+        syncState()
+
         if challengeService.hasActiveChallenge {
             completion(false, "Existe um desafio ativo. Aguarde o término para criar outro.")
             return
@@ -188,7 +168,7 @@ class CreateChallengeViewModel {
 
         Task {
             do {
-                try await createChallengeUseCase.createChallenge(
+                try await challengeService.addChallenge(
                     title: title,
                     description: description,
                     buyIn: buyInAmount,

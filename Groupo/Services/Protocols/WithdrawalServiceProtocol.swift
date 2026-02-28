@@ -1,13 +1,12 @@
 // WithdrawalServiceProtocol.swift
 
-import Combine
 import Foundation
 
-protocol WithdrawalServiceProtocol {
+protocol WithdrawalServiceProtocol: AnyObject {
 
     // MARK: - State
 
-    var withdrawalRequests: AnyPublisher<[WithdrawalRequest], Never> { get }
+    var withdrawalRequests: [WithdrawalRequest] { get }
 
     // MARK: - Actions
 

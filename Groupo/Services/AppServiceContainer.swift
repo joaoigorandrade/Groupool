@@ -1,6 +1,5 @@
 // AppServiceContainer.swift
 
-import Combine
 import Foundation
 import SwiftUI
 
@@ -14,9 +13,12 @@ final class AppServiceContainer {
     let transactionService: any TransactionServiceProtocol
     let voteService: any VoteServiceProtocol
     let withdrawalService: any WithdrawalServiceProtocol
+    let authService: any AuthServiceProtocol
+    let pixService: any PIXServiceProtocol
+    let onboardingService: any OnboardingServiceProtocol
 
     // MARK: - Private
-    
+
     private let store: MockStore?
 
     // MARK: - Designated Init
@@ -28,6 +30,9 @@ final class AppServiceContainer {
         transactionService: any TransactionServiceProtocol,
         voteService: any VoteServiceProtocol,
         withdrawalService: any WithdrawalServiceProtocol,
+        authService: any AuthServiceProtocol,
+        pixService: any PIXServiceProtocol,
+        onboardingService: any OnboardingServiceProtocol,
         store: MockStore? = nil
     ) {
         self.userService = userService
@@ -36,11 +41,14 @@ final class AppServiceContainer {
         self.transactionService = transactionService
         self.voteService = voteService
         self.withdrawalService = withdrawalService
+        self.authService = authService
+        self.pixService = pixService
+        self.onboardingService = onboardingService
         self.store = store
     }
-    
+
     // MARK: - Helper Methods
-    
+
     func resetMockData() {
         store?.reset()
     }
@@ -60,6 +68,9 @@ extension AppServiceContainer {
             transactionService: MockTransactionService(store: store),
             voteService: MockVoteService(store: store),
             withdrawalService: MockWithdrawalService(store: store),
+            authService: MockAuthService(),
+            pixService: MockPIXService(),
+            onboardingService: MockOnboardingService(),
             store: store
         )
     }
@@ -74,6 +85,9 @@ extension AppServiceContainer {
             transactionService: MockTransactionService(store: store),
             voteService: MockVoteService(store: store),
             withdrawalService: MockWithdrawalService(store: store),
+            authService: MockAuthService(),
+            pixService: MockPIXService(),
+            onboardingService: MockOnboardingService(),
             store: store
         )
     }

@@ -324,12 +324,12 @@ private struct FooterSection: View {
 #Preview("Active") {
     let services = AppServiceContainer.preview()
     let treasuryVM = TreasuryViewModel(
-        transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
-        challengeUseCase: TreasuryChallengeUseCase(challengeService: services.challengeService),
-        voteUseCase: TreasuryVoteUseCase(voteService: services.voteService),
-        withdrawalUseCase: TreasuryWithdrawalUseCase(withdrawalService: services.withdrawalService),
-        groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
-        userUseCase: TreasuryUserUseCase(userService: services.userService)
+        transactionService: services.transactionService,
+        challengeService: services.challengeService,
+        voteService: services.voteService,
+        withdrawalService: services.withdrawalService,
+        groupService: services.groupService,
+        userService: services.userService
     )
     
     NavigationStack {

@@ -3,28 +3,28 @@ import SwiftUI
 struct OnboardingScreen: View {
     @State private var viewModel: OnboardingViewModel
     var onJoin: () -> Void
-    
-    init(onboardingUseCase: OnboardingUseCaseProtocol, onJoin: @escaping () -> Void) {
-        _viewModel = State(wrappedValue: OnboardingViewModel(onboardingUseCase: onboardingUseCase))
+
+    init(onboardingService: any OnboardingServiceProtocol, onJoin: @escaping () -> Void) {
+        _viewModel = State(wrappedValue: OnboardingViewModel(onboardingService: onboardingService))
         self.onJoin = onJoin
     }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color("SecondaryBackground").ignoresSafeArea()
-                
+
                 VStack(spacing: 24) {
                     Text(viewModel.groupName)
                         .font(.titleLarge)
                         .multilineTextAlignment(.center)
                         .padding(.top, 40)
-                    
+
                     detailsCard
                     contractSection
-                    
+
                     Spacer()
-                    
+
                     actionSection
                 }
             }
@@ -34,7 +34,7 @@ struct OnboardingScreen: View {
             }
         }
     }
-    
+
     private var detailsCard: some View {
         CardContainer {
             VStack(spacing: 16) {
@@ -49,13 +49,13 @@ struct OnboardingScreen: View {
         }
         .padding(.horizontal)
     }
-    
+
     private var contractSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("O Contrato")
                 .font(.headlineText)
                 .padding(.leading, 8)
-            
+
             LazyVStack(spacing: 12) {
                 ForEach(viewModel.rules, id: \.self) { rule in
                     RuleRow(text: rule)
@@ -64,7 +64,7 @@ struct OnboardingScreen: View {
         }
         .padding(.horizontal)
     }
-    
+
     @ViewBuilder
     private var actionSection: some View {
         if viewModel.isLoading {
@@ -85,7 +85,7 @@ private struct DetailRow: View {
     let label: String
     let value: String
     var valueColor: Color = .primary
-    
+
     var body: some View {
         HStack {
             Text(label).font(.captionText).foregroundColor(.secondary)
@@ -97,18 +97,18 @@ private struct DetailRow: View {
 
 private struct RuleRow: View {
     let text: String
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "checkmark.shield.fill")
                 .foregroundColor(.brandTeal)
                 .font(.system(size: 20))
-            
+
             Text(text)
                 .font(.subheadlineText)
                 .foregroundColor(.primary)
                 .fixedSize(horizontal: false, vertical: true)
-            
+
             Spacer()
         }
         .padding()
@@ -118,5 +118,5 @@ private struct RuleRow: View {
 }
 
 #Preview {
-    OnboardingScreen(onboardingUseCase: OnboardingUseCase(groupService: AppServiceContainer.preview().groupService), onJoin: {})
+    OnboardingScreen(onboardingService: MockOnboardingService(), onJoin: {})
 }

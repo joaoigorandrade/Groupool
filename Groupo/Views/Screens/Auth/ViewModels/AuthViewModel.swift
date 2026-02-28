@@ -1,15 +1,15 @@
 import Foundation
-import SwiftUI
-import Combine
+import Observation
 
-final class AuthViewModel: ObservableObject {
+@Observable
+final class AuthViewModel {
     // MARK: - Navigation State
-    @Published var currentStep: AuthStep = .phoneEntry
-    @Published var navigateToDashboard: Bool = false
+    var currentStep: AuthStep = .phoneEntry
+    var navigateToDashboard: Bool = false
 
     // MARK: - Input State
-    @Published var phoneNumber: String = ""
-    @Published var otpCode: String = "" {
+    var phoneNumber: String = ""
+    var otpCode: String = "" {
         didSet {
             if otpCode.count > 6 {
                 otpCode = String(otpCode.prefix(6))
@@ -18,27 +18,29 @@ final class AuthViewModel: ObservableObject {
     }
 
     // MARK: - UI State
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published var timeRemaining: Int = 30
-    @Published var canResend: Bool = false
+    var isLoading: Bool = false
+    var errorMessage: String?
+    var timeRemaining: Int = 30
+    var canResend: Bool = false
 
     // MARK: - Constraints
     let countryCode = "+55"
-    private var timer: Timer?
+    private var timerTask: Task<Void, Never>?
 
     // MARK: - Dependencies
-    private let authUseCase: AuthUseCaseProtocol
-    private let verifyOTPUseCase: VerifyOTPUseCaseProtocol
+    private let authService: any AuthServiceProtocol
 
     enum AuthStep {
         case phoneEntry
         case otpEntry
     }
 
-    init(authUseCase: AuthUseCaseProtocol, verifyOTPUseCase: VerifyOTPUseCaseProtocol) {
-        self.authUseCase = authUseCase
-        self.verifyOTPUseCase = verifyOTPUseCase
+    init(authService: any AuthServiceProtocol) {
+        self.authService = authService
+    }
+
+    deinit {
+        timerTask?.cancel()
     }
 
     // MARK: - Actions
@@ -71,20 +73,16 @@ final class AuthViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        Task {
+        Task { @MainActor in
             do {
                 let rawPhone = phoneNumber.filter { $0.isNumber }
-                try await authUseCase.sendOTP(phoneNumber: countryCode + rawPhone)
-                await MainActor.run {
-                    self.isLoading = false
-                    self.currentStep = .otpEntry
-                    self.startTimer()
-                }
+                try await authService.sendOTP(phoneNumber: countryCode + rawPhone)
+                self.isLoading = false
+                self.currentStep = .otpEntry
+                self.startTimer()
             } catch {
-                await MainActor.run {
-                    self.isLoading = false
-                    self.errorMessage = error.localizedDescription
-                }
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
             }
         }
     }
@@ -95,20 +93,16 @@ final class AuthViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        Task {
+        Task { @MainActor in
             do {
                 let rawPhone = phoneNumber.filter { $0.isNumber }
-                let token = try await verifyOTPUseCase.verifyOTP(phoneNumber: countryCode + rawPhone, code: otpCode)
-                await MainActor.run {
-                    self.isLoading = false
-                    sessionManager.establishSession(phone: self.countryCode + rawPhone, token: token)
-                    self.navigateToDashboard = true
-                }
+                let token = try await authService.verifyOTP(phoneNumber: countryCode + rawPhone, code: otpCode)
+                self.isLoading = false
+                sessionManager.establishSession(phone: self.countryCode + rawPhone, token: token)
+                self.navigateToDashboard = true
             } catch {
-                await MainActor.run {
-                    self.isLoading = false
-                    self.errorMessage = error.localizedDescription
-                }
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
             }
         }
     }
@@ -126,14 +120,17 @@ final class AuthViewModel: ObservableObject {
     // MARK: - Helpers
 
     private func startTimer() {
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            if self.timeRemaining > 0 {
-                self.timeRemaining -= 1
-            } else {
-                self.canResend = true
-                self.timer?.invalidate()
+        timerTask?.cancel()
+        timerTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard let self else { return }
+                if self.timeRemaining > 0 {
+                    self.timeRemaining -= 1
+                } else {
+                    self.canResend = true
+                    return
+                }
             }
         }
     }

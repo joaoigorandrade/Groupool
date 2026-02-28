@@ -1,4 +1,3 @@
-import Combine
 import Foundation
 import Observation
 
@@ -21,24 +20,22 @@ final class DashboardViewModel {
     var errorMessage: String?
 
     // MARK: - Dependencies
-    private let groupUseCase: DashboardGroupUseCaseProtocol
-    private let challengeUseCase: DashboardChallengeUseCaseProtocol
-    private let transactionUseCase: DashboardTransactionUseCaseProtocol
-    private let userUseCase: DashboardUserUseCaseProtocol
-
-    private var cancellables = Set<AnyCancellable>()
+    private let groupService: any GroupServiceProtocol
+    private let challengeService: any ChallengeServiceProtocol
+    private let transactionService: any TransactionServiceProtocol
+    private let userService: any UserServiceProtocol
 
     init(
-        groupUseCase: DashboardGroupUseCaseProtocol,
-        challengeUseCase: DashboardChallengeUseCaseProtocol,
-        transactionUseCase: DashboardTransactionUseCaseProtocol,
-        userUseCase: DashboardUserUseCaseProtocol
+        userService: any UserServiceProtocol,
+        groupService: any GroupServiceProtocol,
+        challengeService: any ChallengeServiceProtocol,
+        transactionService: any TransactionServiceProtocol
     ) {
-        self.groupUseCase = groupUseCase
-        self.challengeUseCase = challengeUseCase
-        self.transactionUseCase = transactionUseCase
-        self.userUseCase = userUseCase
-        setupSubscribers()
+        self.userService = userService
+        self.groupService = groupService
+        self.challengeService = challengeService
+        self.transactionService = transactionService
+        syncState()
     }
 
     // MARK: - Refresh
@@ -48,42 +45,30 @@ final class DashboardViewModel {
         isLoading = true
         errorMessage = nil
         await withTaskGroup(of: Void.self) { group in
-            group.addTask { await self.groupUseCase.refresh() }
-            group.addTask { await self.challengeUseCase.refresh() }
-            group.addTask { await self.userUseCase.refresh() }
-            group.addTask { await self.transactionUseCase.refresh() }
+            group.addTask { await self.groupService.refresh() }
+            group.addTask { await self.challengeService.refresh() }
+            group.addTask { await self.userService.refresh() }
+            group.addTask { await self.transactionService.refresh() }
         }
+        syncState()
         isLoading = false
     }
 
-    // MARK: - Subscribers
+    // MARK: - State Sync
 
-    private func setupSubscribers() {
-        groupUseCase.currentGroup
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] group in
-                self?.totalPool = group.totalPool
-                self?.members = group.members
-            }
-            .store(in: &cancellables)
+    private func syncState() {
+        let group = groupService.currentGroup
+        totalPool = group.totalPool
+        members = group.members
 
-        Publishers.CombineLatest(userUseCase.currentUser, challengeUseCase.challenges)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] user, challenges in
-                guard let self else { return }
-                self.currentUser = user
-                self.challenges = challenges
-                self.activeChallenge = challenges.first { $0.status == .active || $0.status == .voting }
-                self.calculateStake(user: user, challenges: challenges)
-            }
-            .store(in: &cancellables)
+        let user = userService.currentUser
+        currentUser = user
 
-        transactionUseCase.transactions
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] transactions in
-                self?.transactions = transactions
-            }
-            .store(in: &cancellables)
+        challenges = challengeService.challenges
+        activeChallenge = challenges.first { $0.status == .active || $0.status == .voting }
+        calculateStake(user: user, challenges: challenges)
+
+        transactions = transactionService.transactions
     }
 
     // MARK: - Stake Calculation

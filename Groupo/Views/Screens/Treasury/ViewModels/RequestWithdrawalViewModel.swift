@@ -1,5 +1,5 @@
-import Combine
 import Foundation
+import Observation
 
 @Observable
 class RequestWithdrawalViewModel {
@@ -12,39 +12,37 @@ class RequestWithdrawalViewModel {
     var errorMessage: String?
     private(set) var availableBalance: Decimal = 0
 
-    private let requestWithdrawalUseCase: RequestWithdrawalUseCaseProtocol
+    private let withdrawalService: any WithdrawalServiceProtocol
     private let userService: any UserServiceProtocol
 
     private var currentUser: User?
-    private var timer: AnyCancellable?
-    private var subscribers = Set<AnyCancellable>()
+    private var timerTask: Task<Void, Never>?
 
     init(
-        requestWithdrawalUseCase: RequestWithdrawalUseCaseProtocol,
+        withdrawalService: any WithdrawalServiceProtocol,
         userService: any UserServiceProtocol
     ) {
-        self.requestWithdrawalUseCase = requestWithdrawalUseCase
+        self.withdrawalService = withdrawalService
         self.userService = userService
-        setupSubscribers()
+        syncState()
         startCooldownTimer()
     }
 
-    // MARK: - Subscribers
+    deinit {
+        timerTask?.cancel()
+    }
 
-    private func setupSubscribers() {
-        userService.currentUser
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] user in
-                guard let self else { return }
-                let isFirstLoad = currentUser == nil
-                currentUser = user
-                availableBalance = user.currentEquity
-                if isFirstLoad {
-                    amount = availableBalance
-                }
-                updateCooldownStatus()
-            }
-            .store(in: &subscribers)
+    // MARK: - State Sync
+
+    private func syncState() {
+        let user = userService.currentUser
+        let isFirstLoad = currentUser == nil
+        currentUser = user
+        availableBalance = user.currentEquity
+        if isFirstLoad {
+            amount = availableBalance
+        }
+        updateCooldownStatus()
     }
 
     // MARK: - Validation
@@ -69,12 +67,13 @@ class RequestWithdrawalViewModel {
     // MARK: - Cooldown
 
     private func startCooldownTimer() {
-        timer = Timer.publish(every: 1, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
+        updateCooldownStatus()
+        timerTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
                 self?.updateCooldownStatus()
             }
-        updateCooldownStatus()
+        }
     }
 
     private func updateCooldownStatus() {
@@ -94,8 +93,8 @@ class RequestWithdrawalViewModel {
             cooldownString = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         } else {
             cooldownString = nil
-            timer?.cancel()
-            timer = nil
+            timerTask?.cancel()
+            timerTask = nil
         }
     }
 
@@ -119,7 +118,7 @@ class RequestWithdrawalViewModel {
 
         Task {
             do {
-                try await requestWithdrawalUseCase.requestWithdrawal(amount: amount)
+                try await withdrawalService.requestWithdrawal(amount: amount)
                 HapticManager.notificationSuccess()
                 isLoading = false
                 completion(true, nil)

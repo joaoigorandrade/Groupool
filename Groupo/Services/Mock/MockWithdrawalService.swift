@@ -1,15 +1,12 @@
 // MockWithdrawalService.swift
 
-import Combine
 import Foundation
 
 final class MockWithdrawalService: WithdrawalServiceProtocol {
 
     // MARK: - State
 
-    var withdrawalRequests: AnyPublisher<[WithdrawalRequest], Never> {
-        store.$withdrawalRequests.eraseToAnyPublisher()
-    }
+    var withdrawalRequests: [WithdrawalRequest] { store.withdrawalRequests }
 
     // MARK: - Private
 
@@ -76,18 +73,15 @@ final class MockWithdrawalService: WithdrawalServiceProtocol {
         let requiredContestVotes = (totalMembers / 2) + 1
 
         if contestVotes < requiredContestVotes {
-            // Auto-approve
             var updatedRequest = request
             updatedRequest.status = .approved
             store.withdrawalRequests[index] = updatedRequest
 
-            updateVotingParticipation(for: request.id)
+            store.updateVotingParticipation(for: request.id)
 
-            // Deduct from pool
             let newPool = store.currentGroup.totalPool - request.amount
             store.currentGroup = store.currentGroup.updating(totalPool: newPool)
 
-            // Deduct from member equity
             if let userIndex = store.currentGroup.members.firstIndex(where: {
                 $0.id == request.initiatorID
             }) {
@@ -121,9 +115,5 @@ final class MockWithdrawalService: WithdrawalServiceProtocol {
             store.withdrawalRequests[index] = updatedRequest
             store.save()
         }
-    }
-
-    private func updateVotingParticipation(for targetID: UUID) {
-        store.updateVotingParticipation(for: targetID)
     }
 }

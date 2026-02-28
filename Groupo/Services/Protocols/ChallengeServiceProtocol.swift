@@ -1,13 +1,12 @@
 // ChallengeServiceProtocol.swift
 
-import Combine
 import Foundation
 
-protocol ChallengeServiceProtocol {
+protocol ChallengeServiceProtocol: AnyObject {
 
     // MARK: - State
 
-    var challenges: AnyPublisher<[Challenge], Never> { get }
+    var challenges: [Challenge] { get }
 
     var hasActiveChallenge: Bool { get }
 

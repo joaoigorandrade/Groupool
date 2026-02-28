@@ -1,5 +1,3 @@
-
-import Combine
 import Foundation
 import Observation
 
@@ -10,7 +8,6 @@ class MemberListViewModel {
     var isLoading: Bool = true
     var errorMessage: String?
 
-    private var cancellables = Set<AnyCancellable>()
     private let groupService: any GroupServiceProtocol
     private let challengeService: any ChallengeServiceProtocol
 
@@ -30,26 +27,15 @@ class MemberListViewModel {
     ) {
         self.groupService = groupService
         self.challengeService = challengeService
-        addSubscribers()
+        syncState()
     }
 
-    private func addSubscribers() {
-        groupService.currentGroup
-            .receive(on: DispatchQueue.main)
-            .map { $0.members }
-            .sink { [weak self] returnedMembers in
-                guard let self else { return }
-                self.members = returnedMembers
-                self.isLoading = false
-            }
-            .store(in: &cancellables)
+    // MARK: - State Sync
 
-        challengeService.challenges
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] challenges in
-                self?.latestChallenges = challenges
-            }
-            .store(in: &cancellables)
+    private func syncState() {
+        members = groupService.currentGroup.members
+        latestChallenges = challengeService.challenges
+        isLoading = false
     }
 
     var filteredMembers: [User] {

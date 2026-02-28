@@ -19,20 +19,17 @@ struct GroupoApp: App {
                 switch sessionManager.session {
                 case .unknown:
                     Color.black.ignoresSafeArea()
-                    
+
                 case .unauthenticated:
-                    AuthScreen(
-                        authUseCase: AuthUseCase(userService: services.userService),
-                        verifyOTPUseCase: VerifyOTPUseCase(userService: services.userService)
-                    )
+                    AuthScreen(authService: services.authService)
                         .environment(\.services, services)
                         .environmentObject(toastManager)
                         .environmentObject(sessionManager)
                         .transition(.opacity)
-                    
+
                 case .authenticated:
                     OnboardingScreen(
-                        onboardingUseCase: OnboardingUseCase(groupService: services.groupService),
+                        onboardingService: services.onboardingService,
                         onJoin: {
                             withAnimation {
                                 sessionManager.completeOnboarding()
@@ -43,7 +40,7 @@ struct GroupoApp: App {
                     .environmentObject(toastManager)
                     .environmentObject(sessionManager)
                     .transition(.opacity)
-                    
+
                 case .onboarded:
                     MainScreen(services: services)
                         .environment(\.services, services)

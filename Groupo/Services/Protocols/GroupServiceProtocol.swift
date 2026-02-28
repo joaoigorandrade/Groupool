@@ -1,13 +1,12 @@
 // GroupServiceProtocol.swift
 
-import Combine
 import Foundation
 
-protocol GroupServiceProtocol {
+protocol GroupServiceProtocol: AnyObject {
 
     // MARK: - State
 
-    var currentGroup: AnyPublisher<Group, Never> { get }
+    var currentGroup: Group { get }
 
     // MARK: - Actions
 

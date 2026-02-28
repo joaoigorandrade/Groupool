@@ -1,6 +1,5 @@
-import Observation
 import Foundation
-import Combine
+import Observation
 
 @Observable
 class CreateExpenseViewModel {
@@ -27,30 +26,24 @@ class CreateExpenseViewModel {
 
     var isLoading: Bool = false
 
-    private let createExpenseUseCase: CreateExpenseUseCaseProtocol
+    private let transactionService: any TransactionServiceProtocol
     private let groupService: any GroupServiceProtocol
-    private var subscribers = Set<AnyCancellable>()
 
     var currentGroup: Group?
 
     init(
-        createExpenseUseCase: CreateExpenseUseCaseProtocol,
+        transactionService: any TransactionServiceProtocol,
         groupService: any GroupServiceProtocol
     ) {
-        self.createExpenseUseCase = createExpenseUseCase
+        self.transactionService = transactionService
         self.groupService = groupService
-        setupSubscribers()
+        syncState()
     }
 
-    // MARK: - Subscribers
+    // MARK: - State Sync
 
-    private func setupSubscribers() {
-        groupService.currentGroup
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] group in
-                self?.currentGroup = group
-            }
-            .store(in: &subscribers)
+    private func syncState() {
+        currentGroup = groupService.currentGroup
     }
 
     // MARK: - Validation
@@ -147,17 +140,23 @@ class CreateExpenseViewModel {
 
         isLoading = true
 
-
         let amountDecimal = Decimal(amount)
         let desc = description
 
+        // Transform split amounts from [UUID: Double] to [String: Decimal]
+        var splitDetails: [String: Decimal]?
+        if selectedSplit == .custom {
+            splitDetails = splitAmounts.reduce(into: [:]) { result, pair in
+                result[pair.key.uuidString] = Decimal(pair.value)
+            }
+        }
+
         Task {
             do {
-                try await createExpenseUseCase.createExpense(
-                    description: desc,
+                try await transactionService.addExpense(
                     amount: amountDecimal,
-                    splitOption: selectedSplit,
-                    splits: splitAmounts
+                    description: desc,
+                    splitDetails: splitDetails
                 )
                 HapticManager.notificationSuccess()
                 isLoading = false

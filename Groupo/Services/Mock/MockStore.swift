@@ -1,18 +1,19 @@
 // MockStore.swift
 
-import Combine
 import Foundation
+import Observation
 
+@Observable
 final class MockStore {
 
     // MARK: - State
 
-    @Published var currentUser: User
-    @Published var currentGroup: Group
-    @Published var challenges: [Challenge]
-    @Published var transactions: [Transaction]
-    @Published var votes: [Vote]
-    @Published var withdrawalRequests: [WithdrawalRequest]
+    var currentUser: User
+    var currentGroup: Group
+    var challenges: [Challenge]
+    var transactions: [Transaction]
+    var votes: [Vote]
+    var withdrawalRequests: [WithdrawalRequest]
 
     // MARK: - Private
 
@@ -27,7 +28,7 @@ final class MockStore {
     private let keyWithdrawals = "mock_withdrawals"
 
     // MARK: - Init
-    
+
     init(seed: MockSeed = .default, persistenceEnabled: Bool = true) {
         self.persistenceEnabled = persistenceEnabled
         self.currentUser = seed.user

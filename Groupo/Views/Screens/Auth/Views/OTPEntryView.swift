@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct OTPEntryView: View {
-    @ObservedObject var viewModel: AuthViewModel
+    @State var viewModel: AuthViewModel
     @EnvironmentObject var sessionManager: SessionManager
     @FocusState var focus: Bool
     

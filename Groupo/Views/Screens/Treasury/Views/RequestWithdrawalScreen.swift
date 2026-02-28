@@ -6,11 +6,11 @@ struct RequestWithdrawalScreen: View {
     @State private var viewModel: RequestWithdrawalViewModel
     
     init(
-        requestWithdrawalUseCase: RequestWithdrawalUseCaseProtocol,
+        withdrawalService: any WithdrawalServiceProtocol,
         userService: any UserServiceProtocol
     ) {
         _viewModel = State(wrappedValue: RequestWithdrawalViewModel(
-            requestWithdrawalUseCase: requestWithdrawalUseCase,
+            withdrawalService: withdrawalService,
             userService: userService
         ))
     }
@@ -117,7 +117,7 @@ private extension RequestWithdrawalScreen {
 #Preview("Request") {
     let services = AppServiceContainer.preview()
     RequestWithdrawalScreen(
-        requestWithdrawalUseCase: RequestWithdrawalUseCase(withdrawalService: services.withdrawalService),
+        withdrawalService: services.withdrawalService,
         userService: services.userService
     )
     .environment(\.services, services)
@@ -127,7 +127,7 @@ private extension RequestWithdrawalScreen {
 #Preview("Dark Mode") {
     let services = AppServiceContainer.preview()
     RequestWithdrawalScreen(
-        requestWithdrawalUseCase: RequestWithdrawalUseCase(withdrawalService: services.withdrawalService),
+        withdrawalService: services.withdrawalService,
         userService: services.userService
     )
     .environment(\.services, services)

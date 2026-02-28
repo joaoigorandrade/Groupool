@@ -8,16 +8,16 @@ struct DashboardScreen: View {
     @Namespace private var namespace
 
     init(
-        groupUseCase: DashboardGroupUseCaseProtocol,
-        challengeUseCase: DashboardChallengeUseCaseProtocol,
-        transactionUseCase: DashboardTransactionUseCaseProtocol,
-        userUseCase: DashboardUserUseCaseProtocol
+        userService: any UserServiceProtocol,
+        groupService: any GroupServiceProtocol,
+        challengeService: any ChallengeServiceProtocol,
+        transactionService: any TransactionServiceProtocol
     ) {
         _viewModel = State(wrappedValue: DashboardViewModel(
-            groupUseCase: groupUseCase,
-            challengeUseCase: challengeUseCase,
-            transactionUseCase: transactionUseCase,
-            userUseCase: userUseCase
+            userService: userService,
+            groupService: groupService,
+            challengeService: challengeService,
+            transactionService: transactionService
         ))
     }
 
@@ -86,7 +86,8 @@ struct DashboardScreen: View {
         switch route {
         case .profile:
             ProfileScreen(
-                profileUseCase: ProfileUseCase(userService: services.userService)
+                userService: services.userService,
+                pixService: services.pixService
             )
             .navigationTransition(.zoom(sourceID: "profile", in: namespace))
 
@@ -174,12 +175,12 @@ struct DashboardScreen: View {
 
     private func makeTreasuryViewModel() -> TreasuryViewModel {
         TreasuryViewModel(
-            transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
-            challengeUseCase: TreasuryChallengeUseCase(challengeService: services.challengeService),
-            voteUseCase: TreasuryVoteUseCase(voteService: services.voteService),
-            withdrawalUseCase: TreasuryWithdrawalUseCase(withdrawalService: services.withdrawalService),
-            groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
-            userUseCase: TreasuryUserUseCase(userService: services.userService)
+            transactionService: services.transactionService,
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            groupService: services.groupService,
+            userService: services.userService
         )
     }
 }
@@ -188,10 +189,10 @@ struct DashboardScreen: View {
     let services = AppServiceContainer.preview()
 
     DashboardScreen(
-        groupUseCase: DashboardGroupUseCase(groupService: services.groupService),
-        challengeUseCase: DashboardChallengeUseCase(challengeService: services.challengeService),
-        transactionUseCase: DashboardTransactionUseCase(transactionService: services.transactionService),
-        userUseCase: DashboardUserUseCase(userService: services.userService)
+        userService: services.userService,
+        groupService: services.groupService,
+        challengeService: services.challengeService,
+        transactionService: services.transactionService
     )
     .environment(\.services, services)
     .environment(Router())

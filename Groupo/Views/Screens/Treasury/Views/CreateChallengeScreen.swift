@@ -8,14 +8,12 @@ struct CreateChallengeScreen: View {
     init(
         challengeService: any ChallengeServiceProtocol,
         userService: any UserServiceProtocol,
-        groupService: any GroupServiceProtocol,
-        createChallengeUseCase: CreateChallengeUseCaseProtocol
+        groupService: any GroupServiceProtocol
     ) {
         _viewModel = State(wrappedValue: CreateChallengeViewModel(
             challengeService: challengeService,
             userService: userService,
-            groupService: groupService,
-            createChallengeUseCase: createChallengeUseCase
+            groupService: groupService
         ))
     }
 
@@ -343,8 +341,7 @@ private struct SectionHeader: View {
     CreateChallengeScreen(
         challengeService: services.challengeService,
         userService: services.userService,
-        groupService: services.groupService,
-        createChallengeUseCase: CreateChallengeUseCase(challengeService: services.challengeService)
+        groupService: services.groupService
     )
     .environmentObject(ToastManager())
 }
@@ -354,8 +351,7 @@ private struct SectionHeader: View {
     CreateChallengeScreen(
         challengeService: services.challengeService,
         userService: services.userService,
-        groupService: services.groupService,
-        createChallengeUseCase: CreateChallengeUseCase(challengeService: services.challengeService)
+        groupService: services.groupService
     )
     .environmentObject(ToastManager())
 }

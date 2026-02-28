@@ -7,12 +7,12 @@ struct MainScreen: View {
 
     init(services: AppServiceContainer) {
         _treasuryViewModel = State(wrappedValue: TreasuryViewModel(
-            transactionUseCase: TreasuryTransactionUseCase(transactionService: services.transactionService),
-            challengeUseCase: TreasuryChallengeUseCase(challengeService: services.challengeService),
-            voteUseCase: TreasuryVoteUseCase(voteService: services.voteService),
-            withdrawalUseCase: TreasuryWithdrawalUseCase(withdrawalService: services.withdrawalService),
-            groupUseCase: TreasuryGroupUseCase(groupService: services.groupService),
-            userUseCase: TreasuryUserUseCase(userService: services.userService)
+            transactionService: services.transactionService,
+            challengeService: services.challengeService,
+            voteService: services.voteService,
+            withdrawalService: services.withdrawalService,
+            groupService: services.groupService,
+            userService: services.userService
         ))
     }
 
@@ -52,10 +52,10 @@ struct MainScreen: View {
 
     private var dashboardTab: some View {
         DashboardScreen(
-            groupUseCase: DashboardGroupUseCase(groupService: services.groupService),
-            challengeUseCase: DashboardChallengeUseCase(challengeService: services.challengeService),
-            transactionUseCase: DashboardTransactionUseCase(transactionService: services.transactionService),
-            userUseCase: DashboardUserUseCase(userService: services.userService)
+            userService: services.userService,
+            groupService: services.groupService,
+            challengeService: services.challengeService,
+            transactionService: services.transactionService
         )
         .tag(MainTab.dashboard)
         .tabItem {

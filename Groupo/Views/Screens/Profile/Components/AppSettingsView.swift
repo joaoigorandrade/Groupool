@@ -95,7 +95,7 @@ private extension AppSettingsView {
             NavigationLink("Onboarding (Preview)") {
                 let previewServices = AppServiceContainer.preview(seed: .pendingInvite)
                 OnboardingScreen(
-                    onboardingUseCase: OnboardingUseCase(groupService: previewServices.groupService),
+                    onboardingService: previewServices.onboardingService,
                     onJoin: { print("Joined!") }
                 )
                 .environment(\.services, previewServices)

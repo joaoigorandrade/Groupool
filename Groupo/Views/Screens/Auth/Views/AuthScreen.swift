@@ -1,13 +1,13 @@
 import SwiftUI
 
 struct AuthScreen: View {
-    @StateObject private var viewModel: AuthViewModel
+    @State private var viewModel: AuthViewModel
     @EnvironmentObject var sessionManager: SessionManager
 
-    init(authUseCase: AuthUseCaseProtocol, verifyOTPUseCase: VerifyOTPUseCaseProtocol) {
-        _viewModel = StateObject(wrappedValue: AuthViewModel(authUseCase: authUseCase, verifyOTPUseCase: verifyOTPUseCase))
+    init(authService: any AuthServiceProtocol) {
+        _viewModel = State(wrappedValue: AuthViewModel(authService: authService))
     }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -28,9 +28,6 @@ struct AuthScreen: View {
 
 #Preview {
     let container = AppServiceContainer.preview()
-    return AuthScreen(
-        authUseCase: AuthUseCase(userService: container.userService),
-        verifyOTPUseCase: VerifyOTPUseCase(userService: container.userService)
-    )
-    .environmentObject(SessionManager(userDefaults: .standard))
+    return AuthScreen(authService: container.authService)
+        .environmentObject(SessionManager(userDefaults: .standard))
 }

@@ -1,15 +1,12 @@
 // MockGroupService.swift
 
-import Combine
 import Foundation
 
 final class MockGroupService: GroupServiceProtocol {
 
     // MARK: - State
 
-    var currentGroup: AnyPublisher<Group, Never> {
-        store.$currentGroup.eraseToAnyPublisher()
-    }
+    var currentGroup: Group { store.currentGroup }
 
     // MARK: - Private
 
@@ -24,8 +21,6 @@ final class MockGroupService: GroupServiceProtocol {
     // MARK: - Actions
 
     func refresh() async {
-        // Re-assign to trigger downstream publishers.
-        // Real implementations will fetch from the network here.
         store.currentGroup = store.currentGroup
     }
 }

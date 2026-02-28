@@ -1,15 +1,12 @@
 // MockTransactionService.swift
 
-import Combine
 import Foundation
 
 final class MockTransactionService: TransactionServiceProtocol {
 
     // MARK: - State
 
-    var transactions: AnyPublisher<[Transaction], Never> {
-        store.$transactions.eraseToAnyPublisher()
-    }
+    var transactions: [Transaction] { store.transactions }
 
     // MARK: - Private
 
@@ -24,8 +21,6 @@ final class MockTransactionService: TransactionServiceProtocol {
     // MARK: - Actions
 
     func refresh() async {
-        // Re-assign to trigger downstream publishers.
-        // Real implementations will fetch from the network here.
         store.transactions = store.transactions
     }
 
@@ -53,12 +48,7 @@ final class MockTransactionService: TransactionServiceProtocol {
         store.transactions.insert(transaction, at: 0)
 
         let newPool = store.currentGroup.totalPool - amount
-        store.currentGroup = Group(
-            id: store.currentGroup.id,
-            name: store.currentGroup.name,
-            totalPool: newPool,
-            members: store.currentGroup.members
-        )
+        store.currentGroup = store.currentGroup.updating(totalPool: newPool)
 
         store.save()
     }

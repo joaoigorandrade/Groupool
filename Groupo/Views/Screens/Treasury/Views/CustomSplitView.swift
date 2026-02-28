@@ -120,7 +120,7 @@ private extension CustomSplitView {
     let services = AppServiceContainer.preview()
     CustomSplitView(
         viewModel: CreateExpenseViewModel(
-            createExpenseUseCase: CreateExpenseUseCase(transactionService: services.transactionService),
+            transactionService: services.transactionService,
             groupService: services.groupService
         ),
         members: []
